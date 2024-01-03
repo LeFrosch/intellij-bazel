@@ -15,7 +15,10 @@
  */
 package com.google.idea.blaze.base.qsync;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.idea.blaze.base.lang.buildfile.language.BuildFileType;
 import com.google.idea.blaze.base.logging.utils.querysync.QuerySyncActionStatsScope;
 import com.google.idea.blaze.base.qsync.QuerySyncManager.TaskOrigin;
@@ -33,16 +36,18 @@ import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent;
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
 import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent;
 import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent;
+import com.intellij.ui.EditorNotifications;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
 /** {@link AsyncFileListener} for monitoring project changes requiring a re-sync */
 public class QuerySyncAsyncFileListener implements AsyncFileListener {
 
-  private final SyncRequester syncRequester;
   private final Project project;
+  private final SyncRequester syncRequester;
 
   @VisibleForTesting
   public QuerySyncAsyncFileListener(Project project, SyncRequester syncRequester) {
@@ -56,6 +61,13 @@ public class QuerySyncAsyncFileListener implements AsyncFileListener {
         .getLoadedProject()
         .map(p -> p.containsPath(absolutePath))
         .orElse(false);
+  }
+
+  /** Called if a BUILD or bzl file has been updated */
+  public void notifyBuildFileChanged() {
+    QuerySyncManager.getInstance(project)
+        .getLoadedProject()
+        .ifPresent(QuerySyncProject::notifyBuildFileChanges);
   }
 
   /** Returns true if the listener should request a project sync on significant changes */
@@ -76,15 +88,27 @@ public class QuerySyncAsyncFileListener implements AsyncFileListener {
   @Override
   @Nullable
   public ChangeApplier prepareChange(List<? extends VFileEvent> events) {
-    if (!syncOnFileChanges()) {
-      return null;
-    }
 
-    if (events.stream().anyMatch(this::requiresSync)) {
+    ImmutableList<? extends VFileEvent> eventsRequiringSync =
+        events.stream().filter(this::requiresSync).collect(toImmutableList());
+
+    if (!eventsRequiringSync.isEmpty()) {
       return new ChangeApplier() {
         @Override
         public void afterVfsChange() {
-          syncRequester.requestSync();
+          if (eventsRequiringSync.stream()
+              .anyMatch(
+                  e ->
+                      Optional.ofNullable(e.getFile())
+                          .map(vf -> vf.getFileType() == BuildFileType.INSTANCE)
+                          .orElse(false))) {
+            notifyBuildFileChanged();
+          }
+
+          if (syncOnFileChanges()) {
+            syncRequester.requestSync();
+          }
+          EditorNotifications.getInstance(project).updateAllNotifications();
         }
       };
     }

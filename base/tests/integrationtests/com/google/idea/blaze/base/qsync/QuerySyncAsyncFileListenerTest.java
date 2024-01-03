@@ -15,6 +15,7 @@
  */
 package com.google.idea.blaze.base.qsync;
 
+import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
@@ -133,7 +134,7 @@ public class QuerySyncAsyncFileListenerTest extends LightJavaCodeInsightFixtureT
             INCLUDED_DIRECTORY.resolve("java/com/example/Class1.java").toString(),
             "package com.example;public class Class1 {}");
 
-    QuerySyncAsyncFileListener fileListener =
+    TestListener fileListener =
         new TestListener(getFixture().getProject(), mockSyncRequester)
             .setProjectInclude(projectRootPath().resolve(INCLUDED_DIRECTORY))
             .setAutoSync(true);
@@ -151,6 +152,7 @@ public class QuerySyncAsyncFileListenerTest extends LightJavaCodeInsightFixtureT
                 "/**LICENSE-TEXT*/package com.example;public class Class1{}".getBytes(UTF_8)));
 
     verify(mockSyncRequester, never()).requestSync();
+    assertThat(fileListener.buildFileChanged).isFalse();
   }
 
   @Test
@@ -159,7 +161,7 @@ public class QuerySyncAsyncFileListenerTest extends LightJavaCodeInsightFixtureT
         .addFileToProject(
             INCLUDED_DIRECTORY.resolve("BUILD").toString(), "java_library(name=\"java\",srcs=[])");
 
-    QuerySyncAsyncFileListener fileListener =
+    TestListener fileListener =
         new TestListener(getFixture().getProject(), mockSyncRequester)
             .setProjectInclude(projectRootPath().resolve(INCLUDED_DIRECTORY))
             .setAutoSync(true);
@@ -174,6 +176,7 @@ public class QuerySyncAsyncFileListenerTest extends LightJavaCodeInsightFixtureT
                 "/**LICENSE-TEXT*/java_library(name=\"javalib\",srcs=[])".getBytes(UTF_8)));
 
     verify(mockSyncRequester, atLeastOnce()).requestSync();
+    assertThat(fileListener.buildFileChanged).isTrue();
   }
 
   /**
@@ -183,6 +186,7 @@ public class QuerySyncAsyncFileListenerTest extends LightJavaCodeInsightFixtureT
   private static class TestListener extends QuerySyncAsyncFileListener {
     private Path projectInclude = null;
     private boolean autoSync;
+    public boolean buildFileChanged = false;
 
     public TestListener(Project project, SyncRequester syncRequester) {
       super(project, syncRequester);
@@ -208,6 +212,11 @@ public class QuerySyncAsyncFileListenerTest extends LightJavaCodeInsightFixtureT
     @Override
     public boolean syncOnFileChanges() {
       return autoSync;
+    }
+
+    @Override
+    public void notifyBuildFileChanged() {
+      buildFileChanged = true;
     }
   }
 }
