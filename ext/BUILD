@@ -1,3 +1,9 @@
+load("//:build-visibility.bzl", "DEFAULT_TEST_VISIBILITY")
+
+package(
+    default_visibility = DEFAULT_TEST_VISIBILITY,
+)
+
 java_binary(
     name = "client",
     main_class = "com.google.idea.blaze.ext.IntelliJExtClientCli",
@@ -23,11 +29,14 @@ java_library(
         "//ext/proto:intellijext_java_proto",
         "//intellij_platform_sdk:plugin_api",
         "@com_google_guava_guava//jar",
-        "@io_grpc_grpc_java//core",
-        "@io_grpc_grpc_java//netty",
+        "@io_grpc_grpc_core//jar",
+        "@io_grpc_grpc_netty//jar",
     ] + select({
         "@platforms//os:macos": ["@io_netty_netty_transport_classes_kqueue//jar"],
-        "//conditions:default": ["@io_netty_netty_transport_native_epoll//jar"],
+        "//conditions:default": [
+            "@io_netty_netty_transport_native_epoll//jar",
+            "@io_netty_netty_transport_classes_epoll//jar",
+        ],
     }),
 )
 
@@ -67,12 +76,5 @@ java_test(
         "@io_grpc_grpc_java//core",
         "@junit//jar",
         "@truth//jar",
-    ],
-)
-
-test_suite(
-    name = "ext_tests",
-    tests = [
-        ":IntelliJExtServiceTest",
     ],
 )

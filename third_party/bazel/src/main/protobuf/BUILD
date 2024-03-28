@@ -182,6 +182,33 @@ java_proto_library(
 )
 
 proto_library(
+    name = "bazel_output_service_proto",
+    srcs = ["bazel_output_service.proto"],
+    deps = [
+        "@com_google_protobuf//:any_proto",
+        "@googleapis//:google_rpc_status_proto",
+    ],
+)
+
+java_proto_library(
+    name = "bazel_output_service_java_proto",
+    deps = [":bazel_output_service_proto"],
+)
+
+proto_library(
+    name = "bazel_output_service_rev2_proto",
+    srcs = ["bazel_output_service_rev2.proto"],
+    deps = [
+        "@remoteapis//:build_bazel_remote_execution_v2_remote_execution_proto",
+    ],
+)
+
+java_proto_library(
+    name = "bazel_output_service_rev2_java_proto",
+    deps = [":bazel_output_service_rev2_proto"],
+)
+
+proto_library(
     name = "spawn_proto",
     srcs = ["spawn.proto"],
     deps = [
@@ -219,6 +246,9 @@ filegroup(
     name = "dist_jars",
     srcs = [s + "_java_proto_srcs" for s in FILES] + [
         ":analysis_v2_java_proto_srcs",
+        ":bazel_output_service_java_grpc_srcs",
+        ":bazel_output_service_java_proto_srcs",
+        ":bazel_output_service_rev2_java_proto_srcs",
         ":cache_salt_java_proto_srcs",
         ":command_line_java_proto_srcs",
         ":command_server_java_grpc_srcs",

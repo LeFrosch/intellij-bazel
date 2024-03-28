@@ -61,13 +61,6 @@ genquery(
 )
 
 genquery(
-    name = "java_library_proto_dep_query",
-    expression = "//querysync/javatests/com/google/idea/blaze/qsync/testdata/protodep:*",
-    opts = ["--output=streamed_proto"],
-    scope = scopeForJavaPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/protodep"),
-)
-
-genquery(
     name = "java_library_multi_targets",
     expression = "//querysync/javatests/com/google/idea/blaze/qsync/testdata/multitarget:*",
     opts = ["--output=streamed_proto"],
@@ -75,6 +68,7 @@ genquery(
             scopeForJavaPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/multitarget:externaldep"),
 )
 
+# BEGIN-EXTERNAL
 genquery(
     name = "java_library_nested_package",
     expression = " + ".join([
@@ -85,6 +79,44 @@ genquery(
     scope = scopeForJavaPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/nested") +
             scopeForJavaPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/nested/inner"),
 )
+
+genquery(
+    name = "java_library_proto_dep_query",
+    expression = "//querysync/javatests/com/google/idea/blaze/qsync/testdata/protodep:*",
+    opts = ["--output=streamed_proto"],
+    scope = scopeForJavaPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/protodep"),
+)
+
+genquery(
+    name = "cc_external_dep_query",
+    expression = "//querysync/javatests/com/google/idea/blaze/qsync/testdata/cc_externaldep:*",
+    opts = ["--output=streamed_proto"],
+    scope = scopeForCcPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/cc_externaldep"),
+)
+
+genquery(
+    name = "proto_only_query",
+    expression = "//querysync/javatests/com/google/idea/blaze/qsync/testdata/protoonly:*",
+    opts = ["--output=streamed_proto"],
+    scope =
+        [
+            "//querysync/javatests/com/google/idea/blaze/qsync/testdata/protoonly:BUILD",
+            "//querysync/javatests/com/google/idea/blaze/qsync/testdata/protoonly:proto",
+            "//querysync/javatests/com/google/idea/blaze/qsync/testdata/protoonly:proto_java_proto_lite",
+        ],
+)
+
+genquery(
+    name = "nested_proto_query",
+    expression = "//querysync/javatests/com/google/idea/blaze/qsync/testdata/nestedproto:*",
+    opts = ["--output=streamed_proto"],
+    scope = scopeForJavaPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/nestedproto:consumer") + [
+        "//querysync/javatests/com/google/idea/blaze/qsync/testdata/nestedproto:nested_proto",
+        "//querysync/javatests/com/google/idea/blaze/qsync/testdata/nestedproto:nested_java_proto_lite",
+    ],
+)
+
+# END-EXTERNAL
 
 genquery(
     name = "android_lib_query",
@@ -134,41 +166,12 @@ genquery(
 )
 
 genquery(
-    name = "cc_external_dep_query",
-    expression = "//querysync/javatests/com/google/idea/blaze/qsync/testdata/cc_externaldep:*",
-    opts = ["--output=streamed_proto"],
-    scope = scopeForCcPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/cc_externaldep"),
-)
-
-genquery(
     name = "cc_multisrc_query",
     expression = "//querysync/javatests/com/google/idea/blaze/qsync/testdata/cc_multisrc:*",
     opts = ["--output=streamed_proto"],
     scope =
         scopeForCcPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/cc_multisrc:testclass") +
         scopeForCcPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/cc_multisrc:testclass2"),
-)
-
-genquery(
-    name = "proto_only_query",
-    expression = "//querysync/javatests/com/google/idea/blaze/qsync/testdata/protoonly:*",
-    opts = ["--output=streamed_proto"],
-    scope =
-        [
-            "//querysync/javatests/com/google/idea/blaze/qsync/testdata/protoonly:BUILD",
-            "//querysync/javatests/com/google/idea/blaze/qsync/testdata/protoonly:proto",
-            "//querysync/javatests/com/google/idea/blaze/qsync/testdata/protoonly:proto_java_proto_lite",
-        ],
-)
-
-genquery(
-    name = "nested_proto_query",
-    expression = "//querysync/javatests/com/google/idea/blaze/qsync/testdata/nestedproto:*",
-    opts = ["--output=streamed_proto"],
-    scope = scopeForJavaPackage("//querysync/javatests/com/google/idea/blaze/qsync/testdata/nestedproto:consumer") + [
-        "//querysync/javatests/com/google/idea/blaze/qsync/testdata/nestedproto:nested_proto",
-        "//querysync/javatests/com/google/idea/blaze/qsync/testdata/nestedproto:nested_java_proto_lite",
-    ],
 )
 
 genquery(
@@ -192,23 +195,26 @@ java_library(
         ":android_aidl_source_query",
         ":android_lib_query",
         ":buildincludes_query",
-        ":cc_external_dep_query",
-        ":cc_library_query",
-        ":cc_multisrc_query",
-        ":empty_query",
         ":filegroup_query",
         ":java_exported_dep_query",
         ":java_library_external_dep_query",
         ":java_library_internal_dep_query",
         ":java_library_multi_targets",
-        ":java_library_nested_package",
         ":java_library_no_deps_query",
-        ":java_library_proto_dep_query",
         ":java_library_transitive_dep_query",
         ":java_library_transitive_internal_dep_query",
-        ":nested_proto_query",
-        ":proto_only_query",
+        ":cc_library_query",
+        ":cc_multisrc_query",
         ":tags_query",
+        ":empty_query",
+        # BEGIN-EXTERNAL
+        # These ones don't work in repo
+        ":java_library_nested_package",
+        ":java_library_proto_dep_query",
+        ":cc_external_dep_query",
+        ":proto_only_query",
+        ":nested_proto_query",
+        # END-EXTERNAL
     ],
     deps = [
         "//shared",

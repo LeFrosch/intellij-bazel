@@ -44,9 +44,11 @@ import com.google.idea.blaze.base.util.SaveUtil;
 import com.google.idea.blaze.common.Label;
 import com.google.idea.blaze.common.PrintOutput;
 import com.google.idea.blaze.exception.BuildException;
-import com.google.idea.blaze.qsync.project.BlazeProjectSnapshot;
+import com.google.idea.blaze.qsync.BlazeProjectSnapshot;
+import com.google.idea.blaze.qsync.deps.ArtifactTracker;
 import com.google.idea.blaze.qsync.project.PostQuerySyncData;
 import com.google.idea.blaze.qsync.project.ProjectDefinition;
+import com.google.idea.blaze.qsync.project.TargetsToBuild;
 import com.google.idea.common.experiments.BoolExperiment;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
@@ -87,6 +89,8 @@ import javax.annotation.Nullable;
 public class QuerySyncManager implements Disposable {
   private final Logger logger = Logger.getInstance(getClass());
 
+  public static final String NOTIFICATION_GROUP = "QuerySyncBuild";
+
   private final Project project;
   protected final ListeningExecutorService executor =
       MoreExecutors.listeningDecorator(
@@ -96,6 +100,7 @@ public class QuerySyncManager implements Disposable {
   private volatile QuerySyncProject loadedProject;
 
   private final QuerySyncStatus syncStatus;
+  private final QuerySyncAsyncFileListener fileListener;
 
   private static final BoolExperiment showWindowOnAutomaticSyncErrors =
       new BoolExperiment("querysync.autosync.show.console.on.error", true);
@@ -135,7 +140,7 @@ public class QuerySyncManager implements Disposable {
     this.project = project;
     this.loader = loader != null ? loader : createProjectLoader(executor, project);
     this.syncStatus = new QuerySyncStatus(project);
-    QuerySyncAsyncFileListener.createAndListen(project, this);
+    this.fileListener = QuerySyncAsyncFileListener.createAndListen(project, this);
   }
 
   /**
@@ -192,7 +197,7 @@ public class QuerySyncManager implements Disposable {
     }
   }
 
-  public ArtifactTracker getArtifactTracker() {
+  public ArtifactTracker<?> getArtifactTracker() {
     assertProjectLoaded();
     return loadedProject.getArtifactTracker();
   }
@@ -210,6 +215,10 @@ public class QuerySyncManager implements Disposable {
   public SourceToTargetMap getSourceToTargetMap() {
     assertProjectLoaded();
     return loadedProject.getSourceToTargetMap();
+  }
+
+  public QuerySyncAsyncFileListener getFileListener() {
+    return fileListener;
   }
 
   @CanIgnoreReturnValue
@@ -429,6 +438,18 @@ public class QuerySyncManager implements Disposable {
         taskOrigin);
   }
 
+  @CanIgnoreReturnValue
+  public ListenableFuture<Boolean> enableAnalysisForWholeProject(
+      QuerySyncActionStatsScope querySyncActionStats, TaskOrigin taskOrigin) {
+    assertProjectLoaded();
+    return runBuild(
+        "Enabling analysis for all project targets",
+        "Building dependencies",
+        querySyncActionStats,
+        loadedProject::enableAnalysis,
+        taskOrigin);
+  }
+
   public boolean canEnableAnalysisFor(Path workspaceRelativePath) {
     if (loadedProject == null) {
       return false;
@@ -442,6 +463,13 @@ public class QuerySyncManager implements Disposable {
 
   public Optional<OperationType> currentOperation() {
     return syncStatus.currentOperation();
+  }
+
+  public Optional<Boolean> isProjectFileAddedSinceSync(Path absolutePath) {
+    if (loadedProject == null) {
+      return Optional.empty();
+    }
+    return loadedProject.projectFileAddedSinceSync(absolutePath);
   }
 
   @CanIgnoreReturnValue
@@ -487,7 +515,7 @@ public class QuerySyncManager implements Disposable {
 
   private void notifyInternal(String title, String content, NotificationType notificationType) {
     Notifications.Bus.notify(
-        new Notification("QuerySyncBuild", title, content, notificationType), project);
+        new Notification(NOTIFICATION_GROUP, title, content, notificationType), project);
   }
 
   @Override
