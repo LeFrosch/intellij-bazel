@@ -1,1 +1,1 @@
---action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+build --host_platform=//toolchain:platform_for_aspect_test

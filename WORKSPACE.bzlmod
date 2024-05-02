@@ -803,3 +803,6 @@ to_external_repository(
   name = "test_cpp_custom_toolchain",
   path = "aspect/testing/tests/src/com/google/idea/blaze/aspect/cpp/custom_toolchain/simple",
 )
+
+# this toolchain is only used for testing
+register_toolchains("@test_cpp_custom_toolchain/toolchain:custom_toolchain")

@@ -1,5 +1,22 @@
 filegroup(name = "empty")
 
+# custom constraint for toolchain, so that toolchain is only available when for this test
+constraint_setting(name = "aspect_test")
+
+constraint_value(
+    name = "use_for_aspect_test",
+    constraint_setting = ":aspect_test",
+)
+
+platform(
+    name = "platform_for_aspect_test",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+        ":use_for_aspect_test",
+    ],
+)
+
 cc_toolchain(
     name = "cc_custom_toolchain",
     toolchain_identifier = "custom-toolchain",
@@ -17,14 +34,8 @@ toolchain(
     name = "custom_toolchain",
     toolchain = ":cc_custom_toolchain",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
-    exec_compatible_with = [
-        "@platforms//cpu:x86_64",
-        "@platforms//os:linux",
-    ],
-    target_compatible_with = [
-        "@platforms//cpu:x86_64",
-        "@platforms//os:linux",
-    ],
+    exec_compatible_with = [":use_for_aspect_test"],
+    target_compatible_with = [":use_for_aspect_test"],
 )
 
 package(default_visibility = ["//visibility:public"])

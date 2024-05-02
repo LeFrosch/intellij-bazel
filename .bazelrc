@@ -1,4 +1,5 @@
 build --java_language_version=17 --java_runtime_version=17
+build --host_platform=@test_cpp_custom_toolchain//toolchain:platform_for_aspect_test
 
 # delete testdata package needed for bazel integration tests
 build --deleted_packages=//aspect/testing/tests/src/com/google/idea/blaze/aspect/integration/testdata
