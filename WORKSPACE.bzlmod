@@ -795,3 +795,11 @@ go_rules_dependencies()
 go_register_toolchains(version = "1.19.3")
 
 gazelle_dependencies(go_repository_default_config = "//:WORKSPACE.bzlmod")
+
+# repository rule to load a directory as external a repository
+load(":external_repository.bzl", "to_external_repository")
+
+to_external_repository(
+  name = "test_cpp_custom_toolchain",
+  path = "aspect/testing/tests/src/com/google/idea/blaze/aspect/cpp/custom_toolchain/simple",
+)
