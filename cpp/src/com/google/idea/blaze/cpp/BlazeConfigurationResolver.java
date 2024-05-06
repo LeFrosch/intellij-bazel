@@ -51,12 +51,12 @@ import com.intellij.openapi.util.io.FileUtilRt;
 import com.intellij.openapi.util.registry.Registry;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +108,8 @@ final class BlazeConfigurationResolver {
             xcodeSettings
         );
 
-    ImmutableMap<String, String> targetToVersion = getTargetToVersionMap(toolchainLookupMap, compilerSettings);
+    ImmutableMap<String, Boolean> targetIsClang =
+        getTargetIsClangMap(toolchainLookupMap, compilerSettings);
     ProjectViewTargetImportFilter projectViewFilter =
         new ProjectViewTargetImportFilter(
             Blaze.getBuildSystemName(project), workspaceRoot, projectViewSet);
@@ -122,26 +123,41 @@ final class BlazeConfigurationResolver {
         HeaderRootTrimmer.getValidRoots(
             context, blazeProjectData, toolchainLookupMap, targetFilter, executionRootPathResolver);
     builder.setValidHeaderRoots(validHeaderRoots);
-    builder.setTargetToVersionMap(targetToVersion);
+    builder.setTargetIsClangMap(targetIsClang);
     builder.setXcodeSettings(xcodeSettings);
 
     return builder.build();
   }
 
+  private static Boolean isClangCompilerVersion(@Nullable String version) {
+    if (version == null) {
+      return false;
+    } else {
+      return version.contains("clang");
+    }
+  }
+
   @NotNull
-  private static ImmutableMap<String, String> getTargetToVersionMap(ImmutableMap<TargetKey, CToolchainIdeInfo> toolchainLookupMap, ImmutableMap<CToolchainIdeInfo, BlazeCompilerSettings> compilerSettings) {
-    ImmutableMap<ExecutionRootPath, String> compilerVersionByPath =
-            compilerSettings.entrySet().stream().collect(
-                    ImmutableMap.toImmutableMap(
-                            e -> e.getKey().getCppCompiler(),
-                            e -> e.getValue().getCppCompilerVersion()));
-    return toolchainLookupMap.entrySet().stream()
-            .map(e -> new AbstractMap.SimpleImmutableEntry<>(
-                    e.getKey().getLabel().toString(),
-                    compilerVersionByPath.get(e.getValue().getCppCompiler())))
-            // In case of a broken compiler, the version string is null, but Collectors.toMap requires non-null value function.
-            .filter(e -> e.getValue() != null)
-            .collect(ImmutableMap.toImmutableMap(e -> e.getKey(), e -> e.getValue()));
+  private static ImmutableMap<String, Boolean> getTargetIsClangMap(
+      ImmutableMap<TargetKey, CToolchainIdeInfo> toolchainLookupMap,
+      ImmutableMap<CToolchainIdeInfo, BlazeCompilerSettings> compilerSettings) {
+    final Map<ExecutionRootPath, String> compilerToVersion = new HashMap<>();
+    compilerSettings.forEach((toolchain, settings) -> {
+      compilerToVersion.put(toolchain.getCCompiler(), settings.getCCompilerVersion());
+      compilerToVersion.put(toolchain.getCppCompiler(), settings.getCppCompilerVersion());
+    });
+
+    final ImmutableMap.Builder<String, Boolean> isClangTarget = ImmutableMap.builder();
+    toolchainLookupMap.forEach((target, toolchain) -> {
+      final String cCompilerVersion = compilerToVersion.get(toolchain.getCCompiler());
+      final String cppCompilerVersion = compilerToVersion.get(toolchain.getCppCompiler());
+
+      // Check if both compilers are clang based. Default to false if either is null or not clang.
+      final Boolean isClang = isClangCompilerVersion(cCompilerVersion) && isClangCompilerVersion(cppCompilerVersion);
+      isClangTarget.put(target.toString(), isClang);
+    });
+
+    return isClangTarget.build();
   }
 
   private static Predicate<TargetIdeInfo> getTargetFilter(

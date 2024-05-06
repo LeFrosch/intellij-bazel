@@ -133,7 +133,7 @@ public final class BlazeCWorkspace implements ProjectComponent {
     BlazeConfigurationResolverResult newResult =
         configurationResolver.update(
             context, workspaceRoot, projectViewSet, blazeProjectData, oldResult);
-    BlazeCompilerInfoMapService.getInstance(project).setState(newResult.getTargetToCompilerVersion());
+    BlazeIsClangService.update(project, newResult.getTargetIsClangMap());
     // calculateConfigurations is expensive, so run async without a read lock (b/78570947)
     ProgressManager.getInstance()
         .run(

@@ -33,7 +33,7 @@ import com.google.idea.blaze.base.run.ExecutorType;
 import com.google.idea.blaze.base.run.confighandler.BlazeCommandRunConfigurationRunner;
 import com.google.idea.blaze.base.sync.aspects.BuildResult;
 import com.google.idea.blaze.base.util.SaveUtil;
-import com.google.idea.blaze.cpp.BlazeCompilerInfoMapService;
+import com.google.idea.blaze.cpp.BlazeIsClangService;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.Executor;
 import com.intellij.execution.RunCanceledByUserException;
@@ -192,7 +192,7 @@ public class BlazeCidrRunConfigurationRunner implements BlazeCommandRunConfigura
 
   private boolean isClangBuild() throws ExecutionException {
     Label target = getSingleTarget(configuration);
-    return BlazeCompilerInfoMapService.getInstance(configuration.getProject()).isClangTarget(target);
+    return BlazeIsClangService.isClangTarget(configuration.getProject(), target);
   }
 
   /**
