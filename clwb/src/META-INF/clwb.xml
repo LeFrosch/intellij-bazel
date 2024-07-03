@@ -28,7 +28,6 @@
 
     <programRunner implementation="com.google.idea.blaze.clwb.run.BlazeCppRunner"/>
 
-    <editorNotificationProvider implementation="com.google.idea.blaze.clwb.ui.BazelProjectEditorNotificationProvider" />
     <editorNotificationProvider implementation="com.google.idea.blaze.plugin.CMakeNotificationFilter" />
     <moduleType id="BLAZE_CPP_MODULE" implementationClass="com.google.idea.blaze.clwb.BlazeCppModuleType"/>
     <postStartupActivity implementation="com.google.idea.blaze.clwb.run.producers.NonBlazeProducerSuppressor"/>

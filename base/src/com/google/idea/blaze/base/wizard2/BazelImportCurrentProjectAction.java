@@ -70,7 +70,8 @@ public class BazelImportCurrentProjectAction extends AnAction {
 
   final File workspaceRootFile;
 
-  private BazelImportCurrentProjectAction(File workspaceRootFile) {
+  public BazelImportCurrentProjectAction(File workspaceRootFile) {
+    super("Import current project");
     this.workspaceRootFile = workspaceRootFile;
   }
 
