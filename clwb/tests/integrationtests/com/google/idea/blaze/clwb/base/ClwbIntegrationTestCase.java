@@ -27,6 +27,7 @@ import com.google.idea.testing.ServiceHelper;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindowManager;
@@ -52,6 +53,21 @@ public abstract class ClwbIntegrationTestCase extends HeavyPlatformTestCase {
   protected VirtualFile myProjectRoot;
 
   /**
+   * Normalizes an absolut posix path for windows. Since tests have to be run with `MSYS_NO_PATHCONV`
+   * set to true. Paths are no longer converted by the bazel test setup.
+   */
+  private static String normalizePath(String path) {
+    if (!SystemInfo.isWindows || !path.startsWith("/")) {
+      return path;
+    }
+
+    final var parts = path.substring(1).split("/");
+    parts[0] = parts[0] + ":";
+
+    return String.join("\\", parts);
+  }
+
+  /**
    * Gets the path to the test project and performs some basic checks. The path
    * is provided by `bazel_integration_test` rule in the `BIT_WORKSPACE_DIR`
    * environment variable.
@@ -60,7 +76,7 @@ public abstract class ClwbIntegrationTestCase extends HeavyPlatformTestCase {
     final var bitWorkspaceDir = System.getenv("BIT_WORKSPACE_DIR");
     assertNotNull(bitWorkspaceDir);
 
-    final var file = new File(bitWorkspaceDir);
+    final var file = new File(normalizePath(bitWorkspaceDir));
     assertExists(file);
 
     return file;
@@ -75,11 +91,14 @@ public abstract class ClwbIntegrationTestCase extends HeavyPlatformTestCase {
     final var bitBazelBinary = System.getenv("BIT_BAZEL_BINARY");
     assertNotNull(bitBazelBinary);
 
+    final var file = new File(normalizePath(bitBazelBinary));
+    assertExists(file);
+
     final var errStream = new ByteArrayOutputStream();
 
     // run bazel binary in project root to avoid downloading it twice
     final var result = ExternalTask.builder(getTestProjectRoot())
-        .args(bitBazelBinary, "--version")
+        .args(file.getAbsolutePath(), "--version")
         .stderr(errStream)
         .build()
         .runAsync()
@@ -89,7 +108,7 @@ public abstract class ClwbIntegrationTestCase extends HeavyPlatformTestCase {
       fail("cannot run bazel binary: " + errStream);
     }
 
-    return bitBazelBinary;
+    return file.getAbsolutePath();
   }
 
   @Override
