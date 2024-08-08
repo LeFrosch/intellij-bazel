@@ -43,7 +43,6 @@ import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.NullableLazyValue;
 import com.intellij.util.execution.ParametersListUtil;
-import java.util.ArrayList;
 import javax.annotation.Nullable;
 import javax.swing.Icon;
 
@@ -172,17 +171,7 @@ public class BlazeIntellijPluginConfigurationType implements ConfigurationType {
     }
 
     private static String defaultVmOptions() {
-      String vmoptionsText = VMOptions.read();
-      if (vmoptionsText == null) {
-        return null;
-      }
-      ArrayList<String> vmoptions =
-          Splitter.on("\n")
-              .trimResults()
-              .omitEmptyStrings()
-              .splitToStream(vmoptionsText)
-              .filter(opt -> !opt.startsWith("#"))
-              .collect(toCollection(ArrayList::new));
+      final var vmoptions = VMOptions.readOptions("", false);
       vmoptions.add("-Didea.is.internal=true");
 
       return ParametersListUtil.join(vmoptions);
