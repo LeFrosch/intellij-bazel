@@ -20,6 +20,7 @@ import com.google.idea.common.ui.properties.ObservableValue;
 import com.google.idea.common.ui.properties.Property;
 import com.google.idea.common.ui.templates.AbstractView;
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.ui.SimpleToolWindowPanel;
 import com.intellij.ui.OnePixelSplitter;
 import com.intellij.ui.ScrollPaneFactory;
@@ -31,6 +32,8 @@ import javax.swing.JPanel;
 
 /** View of the combination of the tree and output consoles as a single panel. */
 final class TasksTreeConsoleView extends AbstractView<JPanel> {
+  private static final Logger LOG = Logger.getInstance(TasksTreeConsoleView.class);
+
   private final TasksTreeConsoleModel model;
   private final Disposable parentDisposable;
 
@@ -91,13 +94,19 @@ final class TasksTreeConsoleView extends AbstractView<JPanel> {
 
   private void treeSelectionChanged(
       ObservableValue<? extends Task> property, Task oldTask, Task newTask) {
-    ConsoleView consoleView = model.getConsolesOfTasks().get(newTask);
-    JComponent content = noSelectionPanel;
-    if (consoleView != null) {
-      content = consoleView.getContent();
+    if (newTask == null) {
+      setConsoleComponent(noSelectionPanel);
+      return;
     }
-    setConsoleComponent(
-        newTask == null ? noSelectionPanel : content);
+
+    final var consoleView = model.getConsolesOfTasks().get(newTask);
+    LOG.assertTrue(consoleView != null);
+
+    if (consoleView == null) {
+      setConsoleComponent(noSelectionPanel);
+    } else {
+      setConsoleComponent(consoleView.getContent());
+    }
   }
 
   private void setConsoleComponent(JComponent component) {

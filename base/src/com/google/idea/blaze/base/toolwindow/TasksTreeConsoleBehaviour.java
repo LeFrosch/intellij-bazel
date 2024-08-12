@@ -48,11 +48,12 @@ final class TasksTreeConsoleBehaviour implements Behavior<TasksTreeConsoleModel>
 
   void addTask(
       Task task, Project project, ImmutableList<Filter> filters, Disposable parentDisposable) {
-    TasksTreeModel treeModel = model.getTreeModel();
-    treeModel.tasksTreeProperty().addTask(task);
     model
         .getConsolesOfTasks()
         .computeIfAbsent(task, t -> ConsoleView.create(project, filters, parentDisposable));
+
+    TasksTreeModel treeModel = model.getTreeModel();
+    treeModel.tasksTreeProperty().addTask(task);
   }
 
   void removeTask(Task task) {

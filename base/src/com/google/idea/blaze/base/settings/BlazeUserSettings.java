@@ -76,7 +76,7 @@ public class BlazeUserSettings implements PersistentStateComponent<BlazeUserSett
 
   private boolean javascriptTestrunnersEnabled = false;
 
-  private boolean selectNewestChildTask = false;
+  private boolean selectNewestChildTask = true;
   private boolean formatBuildFilesOnSave = true;
   private boolean showAddFileToProjectNotification = true;
   private String blazeBinaryPath = DEFAULT_BLAZE_PATH;
