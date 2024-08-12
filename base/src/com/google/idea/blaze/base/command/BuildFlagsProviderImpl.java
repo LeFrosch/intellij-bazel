@@ -17,6 +17,7 @@ package com.google.idea.blaze.base.command;
 
 import com.google.idea.blaze.base.projectview.ProjectViewSet;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.registry.Registry;
 import java.util.List;
 
 /** Flags added to blaze/bazel build commands. */
@@ -29,7 +30,13 @@ public class BuildFlagsProviderImpl implements BuildFlagsProvider {
       BlazeCommandName command,
       BlazeInvocationContext invocationContext,
       List<String> flags) {
-    flags.add("--curses=no");
+    if (Registry.is("bazel.sync.enable.curses")) {
+      flags.add("--curses=yes");
+      flags.add("--show_progress_rate_limit=1");
+    } else {
+      flags.add("--curses=no");
+    }
+
     flags.add("--color=yes");
     flags.add("--progress_in_terminal_title=no");
   }

@@ -56,6 +56,7 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.DumbAwareAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
+import com.intellij.openapi.util.Ref;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.ui.content.Content;
 import com.intellij.util.concurrency.AppExecutorUtil;
@@ -238,16 +239,27 @@ final class ConsoleView implements Disposable {
     println(output.getText(), output.getOutputType());
   }
 
-  private void println(String text, OutputType outputType) {
+  private void println(String line, OutputType outputType) {
+    final var dirty = new Ref<>(false);
+
     ansiEscapeDecoder.escapeText(
-        text,
+        line,
         outputType == OutputType.ERROR ? ProcessOutputTypes.STDERR : ProcessOutputTypes.STDOUT,
-        (t, k) -> consoleView.print(t, ConsoleViewContentType.getConsoleViewType(k)));
-    consoleView.print(
-        "\n",
-        outputType == OutputType.ERROR
-            ? ConsoleViewContentType.ERROR_OUTPUT
-            : ConsoleViewContentType.NORMAL_OUTPUT);
+        (text, key) -> {
+          if (!text.isEmpty()) {
+            dirty.set(true);
+          }
+
+          consoleView.print(text, ConsoleViewContentType.getConsoleViewType(key));
+        }
+    );
+
+    if (dirty.get()) {
+      consoleView.print(
+          "\n",
+          ConsoleViewContentType.NORMAL_OUTPUT
+      );
+    }
   }
 
   public void printHyperlink(String text, HyperlinkInfo hyperlinkInfo) {
