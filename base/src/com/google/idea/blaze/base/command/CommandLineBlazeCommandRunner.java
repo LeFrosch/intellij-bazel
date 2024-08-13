@@ -21,6 +21,8 @@ import com.google.errorprone.annotations.MustBeClosed;
 import com.google.idea.blaze.base.async.process.ExternalTask;
 import com.google.idea.blaze.base.async.process.LineProcessingOutputStream;
 import com.google.idea.blaze.base.async.process.PrintOutputLineProcessor;
+import com.google.idea.blaze.base.async.process2.OSProcessOutput;
+import com.google.idea.blaze.base.async.process2.OSProcessUtil;
 import com.google.idea.blaze.base.bazel.BazelExitCodeException;
 import com.google.idea.blaze.base.bazel.BazelExitCodeException.ThrowOption;
 import com.google.idea.blaze.base.command.buildresult.BuildResultHelper;
@@ -44,6 +46,9 @@ import com.google.idea.blaze.base.sync.aspects.BuildResult;
 import com.google.idea.blaze.base.sync.aspects.BuildResult.Status;
 import com.google.idea.blaze.common.PrintOutput;
 import com.google.idea.blaze.exception.BuildException;
+import com.intellij.execution.ExecutionException;
+import com.intellij.execution.configurations.GeneralCommandLine;
+import com.intellij.execution.process.OSProcessHandler;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 
@@ -159,32 +164,15 @@ public class CommandLineBlazeCommandRunner implements BlazeCommandRunner {
       OutputStream out = closer.register(Files.newOutputStream(tempFile));
       BlazeCommand command = blazeCommandBuilder.build();
       WorkspaceRoot workspaceRoot = WorkspaceRoot.fromProject(project);
-      Function<String, String> rootReplacement =
-          WorkspaceRootReplacement.create(workspaceRoot.path(), command);
 
-      int retVal =
-          ExternalTask.builder(workspaceRoot)
-              .addBlazeCommand(command)
-              .context(context)
-              .stdout(out)
-              .stderr(
-                  LineProcessingOutputStream.of(
-                      line -> {
-                        line = rootReplacement.apply(line);
-                        // errors are expected, so limit logging to info level
-                        Logger.getInstance(this.getClass()).info(line.stripTrailing());
-                        context.output(PrintOutput.output(line.stripTrailing()));
-                        return true;
-                      }))
-              .ignoreExitCode(true)
-              .build()
-              .run();
-      SyncQueryStatsScope.fromContext(context).ifPresent(stats -> stats.setBazelExitCode(retVal));
+      final var exitCode = OSProcessUtil.execute(context, command, workspaceRoot);
+
+      SyncQueryStatsScope.fromContext(context).ifPresent(stats -> stats.setBazelExitCode(exitCode));
       BazelExitCodeException.throwIfFailed(
-          blazeCommandBuilder, retVal, ThrowOption.ALLOW_PARTIAL_SUCCESS);
+          blazeCommandBuilder, exitCode, ThrowOption.ALLOW_PARTIAL_SUCCESS);
       return new BufferedInputStream(
           Files.newInputStream(tempFile, StandardOpenOption.DELETE_ON_CLOSE));
-    } catch (IOException e) {
+    } catch (IOException | ExecutionException e) {
       throw new BuildException(e);
     }
   }
@@ -227,18 +215,15 @@ public class CommandLineBlazeCommandRunner implements BlazeCommandRunner {
   private BuildResult issueBuild(
       BlazeCommand.Builder blazeCommandBuilder, WorkspaceRoot workspaceRoot, Map<String, String> envVars, BlazeContext context) {
     blazeCommandBuilder.addBlazeFlags(getExtraBuildFlags(blazeCommandBuilder));
-    int retVal =
-        ExternalTask.builder(workspaceRoot)
-            .addBlazeCommand(blazeCommandBuilder.build())
-            .environmentVars(envVars)
-            .context(context)
-            .stderr(
-                LineProcessingOutputStream.of(
-                    BlazeConsoleLineProcessorProvider.getAllStderrLineProcessors(context)))
-            .ignoreExitCode(true)
-            .build()
-            .run();
-    return BuildResult.fromExitCode(retVal);
+
+    final int exitCode;
+    try {
+      exitCode = OSProcessUtil.execute(context, blazeCommandBuilder.build(), workspaceRoot);
+    } catch (ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    return BuildResult.fromExitCode(exitCode);
   }
 
   @Override

@@ -18,6 +18,7 @@ package com.google.idea.blaze.base.scope.scopes;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.idea.blaze.base.async.process2.OSProcessOutput;
 import com.google.idea.blaze.base.issueparser.BlazeIssueParser;
 import com.google.idea.blaze.base.issueparser.ToolWindowTaskIssueOutputFilter;
 import com.google.idea.blaze.base.scope.BlazeContext;
@@ -128,6 +129,7 @@ public final class ToolWindowScope implements BlazeScope {
   private final OutputSink<PrintOutput> printSink;
   private final OutputSink<StatusOutput> statusSink;
   private final OutputSink<StateUpdate> stateSink;
+  private final OutputSink<OSProcessOutput> processSink;
   @Nullable private final OutputSink<SummaryOutput> summarySink;
 
   private boolean finishTaskOnScopeEnd;
@@ -167,6 +169,11 @@ public final class ToolWindowScope implements BlazeScope {
           tasksToolWindowController.state(task, output);
           return Propagation.Stop;
         };
+    processSink =
+        (output) -> {
+          tasksToolWindowController.process(task, output);
+          return Propagation.Stop;
+        };
     if (showSummaryOutput) {
       summarySink =
           (output) -> {
@@ -189,6 +196,7 @@ public final class ToolWindowScope implements BlazeScope {
     context.addOutputSink(PrintOutput.class, printSink);
     context.addOutputSink(StatusOutput.class, statusSink);
     context.addOutputSink(StateUpdate.class, stateSink);
+    context.addOutputSink(OSProcessOutput.class, processSink);
     if (summarySink != null) {
       context.addOutputSink(SummaryOutput.class, summarySink);
     }

@@ -17,6 +17,7 @@
 package com.google.idea.blaze.base.toolwindow;
 
 import com.google.common.collect.ImmutableList;
+import com.google.idea.blaze.base.async.process2.OSProcessOutput;
 import com.google.idea.blaze.base.scope.output.StateUpdate;
 import com.google.idea.blaze.base.scope.output.StatusOutput;
 import com.google.idea.blaze.common.PrintOutput;
@@ -39,6 +40,9 @@ public final class NoopTasksToolWindowService implements TasksToolWindowService 
 
   @Override
   public void status(Task task, StatusOutput output) {}
+
+  @Override
+  public void process(Task task, OSProcessOutput output) {}
 
   @Override
   public void state(Task task, StateUpdate output) {}

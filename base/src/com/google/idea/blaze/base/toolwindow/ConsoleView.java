@@ -19,6 +19,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
+import com.google.idea.blaze.base.async.process2.OSProcessOutput;
 import com.google.idea.blaze.base.console.NonProblemFilterWrapper;
 import com.google.idea.blaze.base.scope.output.StatusOutput;
 import com.google.idea.blaze.common.PrintOutput;
@@ -58,6 +59,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.Ref;
 import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.terminal.TerminalExecutionConsole;
 import com.intellij.ui.content.Content;
 import com.intellij.util.concurrency.AppExecutorUtil;
 import java.awt.Component;
@@ -71,21 +73,25 @@ import javax.swing.JComponent;
 import javax.swing.LayoutFocusTraversalPolicy;
 import org.jetbrains.annotations.NotNull;
 
-/** ConsoleView handles how the output of a single task is displayed in the tool-window. */
+/**
+ * ConsoleView handles how the output of a single task is displayed in the tool-window.
+ */
 final class ConsoleView implements Disposable {
 
-  /** The counter that is used to create IntelliJ UI components ids. */
+  /**
+   * The counter that is used to create IntelliJ UI components ids.
+   */
   private static long consoleIdCounter;
 
   private static final Class<?>[] IGNORED_CONSOLE_ACTION_TYPES = {
-    PreviousOccurenceToolbarAction.class, // common_typos_disable
-    NextOccurenceToolbarAction.class,
-    ClearConsoleAction.class,
-    PrintAction.class
+      PreviousOccurenceToolbarAction.class, // common_typos_disable
+      NextOccurenceToolbarAction.class,
+      ClearConsoleAction.class,
+      PrintAction.class
   };
 
   private final Project project;
-  private final ConsoleViewImpl consoleView;
+  private final TerminalExecutionConsole consoleView;
   private final CompositeFilter customFilters = new CompositeFilter();
   private final AnsiEscapeDecoder ansiEscapeDecoder = new AnsiEscapeDecoder();
 
@@ -106,12 +112,7 @@ final class ConsoleView implements Disposable {
 
   private ConsoleView(Project project, Disposable parentDisposable) {
     this.project = project;
-    consoleView =
-        new ConsoleViewImpl(
-            project,
-            GlobalSearchScope.allScope(project),
-            /* viewer= */ false,
-            /* usePredefinedFilters= */ false);
+    consoleView = new TerminalExecutionConsole(project, null);
 
     Disposer.register(parentDisposable, this);
     Disposer.register(this, consoleView);
@@ -137,29 +138,31 @@ final class ConsoleView implements Disposable {
   @Nullable
   private RangeHighlighter findLinkRange(HyperlinkInfo link, int originalOffset) {
     // first check if it's still at the same offset
-    Document doc = consoleView.getEditor().getDocument();
-    if (doc.getTextLength() <= originalOffset) {
-      return null;
-    }
-    int lineNumber = doc.getLineNumber(originalOffset);
-    EditorHyperlinkSupport helper = consoleView.getHyperlinks();
-    for (RangeHighlighter range : helper.findAllHyperlinksOnLine(lineNumber)) {
-      if (Objects.equals(EditorHyperlinkSupport.getHyperlinkInfo(range), link)) {
-        return range;
-      }
-    }
-    // fall back to searching all hyperlinks
-    return findRangeForHyperlink(link);
+    // Document doc = consoleView.getEditor().getDocument();
+    // if (doc.getTextLength() <= originalOffset) {
+    //   return null;
+    // }
+    // int lineNumber = doc.getLineNumber(originalOffset);
+    // EditorHyperlinkSupport helper = consoleView.getHyperlinks();
+    // for (RangeHighlighter range : helper.findAllHyperlinksOnLine(lineNumber)) {
+    //   if (Objects.equals(EditorHyperlinkSupport.getHyperlinkInfo(range), link)) {
+    //     return range;
+    //   }
+    // }
+    // // fall back to searching all hyperlinks
+    // return findRangeForHyperlink(link);
+
+    return null;
   }
 
   @Nullable
   private RangeHighlighter findRangeForHyperlink(HyperlinkInfo link) {
-    Map<RangeHighlighter, HyperlinkInfo> links = consoleView.getHyperlinks().getHyperlinks();
-    for (Map.Entry<RangeHighlighter, HyperlinkInfo> entry : links.entrySet()) {
-      if (Objects.equals(link, entry.getValue())) {
-        return entry.getKey();
-      }
-    }
+    //Map<RangeHighlighter, HyperlinkInfo> links = consoleView.getHyperlinks().getHyperlinks();
+    //for (Map.Entry<RangeHighlighter, HyperlinkInfo> entry : links.entrySet()) {
+    //  if (Objects.equals(link, entry.getValue())) {
+    //    return entry.getKey();
+    //  }
+    //}
     return null;
   }
 
@@ -190,14 +193,14 @@ final class ConsoleView implements Disposable {
     layoutUi.getOptions().setLeftToolbar(group, TOOLBAR_ACTION_PLACE);
 
     // Initializing prev and next occurrences actions
-    OccurenceNavigator navigator = fromConsoleView(consoleView);
-    CommonActionsManager actionsManager = CommonActionsManager.getInstance();
-    AnAction prevAction = actionsManager.createPrevOccurenceAction(navigator);
-    prevAction.getTemplatePresentation().setText(navigator.getPreviousOccurenceActionName());
-    AnAction nextAction = actionsManager.createNextOccurenceAction(navigator);
-    nextAction.getTemplatePresentation().setText(navigator.getNextOccurenceActionName());
+    // OccurenceNavigator navigator = fromConsoleView(consoleView);
+    // CommonActionsManager actionsManager = CommonActionsManager.getInstance();
+    // AnAction prevAction = actionsManager.createPrevOccurenceAction(navigator);
+    // prevAction.getTemplatePresentation().setText(navigator.getPreviousOccurenceActionName());
+    // AnAction nextAction = actionsManager.createNextOccurenceAction(navigator);
+    // nextAction.getTemplatePresentation().setText(navigator.getNextOccurenceActionName());
 
-    group.addAll(prevAction, nextAction);
+    // group.addAll(prevAction, nextAction);
 
     AnAction[] consoleActions = consoleView.createConsoleActions();
     for (AnAction action : consoleActions) {
@@ -231,12 +234,23 @@ final class ConsoleView implements Disposable {
     consoleView.clear();
   }
 
+  void attachToProcess(OSProcessOutput output) {
+    consoleView.attachToProcess(output.handler());
+  }
+
   void println(StatusOutput output) {
-    println(output.getStatus(), OutputType.NORMAL);
+    consoleView.print(output.getStatus() + "\n\r", ConsoleViewContentType.NORMAL_OUTPUT);
   }
 
   void println(PrintOutput output) {
-    println(output.getText(), output.getOutputType());
+    final ConsoleViewContentType contentType;
+    if (output.getOutputType() == OutputType.ERROR) {
+      contentType = ConsoleViewContentType.ERROR_OUTPUT;
+    } else {
+      contentType = ConsoleViewContentType.NORMAL_OUTPUT;
+    }
+
+    consoleView.print(output.getText() + "\n\r", contentType);
   }
 
   private void println(String line, OutputType outputType) {
@@ -267,9 +281,11 @@ final class ConsoleView implements Disposable {
   }
 
   @Override
-  public void dispose() {}
+  public void dispose() {
+  }
 
   private class StopAction extends DumbAwareAction {
+
     public StopAction() {
       super(IdeBundle.message("action.stop"), null, AllIcons.Actions.Suspend);
     }
@@ -294,8 +310,11 @@ final class ConsoleView implements Disposable {
     }
   }
 
-  /** A composite filter composed of a modifiable list of custom filters. */
+  /**
+   * A composite filter composed of a modifiable list of custom filters.
+   */
   private static class CompositeFilter implements Filter {
+
     private final List<Filter> customFilters = new ArrayList<>();
 
     void setCustomFilters(List<Filter> filters) {
@@ -321,24 +340,26 @@ final class ConsoleView implements Disposable {
     }
   }
 
-  /** Add the global filters, wrapped to separate them from blaze problems. */
+  /**
+   * Add the global filters, wrapped to separate them from blaze problems.
+   */
   private void addWrappedPredefinedFilters() {
-    ReadAction.nonBlocking(
-            () ->
-                stream(ConsoleFilterProvider.FILTER_PROVIDERS.getExtensions())
-                    .flatMap(
-                        provider ->
-                            stream(getFilters(GlobalSearchScope.allScope(project), provider)))
-                    .map(NonProblemFilterWrapper::wrap)
-                    .collect(toImmutableList()))
-        .expireWith(consoleView)
-        .finishOnUiThread(
-            ModalityState.stateForComponent(consoleView),
-            filters -> {
-              filters.forEach(consoleView::addMessageFilter);
-              consoleView.rehighlightHyperlinksAndFoldings();
-            })
-        .submit(AppExecutorUtil.getAppExecutorService());
+    // ReadAction.nonBlocking(
+    //         () ->
+    //             stream(ConsoleFilterProvider.FILTER_PROVIDERS.getExtensions())
+    //                 .flatMap(
+    //                     provider ->
+    //                         stream(getFilters(GlobalSearchScope.allScope(project), provider)))
+    //                 .map(NonProblemFilterWrapper::wrap)
+    //                 .collect(toImmutableList()))
+    //     .expireWith(consoleView)
+    //     .finishOnUiThread(
+    //         ModalityState.stateForComponent(consoleView),
+    //         filters -> {
+    //           filters.forEach(consoleView::addMessageFilter);
+    //           consoleView.rehighlightHyperlinksAndFoldings();
+    //         })
+    //     .submit(AppExecutorUtil.getAppExecutorService());
   }
 
   private Filter[] getFilters(GlobalSearchScope scope, ConsoleFilterProvider provider) {
@@ -352,7 +373,9 @@ final class ConsoleView implements Disposable {
     return provider.getDefaultFilters(project);
   }
 
-  /** Changes the action text to reference 'problems', not 'stack traces'. */
+  /**
+   * Changes the action text to reference 'problems', not 'stack traces'.
+   */
   private static OccurenceNavigator fromConsoleView(ConsoleViewImpl console) {
     return new OccurenceNavigator() {
       @Override

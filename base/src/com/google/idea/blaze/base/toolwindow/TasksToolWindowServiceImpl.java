@@ -17,6 +17,7 @@ package com.google.idea.blaze.base.toolwindow;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.idea.blaze.base.async.process2.OSProcessOutput;
 import com.google.idea.blaze.base.scope.output.StateUpdate;
 import com.google.idea.blaze.base.scope.output.StatusOutput;
 import com.google.idea.blaze.common.PrintOutput;
@@ -73,6 +74,11 @@ final class TasksToolWindowServiceImpl implements TasksToolWindowService, Dispos
   public void status(Task task, StatusOutput output) {
 
     ApplicationManager.getApplication().invokeLater(() -> tabs.statusOutput(task, output));
+  }
+
+  @Override
+  public void process(Task task, OSProcessOutput output) {
+    ApplicationManager.getApplication().invokeLater(() -> tabs.processOutput(task, output));
   }
 
   /** Update the state in a task view. */

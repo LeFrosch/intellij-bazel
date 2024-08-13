@@ -17,6 +17,7 @@ package com.google.idea.blaze.base.toolwindow;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
+import com.google.idea.blaze.base.async.process2.OSProcessOutput;
 import com.google.idea.blaze.base.scope.output.StateUpdate;
 import com.google.idea.blaze.base.scope.output.StatusOutput;
 import com.google.idea.blaze.common.PrintOutput;
@@ -76,6 +77,10 @@ final class TasksTreeConsoleBehaviour implements Behavior<TasksTreeConsoleModel>
 
   void taskStatus(Task task, StatusOutput output) {
     getConsole(task).println(output);
+  }
+
+  void taskProcess(Task task, OSProcessOutput output) {
+    getConsole(task).attachToProcess(output);
   }
 
   void taskState(Task task, StateUpdate output) {

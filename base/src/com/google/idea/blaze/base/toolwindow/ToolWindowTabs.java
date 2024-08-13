@@ -16,6 +16,7 @@
 package com.google.idea.blaze.base.toolwindow;
 
 import com.google.common.collect.ImmutableList;
+import com.google.idea.blaze.base.async.process2.OSProcessOutput;
 import com.google.idea.blaze.base.scope.output.StateUpdate;
 import com.google.idea.blaze.base.scope.output.StatusOutput;
 import com.google.idea.blaze.common.PrintOutput;
@@ -71,6 +72,10 @@ final class ToolWindowTabs {
 
   void statusOutput(Task task, StatusOutput output) {
     getTab(task).behaviour.taskStatus(task, output);
+  }
+
+  void processOutput(Task task, OSProcessOutput output) {
+    getTab(task).behaviour.taskProcess(task, output);
   }
 
   void updateState(Task task, StateUpdate output) {

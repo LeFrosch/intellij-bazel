@@ -32,7 +32,6 @@ public class BuildFlagsProviderImpl implements BuildFlagsProvider {
       List<String> flags) {
     if (Registry.is("bazel.sync.enable.curses")) {
       flags.add("--curses=yes");
-      flags.add("--show_progress_rate_limit=1");
     } else {
       flags.add("--curses=no");
     }
