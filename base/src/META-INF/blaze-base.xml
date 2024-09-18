@@ -272,7 +272,6 @@
 
     <applicationService serviceInterface="com.google.idea.blaze.base.async.executor.BlazeExecutor"
                         serviceImplementation="com.google.idea.blaze.base.async.executor.BlazeExecutorImpl"/>
-    <fileDocumentManagerListener implementation="com.google.idea.blaze.base.buildmodifier.BuildFileFormatOnSaveHandler" order="first"/>
     <applicationService serviceInterface="com.google.idea.blaze.base.io.InputStreamProvider"
                         serviceImplementation="com.google.idea.blaze.base.io.InputStreamProviderImpl"/>
     <applicationService serviceInterface="com.google.idea.blaze.base.io.FileOperationProvider"

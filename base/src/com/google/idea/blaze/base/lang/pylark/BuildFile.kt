@@ -1,9 +1,8 @@
 package com.google.idea.blaze.base.lang.pylark
 
 import com.intellij.psi.FileViewProvider
-import com.jetbrains.python.psi.PyCallExpression
-import com.jetbrains.python.psi.PyExpressionStatement
-import com.jetbrains.python.psi.PyStringLiteralExpression
+import com.intellij.psi.PsiElement
+import com.jetbrains.python.psi.*
 import com.jetbrains.python.psi.impl.PyFileImpl
 import icons.BlazeIcons
 import javax.swing.Icon
@@ -35,5 +34,21 @@ class BuildFile(viewProvider: FileViewProvider) : PyFileImpl(viewProvider, Build
     if (literal !is PyStringLiteralExpression) return false
 
     return literal.stringValue == targetName
+  }
+
+  fun findSymbol(symbolName: String): PsiElement? {
+    return children.firstNotNullOfOrNull {
+      isAssignment(it, symbolName) ?: isFunction(it, symbolName) // ?: fromLoad()
+    }
+  }
+
+  private fun isAssignment(stmt: PsiElement, symbolName: String): PsiElement? {
+    if (stmt !is PyAssignmentStatement) return null
+    return stmt.targets.firstOrNull { it.name == symbolName }
+  }
+
+  private fun isFunction(stmt: PsiElement, symbolName: String): PsiElement? {
+    if (stmt !is PyFunction || stmt.name != symbolName) return null
+    return stmt
   }
 }

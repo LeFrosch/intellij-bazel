@@ -15,7 +15,7 @@
  */
 package com.google.idea.blaze.clwb;
 
-import com.google.idea.blaze.base.lang.buildfile.language.BuildFileType;
+import com.google.idea.blaze.base.lang.pylark.BuildFileType;
 import com.google.idea.blaze.base.settings.Blaze;
 import com.google.idea.blaze.base.wizard2.BazelImportCurrentProjectAction;
 import com.google.idea.blaze.base.wizard2.BazelNotificationProvider;

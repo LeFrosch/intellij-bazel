@@ -18,19 +18,13 @@ internal class LabelReferenceProvider : BuildFileReferenceContributor.Provider {
   override fun getElementReference(element: PsiElement, ctx: ProcessingContext): PsiReference? {
     if (element !is PyStringLiteralExpression) return null
 
-    val load = getLoadExpression(element)
-    if (load == null) {
-      return LabelReference(element, true)
-    }
-
+    val load = getLoadExpression(element) ?: return LabelReference(element, true)
     val module = load.getArgument(0, PyStringLiteralExpression::class.java) ?: return null
 
     val moduleReference = LabelReference(module, false)
     if (element == module) return moduleReference
 
-    // TODO: Symbol reference
-
-    return null
+    return LoadSymbolReference(element, moduleReference)
   }
 
   private fun getLoadExpression(element: PsiElement): PyCallExpression? {
@@ -45,7 +39,7 @@ internal class LabelReferenceProvider : BuildFileReferenceContributor.Provider {
     }
 
     if (parent !is PyCallExpression) return null
-    if (parent.name != "load") return null
+    if (parent.callee?.name != "load") return null
 
     return parent
   }
