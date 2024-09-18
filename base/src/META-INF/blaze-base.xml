@@ -436,6 +436,11 @@
       fieldName="INSTANCE"/>
     <lang.parserDefinition language="BUILD" implementationClass="com.google.idea.blaze.base.lang.pylark.BuildFileParserDefinition"/>
     <lang.syntaxHighlighterFactory language="BUILD" implementationClass="com.google.idea.blaze.base.lang.pylark.BuildFileSyntaxHighlighterFactory"/>
+    <lang.inspectionSuppressor language="BUILD" implementationClass="com.google.idea.blaze.base.lang.pylark.BuildFileInspectionSuppressor"/>
+  </extensions>
+
+  <extensions defaultExtensionNs="Pythonid">
+    <pyReferenceResolveProvider implementation="com.google.idea.blaze.base.lang.pylark.resolve.BuildFileBuiltinsProvider"/>
   </extensions>
 
   <extensionPoints>

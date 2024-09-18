@@ -6,6 +6,15 @@ import icons.BlazeIcons
 import javax.swing.Icon
 
 class BuildFile(viewProvider: FileViewProvider) : PyFileImpl(viewProvider, BuildFileLanguage) {
-    override fun getIcon(flags: Int): Icon = BlazeIcons.BuildFile
+  enum class Flavor { BUILD, WORKSPACE, MODULE, STARLARK }
+
   override fun getIcon(flags: Int): Icon = BlazeIcons.BuildFile
+
+  val flavor: Flavor
+    get() = when {
+      name.startsWith("BUILD") -> Flavor.BUILD
+      name.startsWith("WORKSPACE") -> Flavor.WORKSPACE
+      name.startsWith("MODULE") -> Flavor.MODULE
+      else -> Flavor.STARLARK
+    }
 }
