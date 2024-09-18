@@ -254,7 +254,6 @@
     <projectService serviceImplementation="com.google.idea.blaze.base.sync.BlazeSyncManager"/>
     <applicationConfigurable provider="com.google.idea.blaze.base.qsync.settings.QuerySyncConfigurableProvider" id ="query.sync" displayName="Query Sync"/>
     <applicationService serviceImplementation="com.google.idea.blaze.base.qsync.settings.QuerySyncSettings" id="QuerySyncSettings"/>
-    <psi.referenceContributor language="BUILD" implementation="com.google.idea.blaze.base.lang.buildfile.references.VisibilityReferenceContributor"/>
     <projectService serviceImplementation="com.google.idea.blaze.base.qsync.QuerySyncManager"/>
     <iw.actionProvider implementation="com.google.idea.blaze.base.qsync.QuerySyncInspectionWidgetActionProvider"/>
     <iw.actionProvider implementation="com.google.idea.blaze.base.qsync.ComposePreviewQuerySyncInspectionWidgetActionProvider"/>
@@ -373,13 +372,6 @@
     <consoleFilterProvider implementation="com.google.idea.blaze.base.run.filter.TestLogFilter$Provider"/>
     <!-- Add target filter last, so it doesn't override other links containing a target string.-->
     <consoleFilterProvider implementation="com.google.idea.blaze.base.run.filter.BlazeTargetFilter$Provider" order="last"/>
-    <codeInsight.lineMarkerProvider
-        language="BUILD"
-        implementationClass="com.google.idea.blaze.base.query.MacroLineMarkerProvider"/>
-    <lookup.charFilter implementation="com.google.idea.blaze.base.lang.buildfile.completion.BuildLabelCharFilter"/>
-    <runLineMarkerContributor
-        language="BUILD"
-        implementationClass="com.google.idea.blaze.base.run.producers.BuildFileRunLineMarkerContributor"/>
     <actionConfigurationCustomizer implementation="com.google.idea.blaze.base.plugin.BlazeHideMakeActions"/>
     <notificationGroup displayType="BALLOON" id="BuildifierBinaryMissing"/>
     <notificationGroup displayType="BALLOON" id="AddToProject" />
@@ -435,55 +427,15 @@
   </extensions>
 
   <extensions defaultExtensionNs="com.intellij">
-    <fileTypeFactory implementation="com.google.idea.blaze.base.lang.buildfile.language.BuildFileTypeFactory"/>
-    <annotator language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.validation.HighlightingAnnotator"/>
-    <!--<annotator language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.validation.LoadErrorAnnotator"/>-->
-    <annotator language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.validation.GlobErrorAnnotator"/>
-    <annotator language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.validation.BuiltInRuleAnnotator"/>
-    <annotator language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.validation.LoadStatementAnnotator"/>
-    <colorSettingsPage implementation="com.google.idea.blaze.base.lang.buildfile.highlighting.BuildColorsPage"/>
-    <projectService serviceImplementation="com.google.idea.blaze.base.lang.buildfile.psi.util.BuildElementGenerator"/>
-    <projectService serviceImplementation="com.google.idea.blaze.base.lang.buildfile.references.BuildReferenceManager"/>
-    <referencesSearch implementation="com.google.idea.blaze.base.lang.buildfile.search.BuildReferenceSearcher"/>
-    <referencesSearch implementation="com.google.idea.blaze.base.lang.buildfile.search.GlobReferenceSearcher"/>
-    <readWriteAccessDetector implementation="com.google.idea.blaze.base.lang.buildfile.findusages.BuildReadWriteAccessDetector"/>
-    <elementDescriptionProvider implementation="com.google.idea.blaze.base.lang.buildfile.findusages.BuildElementDescriptionProvider"/>
-    <targetElementEvaluator language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.findusages.BuildTargetElementEvaluator"/>
-    <quoteHandler fileType="BUILD" className="com.google.idea.blaze.base.lang.buildfile.editor.BuildQuoteHandler"/>
-    <enterHandlerDelegate implementation="com.google.idea.blaze.base.lang.buildfile.editor.BuildEnterBetweenBracketsHandler" order="before EnterBetweenBracesHandler"/>
-    <enterHandlerDelegate implementation="com.google.idea.blaze.base.lang.buildfile.editor.BuildEnterHandler" order="after EnterBetweenBracesHandler"/>
-    <completion.contributor language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.completion.ParameterCompletionContributor"/>
-    <completion.contributor language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.completion.BuiltInFunctionCompletionContributor"/>
-    <completion.contributor language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.completion.CommonMacroCompletionContributor"/>
-    <completion.contributor language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.completion.BuiltInSymbolCompletionContributor"/>
-    <completion.contributor language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.completion.BuiltInFunctionAttributeCompletionContributor"/>
-    <completion.contributor language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.completion.ArgumentCompletionContributor"/>
-    <langCodeStyleSettingsProvider implementation="com.google.idea.blaze.base.lang.buildfile.formatting.BuildLanguageCodeStyleSettingsProvider"/>
-    <codeStyleSettingsProvider implementation="com.google.idea.blaze.base.lang.buildfile.formatting.BuildCodeStyleSettingsProvider"/>
-    <editor.backspaceModeOverride language="BUILD" implementationClass="com.intellij.codeInsight.editorActions.SmartBackspaceDisabler"/>
-    <filetype.stubBuilder filetype="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.stubs.BuildFileStubBuilder"/>
-    <editorNotificationProvider implementation="com.google.idea.blaze.base.lang.AdditionalLanguagesHelper"/>
-    <editorNotificationProvider implementation="com.google.idea.blaze.base.dependencies.ExternalFileProjectManagementHelper"/>
-    <usageTypeProvider implementation="com.google.idea.blaze.base.lang.buildfile.findusages.BuildUsageTypeProvider"/>
-    <renameInputValidator implementation="com.google.idea.blaze.base.lang.buildfile.refactor.TargetRenameValidator"/>
-    <completion.confidence language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.completion.BuildFileCompletionConfidence"/>
-    <spellchecker.support language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.validation.BuildSpellcheckingStrategy"/>
-    <highlightVisitor implementation="com.google.idea.blaze.base.editor.HighlightingStatsCollector"/>
-   <formattingService implementation="com.google.idea.blaze.base.buildmodifier.BuildifierFormattingService"/>
-  </extensions>
-
-  <extensions defaultExtensionNs="com.intellij.lang">
-    <syntaxHighlighterFactory language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.highlighting.BuildSyntaxHighlighterFactory"/>
-    <parserDefinition language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.parser.BuildParserDefinition"/>
-    <namesValidator language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.refactor.BuildNamesValidator"/>
-    <braceMatcher language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.formatting.BuildBraceMatcher"/>
-    <commenter language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.formatting.BuildCommenter"/>
-    <foldingBuilder language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.formatting.BuildFileFoldingBuilder"/>
-    <psiStructureViewFactory language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.views.BuildStructureViewFactory"/>
-    <findUsagesProvider language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.findusages.BuildFindUsagesProvider"/>
-    <refactoringSupport language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.refactor.BuildRefactoringSupportProvider"/>
-    <documentationProvider language="BUILD" implementationClass="com.google.idea.blaze.base.lang.buildfile.documentation.BuildDocumentationProvider"/>
-    <elementManipulator forClass="com.google.idea.blaze.base.lang.buildfile.psi.StringLiteral" implementationClass="com.google.idea.blaze.base.lang.buildfile.refactor.StringLiteralElementManipulator"/>
+    <fileType
+      name="BUILD"
+      language="BUILD"
+      fileNames="BUILD;BUILD.bazel;WORKSPACE;WORKSPACE.bazel;MODULE.bazel"
+      extensions="bzl;sky;star"
+      implementationClass="com.google.idea.blaze.base.lang.pylark.BuildFileType"
+      fieldName="INSTANCE"/>
+    <lang.parserDefinition language="BUILD" implementationClass="com.google.idea.blaze.base.lang.pylark.BuildFileParserDefinition"/>
+    <lang.syntaxHighlighterFactory language="BUILD" implementationClass="com.google.idea.blaze.base.lang.pylark.BuildFileSyntaxHighlighterFactory"/>
   </extensions>
 
   <extensionPoints>
