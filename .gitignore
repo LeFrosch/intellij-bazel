@@ -4,3 +4,8 @@ bazel-*
 .ijwb/
 .aswb/
 .clwb/
+
+# jetbrains plugin
+.idea/
+.bazelbsp/
+projectview.bazelproject

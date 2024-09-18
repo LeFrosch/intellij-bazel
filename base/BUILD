@@ -17,12 +17,13 @@ load(
     "intellij_integration_test_suite",
     "intellij_unit_test_suite",
 )
+load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library")
 
-java_library(
+kt_jvm_library(
     name = "base",
-    srcs = glob(["src/**/*.java"]),
-    javacopts = ["-Xep:FutureReturnValueIgnored:OFF"],
+    srcs = glob(["src/**/*.java", "src/**/*.kt"]),
     resources = glob(["src/resources/**/*"]),
+    resource_strip_prefix = "base/src",
     visibility = PLUGIN_PACKAGES_VISIBILITY,
     deps = [
         "//common/actions",
@@ -44,6 +45,7 @@ java_library(
         "//shared:proto",
         "//shared:vcs",
         "//third_party/auto_value",
+        "//third_party/python",
         "@error_prone_annotations//jar",
         "@gson//jar"
     ],
