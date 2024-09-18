@@ -242,7 +242,10 @@ public class LabelReference extends PsiReferenceBase<StringLiteral> {
       return null;
     }
     BlazePackage blazePackage = myElement.getBlazePackage();
-    return LabelUtils.createLabelFromString(blazePackage, labelString);
+    return LabelUtils.createLabelFromString(
+        blazePackage != null ? blazePackage.getPackageLabel() : null,
+        labelString
+    );
   }
 
   private static boolean skylarkExtensionReference(StringLiteral element) {

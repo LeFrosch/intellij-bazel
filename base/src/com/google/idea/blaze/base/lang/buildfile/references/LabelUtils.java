@@ -76,21 +76,18 @@ public class LabelUtils {
    */
   @Nullable
   public static Label createLabelFromString(
-      @Nullable BlazePackage blazePackage, @Nullable String labelString) {
+      @Nullable Label packageLabel, @Nullable String labelString) {
     if (labelString == null) {
       return null;
     }
     int colonIndex = labelString.indexOf(':');
     if (isAbsolute(labelString)) {
-      if (labelString.startsWith("//") && blazePackage != null) {
+      if (labelString.startsWith("//") && packageLabel != null) {
         // Labels of the form //packagePath:packageRelativeTarget inside an external workspace need
         // to be resolved within that workspace.
-        Label originLabel = blazePackage.getPackageLabel();
-        if (originLabel != null) {
-          String originWorkspace = originLabel.externalWorkspaceName();
-          if (originWorkspace != null) {
-            labelString = "@" + originWorkspace + labelString;
-          }
+        String originWorkspace = packageLabel.externalWorkspaceName();
+        if (originWorkspace != null) {
+          labelString = "@" + originWorkspace + labelString;
         }
       }
       if (colonIndex != -1) {
@@ -107,13 +104,10 @@ public class LabelUtils {
       return Label.createIfValid(labelString);
     }
     // package-relative label of the form '[:]relativePath'
-    if (colonIndex > 0 || blazePackage == null) {
+    if (colonIndex > 0 || packageLabel == null) {
       return null;
     }
-    Label packageLabel = blazePackage.getPackageLabel();
-    return packageLabel != null
-        ? packageLabel.withTargetName(labelString.substring(colonIndex + 1))
-        : null;
+    return packageLabel.withTargetName(labelString.substring(colonIndex + 1));
   }
 
   /** The blaze file referenced by the label. */

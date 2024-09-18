@@ -437,6 +437,7 @@
     <lang.parserDefinition language="BUILD" implementationClass="com.google.idea.blaze.base.lang.pylark.BuildFileParserDefinition"/>
     <lang.syntaxHighlighterFactory language="BUILD" implementationClass="com.google.idea.blaze.base.lang.pylark.BuildFileSyntaxHighlighterFactory"/>
     <lang.inspectionSuppressor language="BUILD" implementationClass="com.google.idea.blaze.base.lang.pylark.BuildFileInspectionSuppressor"/>
+    <psi.referenceContributor language="Python" implementation="com.google.idea.blaze.base.lang.pylark.resolve.BuildFileReferenceContributor"/>
   </extensions>
 
   <extensions defaultExtensionNs="Pythonid">

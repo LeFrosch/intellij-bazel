@@ -100,6 +100,10 @@ public final class Label extends TargetExpression {
     return toString().startsWith("@");
   }
 
+  public boolean isAbsolut() {
+    return toString().startsWith("//") || toString().startsWith("@");
+  }
+
   /**
    * Returns the external workspace referenced by this label, or null if it's a main workspace
    * label.
