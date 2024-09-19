@@ -1,4 +1,5 @@
 from .default import *
+from . import native
 
 def rule(
   implementation,
