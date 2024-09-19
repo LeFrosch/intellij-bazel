@@ -16,7 +16,7 @@ class LabelReference(element: PyStringLiteralExpression, soft: Boolean) : PsiRef
 
     val inStarlarkFile = element.getBuildFileFlavor() == BuildFile.Flavor.STARLARK
 
-    return BuildReferenceService.of(element.project).resolveLabel(
+    return LabelReferenceService.of(element.project).resolve(
       label,
       excludeRules = !label.isAbsolut || inStarlarkFile,
     )

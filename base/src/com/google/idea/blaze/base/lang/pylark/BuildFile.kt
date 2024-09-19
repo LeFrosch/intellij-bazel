@@ -1,7 +1,10 @@
 package com.google.idea.blaze.base.lang.pylark
 
+import com.google.idea.blaze.base.lang.pylark.resolve.LoadSymbolProvider
+import com.google.idea.blaze.base.lang.pylark.resolve.LoadSymbolReference
 import com.intellij.psi.FileViewProvider
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiReference
 import com.jetbrains.python.psi.*
 import com.jetbrains.python.psi.impl.PyFileImpl
 import icons.BlazeIcons
@@ -50,5 +53,30 @@ class BuildFile(viewProvider: FileViewProvider) : PyFileImpl(viewProvider, Build
   private fun isFunction(stmt: PsiElement, symbolName: String): PsiElement? {
     if (stmt !is PyFunction || stmt.name != symbolName) return null
     return stmt
+  }
+
+  fun loadedSymbols(): Map<String, PsiReference> {
+    // TODO: can we cache that?
+    return buildMap {
+      for (stmt in children.filterIsInstance<PyExpressionStatement>()) {
+        addLoadedSymbols(stmt)
+      }
+    }
+  }
+
+  private fun MutableMap<String, PsiReference>.addLoadedSymbols(stmt: PyExpressionStatement) {
+    val expr = stmt.expression
+    if (expr !is PyCallExpression || expr.callee?.name != "load") return
+
+    for (arg in expr.arguments.drop(1)) {
+      if (arg is PyStringLiteralExpression) {
+        val ref = arg.reference ?: continue
+        put(arg.stringValue, ref)
+      }
+      if (arg is PyKeywordArgument) {
+        val ref = arg.valueExpression?.reference ?: continue
+        put(arg.keyword ?: continue, ref)
+      }
+    }
   }
 }

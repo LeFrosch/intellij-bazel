@@ -15,12 +15,12 @@ import com.intellij.psi.PsiManager
 private val BUILD_FILE_NAMES = listOf("BUILD.bazel", "BUILD")
 
 @Service(Service.Level.PROJECT)
-class BuildReferenceService(private val project: Project) {
+class LabelReferenceService(private val project: Project) {
   companion object {
-    fun of(project: Project): BuildReferenceService = project.service()
+    fun of(project: Project): LabelReferenceService = project.service()
   }
 
-  fun resolveLabel(label: Label, excludeRules: Boolean = false): PsiElement? {
+  fun resolve(label: Label, excludeRules: Boolean = false): PsiElement? {
     val packageDir = findPackageDir(label) ?: return null
 
     val targetName = label.targetName().toString()

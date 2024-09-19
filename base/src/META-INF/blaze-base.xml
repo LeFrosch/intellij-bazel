@@ -440,7 +440,8 @@
   </extensions>
 
   <extensions defaultExtensionNs="Pythonid">
-    <pyReferenceResolveProvider implementation="com.google.idea.blaze.base.lang.pylark.resolve.BuildFileBuiltinsProvider"/>
+    <pyReferenceResolveProvider implementation="com.google.idea.blaze.base.lang.pylark.resolve.LoadSymbolProvider"/>
+    <pyReferenceResolveProvider implementation="com.google.idea.blaze.base.lang.pylark.resolve.BuiltinsProvider"/>
   </extensions>
 
   <extensionPoints>

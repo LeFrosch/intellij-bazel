@@ -16,11 +16,11 @@ import com.jetbrains.python.psi.resolve.RatedResolveResult
 import com.jetbrains.python.psi.types.TypeEvalContext
 import java.nio.file.Path
 
-private val LOG = Logger.getInstance(BuildFileBuiltinsProvider::class.java)
+private val LOG = Logger.getInstance(BuiltinsProvider::class.java)
 private val BUILTINS_PATH = Path.of("resources", "pylark")
 
-class BuildFileBuiltinsProvider : PyReferenceResolveProvider {
-  override fun resolveName(expression: PyQualifiedExpression, context: TypeEvalContext): List<RatedResolveResult?> {
+class BuiltinsProvider : PyReferenceResolveProvider {
+  override fun resolveName(expression: PyQualifiedExpression, context: TypeEvalContext): List<RatedResolveResult> {
     val flavor = expression.getBuildFileFlavor() ?: return emptyList()
     val cache = CacheCacheService.of(expression.project, flavor) ?: return emptyList()
     val element = cache.getByName(expression.name) ?: return emptyList()
