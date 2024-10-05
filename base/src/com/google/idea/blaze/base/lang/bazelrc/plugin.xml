@@ -1,0 +1,33 @@
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <fileType
+      name="Bazelrc"
+      implementationClass="com.google.idea.blaze.base.lang.bazelrc.BazelrcFileType"
+      fieldName="INSTANCE"
+      language="Bazelrc"
+      fileNames=".bazelrc"
+      extensions="bazelrc"
+    />
+
+    <lang.syntaxHighlighterFactory
+      language="Bazelrc"
+      implementationClass="com.google.idea.blaze.base.lang.bazelrc.highlighting.BazelrcSyntaxHighlighterFactory"/>
+
+    <lang.parserDefinition
+      language="Bazelrc"
+      implementationClass="com.google.idea.blaze.base.lang.bazelrc.parser.BazelrcParserDefinition"/>
+
+    <lang.commenter
+      language="Bazelrc"
+      implementationClass="com.google.idea.blaze.base.lang.bazelrc.commenter.BazelrcCommenter"/>
+
+    <lang.quoteHandler
+      language="Bazelrc"
+      implementationClass="com.google.idea.blaze.base.lang.bazelrc.matching.BazelrcQuoteHandler"/>
+
+    <completion.contributor
+      language="Bazelrc"
+      implementationClass="com.google.idea.blaze.base.lang.bazelrc.completion.BazelrcCompletionContributor"/>
+
+  </extensions>
+</idea-plugin>
