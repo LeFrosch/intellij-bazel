@@ -24,6 +24,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.idea.blaze.base.async.executor.ProgressiveTaskWithProgressIndicator;
+import com.google.idea.blaze.base.buildview.BuildViewMigration;
+import com.google.idea.blaze.base.buildview.BuildViewScope;
 import com.google.idea.blaze.base.command.BlazeInvocationContext.ContextType;
 import com.google.idea.blaze.base.issueparser.BlazeIssueParser;
 import com.google.idea.blaze.base.logging.utils.querysync.QuerySyncActionStatsScope;
@@ -347,10 +349,15 @@ public class QuerySyncManager implements Disposable {
     querySyncActionStatsScope.getBuilder().setTaskOrigin(taskOrigin);
     BlazeUserSettings userSettings = BlazeUserSettings.getInstance();
     return ProgressiveTaskWithProgressIndicator.builder(project, title)
+        .setModality(BuildViewMigration.progressModality())
         .submitTaskWithResult(
             indicator ->
                 Scope.root(
                     context -> {
+                      if (BuildViewMigration.getEnabled()) {
+                        context.push(new BuildViewScope(project, title));
+                      }
+
                       Task task = new Task(project, subTitle, Task.Type.SYNC);
                       BlazeScope scope =
                           new ToolWindowScope.Builder(project, task)

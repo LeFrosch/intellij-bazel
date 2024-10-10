@@ -119,7 +119,7 @@ public class BlazeSyncManager {
                           indicator ->
                               Scope.root(
                                   context -> {
-                                    if (Registry.is("bazel.new.sync.view")) {
+                                    if (BuildViewMigration.getEnabled()) {
                                       context.push(new BuildViewScope(project,
                                           getRootInvocationTitle(syncParams)));
                                     }

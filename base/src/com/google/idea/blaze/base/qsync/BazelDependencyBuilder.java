@@ -39,6 +39,7 @@ import com.google.idea.blaze.base.bazel.BazelExitCodeException;
 import com.google.idea.blaze.base.bazel.BazelExitCodeException.ThrowOption;
 import com.google.idea.blaze.base.bazel.BuildSystem;
 import com.google.idea.blaze.base.bazel.BuildSystem.BuildInvoker;
+import com.google.idea.blaze.base.buildview.BazelService;
 import com.google.idea.blaze.base.command.BlazeCommand;
 import com.google.idea.blaze.base.command.BlazeCommandName;
 import com.google.idea.blaze.base.command.BlazeFlags;
@@ -207,8 +208,7 @@ public class BazelDependencyBuilder implements DependencyBuilder {
       buildDepsStatsBuilder.ifPresent(
           stats -> stats.setBuildFlags(builder.build().toArgumentList()));
       Instant buildTime = Instant.now();
-      BlazeBuildOutputs outputs =
-          invoker.getCommandRunner().run(project, builder, buildResultHelper, context, ImmutableMap.of());
+      BlazeBuildOutputs outputs = BazelService.instance(project).build(context, builder);
       buildDepsStatsBuilder.ifPresent(
           stats -> {
             stats.setBuildIds(outputs.getBuildIds());
