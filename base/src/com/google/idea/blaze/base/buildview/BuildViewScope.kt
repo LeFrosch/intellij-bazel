@@ -21,6 +21,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.progress.impl.BackgroundableProcessIndicator
 import com.intellij.openapi.progress.util.AbstractProgressIndicatorExBase
 import com.intellij.openapi.project.Project
+import com.intellij.util.ThreeState
 import java.util.function.Consumer
 
 class BuildViewScope(project: Project, private val title: String) : BlazeScope {
@@ -84,6 +85,7 @@ private class ProgressDescriptor(private val title: String, ctx: BlazeContext) :
   BuildProgressDescriptor {
   private val descriptor = DefaultBuildDescriptor(Any(), title, "", System.currentTimeMillis())
     .withRestartAction(RestartAction(ctx))
+    .apply { isNavigateToError = ThreeState.NO }
 
   override fun getTitle(): String = title
 
