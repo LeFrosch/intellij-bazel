@@ -65,10 +65,6 @@
     <SyncListener implementation="com.google.idea.blaze.java.libraries.DetachAllSourceJarsAction$DetachAllOnSync"/>
     <JavaClasspathAspectStrategy implementation="com.google.idea.blaze.java.run.hotswap.JavaClasspathAspectStrategy$BazelStrategy"/>
     <TestComparisonFailureParser implementation="com.google.idea.blaze.java.run.smrunner.JunitTestComparisonFailureParser"/>
-    <FastBuildAspectStrategy implementation="com.google.idea.blaze.java.fastbuild.BazelFastBuildAspectStrategy"/>
-    <FastBuildDeployJarStrategy implementation="com.google.idea.blaze.java.fastbuild.BazelFastBuildDeployJarStrategy"/>
-    <FastBuildTestEnvironmentCreator implementation="com.google.idea.blaze.java.run.fastbuild.BazelFastBuildTestEnvironmentCreator"/>
-    <FastBuildTestEnvironmentModifier implementation="com.google.idea.blaze.java.run.fastbuild.BazelTestEnvironmentVariables"/>
     <SyncStatusContributor implementation="com.google.idea.blaze.java.syncstatus.JavaSyncStatusContributor"/>
     <SyncDataExtractor implementation="com.google.idea.blaze.java.sync.model.BlazeJavaSyncData$Extractor"/>
     <SyncDataExtractor implementation="com.google.idea.blaze.java.sync.jdeps.JdepsState$Extractor"/>
@@ -121,32 +117,12 @@
     <implicitUsageProvider implementation="com.google.idea.blaze.java.psi.ForAutoConverterImplicitUsageProvider"/>
     <!-- Need to come first to prevent overriding other position managers. -->
     <debugger.positionManagerFactory implementation="com.google.idea.blaze.java.run.ExternalFilePositionManager$Factory" order="first"/>
-    <projectService serviceInterface="com.google.idea.blaze.java.fastbuild.FastBuildCompilerFactory"
-                    serviceImplementation="com.google.idea.blaze.java.fastbuild.FastBuildCompilerFactoryImpl"/>
-    <projectService serviceInterface="com.google.idea.blaze.java.fastbuild.FastBuildIncrementalCompiler"
-        serviceImplementation="com.google.idea.blaze.java.fastbuild.FastBuildIncrementalCompilerImpl"/>
-    <projectService serviceImplementation="com.google.idea.blaze.java.run.fastbuild.FastBuildTestClassFinder"/>
-    <executor implementation="com.google.idea.blaze.java.run.fastbuild.FastBuildRunExecutor"/>
-    <executor implementation="com.google.idea.blaze.java.run.fastbuild.FastBuildDebugExecutor"/>
-    <programRunner implementation="com.google.idea.blaze.java.run.fastbuild.FastBuildProgramRunner"/>
-    <programRunner implementation="com.google.idea.blaze.java.run.fastbuild.FastBuildDebuggerRunner"/>
-    <applicationService serviceImplementation="com.google.idea.blaze.java.run.fastbuild.FastBuildSuggestion"/>
-    <projectService serviceImplementation="com.google.idea.blaze.java.fastbuild.FastBuildChangedFilesService"/>
     <projectService serviceInterface="com.intellij.openapi.compiler.CompilerManager"
         serviceImplementation="com.google.idea.blaze.java.run.BlazeCompilerManager"
         overrides="true"/>
     <postStartupActivity implementation="com.google.idea.blaze.java.run.producers.NonBlazeProducerSuppressor"/>
     <actionConfigurationCustomizer implementation="com.google.idea.blaze.java.run.hotswap.BlazeHotSwapAction$Customizer"/>
-    <notificationGroup id="Fastbuild failed notification"
-        displayType="STICKY_BALLOON"/>
   </extensions>
-
-  <project-components>
-    <component>
-      <interface-class>com.google.idea.blaze.java.fastbuild.FastBuildService</interface-class>
-      <implementation-class>com.google.idea.blaze.java.fastbuild.FastBuildServiceImpl</implementation-class>
-    </component>
-  </project-components>
 
   <extensionPoints>
     <extensionPoint qualifiedName="com.google.idea.blaze.DefaultJdkProvider"
@@ -159,16 +135,6 @@
                     interface="com.google.idea.blaze.java.run.producers.JUnitParameterizedClassHeuristic"/>
     <extensionPoint qualifiedName="com.google.idea.blaze.JavaClasspathAspectStrategy"
                     interface="com.google.idea.blaze.java.run.hotswap.JavaClasspathAspectStrategy"/>
-    <extensionPoint qualifiedName="com.google.idea.blaze.FastBuildTestEnvironmentCreator"
-                    interface="com.google.idea.blaze.java.run.fastbuild.FastBuildTestEnvironmentCreator"/>
-    <extensionPoint qualifiedName="com.google.idea.blaze.FastBuildAspectStrategy"
-                    interface="com.google.idea.blaze.java.fastbuild.FastBuildAspectStrategy"/>
-    <extensionPoint qualifiedName="com.google.idea.blaze.FastBuildDeployJarStrategy"
-                    interface="com.google.idea.blaze.java.fastbuild.FastBuildDeployJarStrategy"/>
-    <extensionPoint qualifiedName="com.google.idea.blaze.FastBuildTestEnvironmentModifier"
-                    interface="com.google.idea.blaze.java.run.fastbuild.FastBuildTestEnvironmentModifier"/>
-    <extensionPoint qualifiedName="com.google.idea.blaze.FastBuildCompilationModification"
-                    interface="com.google.idea.blaze.java.fastbuild.FastBuildCompilationModification"/>
     <extensionPoint qualifiedName="com.google.idea.blaze.AttachSourcesFilter"
                     interface="com.google.idea.blaze.java.sync.model.AttachSourcesFilter"/>
     <extensionPoint qualifiedName="com.google.idea.blaze.HotSwapCommandBuilder"

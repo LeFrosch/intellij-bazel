@@ -49,8 +49,6 @@ public abstract class BuildDepsStats implements QuerySyncOperationStats {
 
   public abstract ImmutableSet<Label> buildTargets();
 
-  public abstract Optional<Integer> updatedFilesCount();
-
   public abstract Optional<Long> artifactBytesConsumed();
 
   @Override
@@ -89,8 +87,6 @@ public abstract class BuildDepsStats implements QuerySyncOperationStats {
     public abstract Builder setBuildFlags(ImmutableList<String> value);
 
     public abstract Builder setBuildIds(ImmutableList<String> value);
-
-    public abstract Builder setUpdatedFilesCount(@Nullable Integer value);
 
     public abstract Builder setArtifactBytesConsumed(@Nullable Long value);
 

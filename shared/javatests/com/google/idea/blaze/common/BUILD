@@ -41,3 +41,14 @@ java_test(
         "@truth//jar",
     ],
 )
+
+java_test(
+    name = "AtomicFileWriterTest",
+    size = "small",
+    srcs = ["AtomicFileWriterTest.java"],
+    deps = [
+        "//shared",
+        "@junit//jar",
+        "@truth//jar",
+    ],
+)

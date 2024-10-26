@@ -23,9 +23,7 @@ import com.intellij.execution.executors.DefaultRunExecutor;
 /** Run configuration executor type */
 public enum ExecutorType {
   RUN,
-  FAST_BUILD_RUN,
   DEBUG,
-  FAST_BUILD_DEBUG,
   COVERAGE,
   UNKNOWN;
 
@@ -37,16 +35,8 @@ public enum ExecutorType {
     if (executorId.equals(DefaultRunExecutor.EXECUTOR_ID)) {
       return RUN;
     }
-    // hard-code string because this class doesn't exist in the CLion plugin
-    if (executorId.equals("BlazeFastRun")) {
-      return FAST_BUILD_RUN;
-    }
     if (executorId.equals(DefaultDebugExecutor.EXECUTOR_ID)) {
       return DEBUG;
-    }
-    // hard-code string because this class doesn't exist in the CLion plugin
-    if (executorId.equals("BlazeFastDebug")) {
-      return FAST_BUILD_DEBUG;
     }
     // hard-code string to avoid plugin dependency (coverage plugin not yet available in CLion)
     if (executorId.equals("Coverage")) {
@@ -56,11 +46,7 @@ public enum ExecutorType {
   }
 
   public boolean isDebugType() {
-    return this.equals(DEBUG) || this.equals(FAST_BUILD_DEBUG);
-  }
-
-  public boolean isFastBuildType() {
-    return this.equals(FAST_BUILD_RUN) || this.equals(FAST_BUILD_DEBUG);
+    return this.equals(DEBUG);
   }
 
   /** Executor types supported for debuggable targets. */
@@ -73,5 +59,5 @@ public enum ExecutorType {
 
   /** Executor types supported for targets supporting fast run/debug. */
   public static final ImmutableSet<ExecutorType> FAST_DEBUG_SUPPORTED_TYPES =
-      ImmutableSet.of(RUN, FAST_BUILD_RUN, DEBUG, FAST_BUILD_DEBUG, COVERAGE);
+      ImmutableSet.of(RUN, DEBUG, COVERAGE);
 }

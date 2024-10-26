@@ -13,9 +13,9 @@ java_test(
         "//querysync/javatests/com/google/idea/blaze/qsync/testdata",
         "//querysync/javatests/com/google/idea/blaze/qsync/testdata:build_graphs",
         "//shared",
-        "@com_google_guava_guava//jar",
         "@junit//jar",
         "@truth//jar",
+        "@com_google_guava_guava//jar",
     ],
 )
 
@@ -27,9 +27,9 @@ java_test(
         "//querysync/javatests/com/google/idea/blaze/qsync:TestUtils",
         "//querysync/javatests/com/google/idea/blaze/qsync/query:QuerySummaryTestUtil",
         "//shared:vcs",
-        "@com_google_guava_guava//jar",
         "@junit//jar",
         "@truth//jar",
+        "@com_google_guava_guava//jar",
     ],
 )
 
@@ -39,9 +39,9 @@ java_test(
     srcs = ["ProjectDefinitionTest.java"],
     deps = [
         "//querysync/java/com/google/idea/blaze/qsync/project",
-        "@com_google_guava_guava//jar",
         "@junit//jar",
         "@truth//jar",
+        "@com_google_guava_guava//jar",
     ],
 )
 
@@ -52,9 +52,9 @@ java_test(
     deps = [
         "//querysync/java/com/google/idea/blaze/qsync/project",
         "//querysync/java/com/google/idea/blaze/qsync/project:language_class_java_proto",
-        "@com_google_protobuf//:protobuf_java",
         "@junit//jar",
         "@truth//jar",
+        "@protobuf//:protobuf_java",
     ],
 )
 
@@ -64,8 +64,44 @@ java_test(
     srcs = ["TestSourceGlobMatcherTest.java"],
     deps = [
         "//querysync/java/com/google/idea/blaze/qsync/project",
-        "@com_google_guava_guava//jar",
         "@junit//jar",
         "@truth//jar",
+        "@com_google_guava_guava//jar",
+    ],
+)
+
+java_test(
+    name = "DepsGraphTest",
+    size = "small",
+    srcs = ["DepsGraphTest.java"],
+    deps = [
+        "//querysync/java/com/google/idea/blaze/qsync/project",
+        "@junit//jar",
+        "@truth//jar",
+        "@com_google_guava_guava//jar",
+    ],
+)
+
+java_test(
+    name = "ExternalTransitiveClosureTest",
+    size = "small",
+    srcs = ["ExternalTransitiveClosureTest.java"],
+    deps = [
+        "//querysync/java/com/google/idea/blaze/qsync/project",
+        "@junit//jar",
+        "@truth//jar",
+        "@com_google_guava_guava//jar",
+    ],
+)
+
+java_test(
+    name = "PendingExternalDepsTest",
+    size = "small",
+    srcs = ["PendingExternalDepsTest.java"],
+    deps = [
+        "//querysync/java/com/google/idea/blaze/qsync/project",
+        "@junit//jar",
+        "@truth//jar",
+        "@com_google_guava_guava//jar",
     ],
 )

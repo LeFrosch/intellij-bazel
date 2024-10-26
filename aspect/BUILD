@@ -29,10 +29,20 @@ filegroup(
 filegroup(
     name = "aspect_files",
     srcs = [
+        ":aspect_files_only",
+        ":aspect_tools",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Separate different targets as they are put into different directories
+filegroup(
+    name = "aspect_files_only",
+    srcs = [
         "WORKSPACE",
         "artifacts.bzl",
+        "build_compose_dependencies.bzl",
         "build_dependencies.bzl",
-        "fast_build_info_bundled.bzl",
         "flag_hack.bzl",
         "intellij_info.bzl",
         "intellij_info_bundled.bzl",
@@ -40,6 +50,13 @@ filegroup(
         "java_classpath.bzl",
         "make_variables.bzl",
         ":BUILD.bazel",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "aspect_tools",
+    srcs = [
         "//aspect/tools:CreateAar",
         "//aspect/tools:JarFilter_deploy.jar",
         "//aspect/tools:PackageParser_deploy.jar",
@@ -85,15 +102,6 @@ genrule(
           "sed -i -e '/BUNDLED-IGNORE-BEGIN/,/BUNDLED-IGNORE-END/d' $@ && " +
           "sed -i -e '/BUNDLED-INCLUDE-BEGIN/,/BUNDLED-INCLUDE-END/{s/^[#][#]//;}' $@ &&" +
           "sed -i -e 's,load(\".*/rules_java/,load(\"@rules_java//', $@",
-)
-
-# Makes bundled fast_build_info.bzl use bundled intellij_info_impl.bzl
-genrule(
-    name = "create_fast_build_info_bundle",
-    srcs = ["fast_build_info.bzl"],
-    outs = ["fast_build_info_bundled.bzl"],
-    cmd = "cat $(SRCS) >$@ && " +
-          "sed -i -e 's,:intellij_info_impl.bzl,:intellij_info_impl_bundled.bzl,g' $@",
 )
 
 genrule(

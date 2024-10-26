@@ -29,6 +29,9 @@ import com.google.idea.blaze.base.model.ExternalWorkspaceData;
 import com.google.idea.blaze.base.model.primitives.WorkspacePath;
 import com.google.idea.blaze.base.settings.BuildSystemName;
 import com.intellij.psi.PsiFile;
+import java.io.File;
+import java.nio.file.Paths;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -142,7 +145,7 @@ public class ExternalWorkspaceReferenceTest extends BuildFileIntegrationTestCase
   public void testReferenceToWorkspaceFileContents() {
     BuildFile workspaceFile =
         createBuildFile(
-            new WorkspacePath("WORKSPACE.bazel"),
+            new WorkspacePath("WORKSPACE"),
             "maven_jar(",
             "    name = 'w3c_css_sac',",
             "    artifact = 'org.w3c.css:sac:1.3',",

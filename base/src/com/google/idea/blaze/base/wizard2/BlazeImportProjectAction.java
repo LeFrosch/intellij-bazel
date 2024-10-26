@@ -29,6 +29,16 @@ import org.jetbrains.annotations.NotNull;
 class BlazeImportProjectAction extends AnAction {
   private static final Logger logger = Logger.getInstance(BlazeImportProjectAction.class);
 
+  public BlazeImportProjectAction() {
+    super();
+    setRunInApplicationScope();
+  }
+
+  /** Explicitly set to run action in the application context (vs. project context) */
+  private void setRunInApplicationScope() {
+    getTemplatePresentation().setApplicationScope(true);
+  }
+
   @Override
   public void actionPerformed(AnActionEvent e) {
     BlazeNewProjectWizard wizard =

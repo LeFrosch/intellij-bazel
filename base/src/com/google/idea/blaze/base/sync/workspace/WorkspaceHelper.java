@@ -25,12 +25,13 @@ import com.google.idea.blaze.base.model.primitives.TargetName;
 import com.google.idea.blaze.base.model.primitives.WorkspacePath;
 import com.google.idea.blaze.base.model.primitives.WorkspaceRoot;
 import com.google.idea.blaze.base.settings.Blaze;
+import com.google.idea.blaze.base.settings.BlazeImportSettings.ProjectType;
 import com.google.idea.blaze.base.settings.BuildSystemName;
 import com.google.idea.blaze.base.sync.SyncCache;
 import com.google.idea.blaze.base.sync.data.BlazeProjectDataManager;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.io.FileUtil;
 
@@ -41,9 +42,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
-/**
- * External-workspace-aware resolution of workspace paths.
- */
+/** External-workspace-aware resolution of workspace paths. */
 public class WorkspaceHelper {
 
   private static BlazeProjectData blazeProjectData;
@@ -73,9 +72,7 @@ public class WorkspaceHelper {
     return resolveExternalWorkspaceRoot(project, workspaceName, null);
   }
 
-  /**
-   * Resolves the parent blaze package corresponding to this label.
-   */
+  /** Resolves the parent blaze package corresponding to this label. */
   @Nullable
   public static File resolveBlazePackage(Project project, Label label) {
     logger.debug("resolveBlazePackage: " + label + " in project " + project.getName());
@@ -95,9 +92,7 @@ public class WorkspaceHelper {
     return workspace != null ? workspace.root.workspacePathForSafe(absoluteFile) : null;
   }
 
-  /**
-   * Converts a file to the corresponding BUILD label for this project, if valid.
-   */
+  /** Converts a file to the corresponding BUILD label for this project, if valid. */
   @Nullable
   public static Label getBuildLabel(Project project, File absoluteFile) {
     logger.debug("getBuildLabel for file " + absoluteFile.getAbsolutePath());
@@ -168,8 +163,8 @@ public class WorkspaceHelper {
         TargetName.createIfValid(
             FileUtil.getRelativePath(workspace.root.fileForPath(packagePath), file));
     return targetName != null
-               ? Label.create(workspace.externalWorkspaceName, packagePath, targetName)
-               : null;
+        ? Label.create(workspace.externalWorkspaceName, packagePath, targetName)
+        : null;
   }
 
   private static WorkspacePath getPackagePath(
@@ -195,6 +190,9 @@ public class WorkspaceHelper {
   private static synchronized WorkspaceRoot resolveExternalWorkspaceRoot(
       Project project, String workspaceName, @Nullable BuildFile buildFile) {
     if (Blaze.getBuildSystemName(project) == BuildSystemName.Blaze) {
+      return null;
+    }
+    if (Blaze.getProjectType(project) == ProjectType.QUERY_SYNC) {
       return null;
     }
 

@@ -129,13 +129,16 @@ public class ProjectQuerierImpl implements ProjectQuerier {
             vcsState.map(s -> s.upstreamRevision).orElse("<unknown>"),
             vcsState.flatMap(s -> s.workspaceSnapshotPath).map(Object::toString).orElse("<none>")));
 
+    Optional<String> bazelVersion = Optional.empty();
+    try {
+      bazelVersion = bazelVersionProvider.getBazelVersion();
+    } catch (BuildException e) {
+      context.handleExceptionAsWarning("Could not get bazel version", e);
+    }
+
     RefreshOperation refresh =
         projectRefresher.startPartialRefresh(
-            context,
-            previousState,
-            vcsState,
-            bazelVersionProvider.getBazelVersion(),
-            currentProjectDef);
+            context, previousState, vcsState, bazelVersion, currentProjectDef);
 
     Optional<QuerySpec> spec = refresh.getQuerySpec();
     QuerySummary querySummary;

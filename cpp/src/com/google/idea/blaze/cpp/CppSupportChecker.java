@@ -15,6 +15,7 @@
  */
 package com.google.idea.blaze.cpp;
 
+import com.google.idea.common.util.MorePlatformUtils;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.jetbrains.cidr.lang.toolchains.CidrCompilerSwitches;

@@ -143,9 +143,9 @@ public class QuerySummaryTest {
     assertThat(qs.getSourceFilesMap()).containsKey(buildLabel);
     SourceFile buildSrc = qs.getSourceFilesMap().get(buildLabel);
     assertThat(buildSrc.getSubincludeList())
-        .contains(TestData.ROOT_PACKAGE + "/buildincludes:includes.bzl");
+        .containsExactly(TestData.ROOT_PACKAGE + "/buildincludes:includes.bzl");
     assertThat(qs.getReverseSubincludeMap())
-        .containsAtLeast(
+        .containsExactly(
             TestData.ROOT.resolve("buildincludes/includes.bzl"),
             TestData.ROOT.resolve("buildincludes/BUILD"));
   }
