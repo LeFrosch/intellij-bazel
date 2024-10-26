@@ -6,7 +6,7 @@ G3PLUGINS_VISIBILITY = ["//visibility:public"]
 INTELLIJ_PLUGINS_VISIBILITY = ["//visibility:public"]
 DEFAULT_TEST_VISIBILITY = ["//visibility:public"]
 
-TEST_ASWB_SUBPACKAGES_VISIBILITY = []
+TEST_ASWB_SUBPACKAGES_VISIBILITY = ["//visibility:public"]
 ASWB_SUBPACKAGES_VISIBILITY = ["//visibility:public"]
 ASWB_PACKAGES_VISIBILITY = ["//visibility:public"]
 ASWB_PLUGIN_PACKAGES_VISIBILITY = ["//visibility:public"]
@@ -29,8 +29,6 @@ PYTHON_PACKAGES_VISIBILITY = ["//visibility:public"]
 
 SKYLARK_PACKAGES_VISIBILITY = ["//visibility:public"]
 
-FAST_BUILD_JAVAC_VISIBILITY = ["//visibility:public"]
-
 COMMON_PLUGINS_VISIBILITY = ["//visibility:public"]
 
 SDK_COMPAT_VISIBILITY = ["//visibility:public"]
@@ -43,6 +41,8 @@ ASPECT_TEST_RULES_VISIBILITY_TO_ALL = [
 ]
 
 SERVICES_EXPERIMENT_SUBPACKAGES = None
+
+ASPECT_TOOLS_PACKAGE = ["//aspect/tools:__pkg__"]
 
 def create_plugin_packages_group(name = None):
     native.package_group(

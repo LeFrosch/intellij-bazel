@@ -44,6 +44,7 @@ import com.google.idea.blaze.base.sync.aspects.BuildResult;
 import com.google.idea.blaze.base.sync.aspects.BuildResult.Status;
 import com.google.idea.blaze.common.PrintOutput;
 import com.google.idea.blaze.exception.BuildException;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 
@@ -88,13 +89,8 @@ public class CommandLineBlazeCommandRunner implements BlazeCommandRunner {
     }
     context.output(SummaryOutput.output(SummaryOutput.Prefix.TIMESTAMP, "Build command finished. Retrieving BEP outputs ..."));
     try {
-      context.output(SummaryOutput.output(SummaryOutput.Prefix.TIMESTAMP, "Parsing BEP outputs..."));
-      ParsedBepOutput buildOutput = buildResultHelper.getBuildOutput();
-      context.output(SummaryOutput.output(SummaryOutput.Prefix.TIMESTAMP, "Handling parsed BEP outputs..."));
-      BlazeBuildOutputs blazeBuildOutputs = BlazeBuildOutputs.fromParsedBepOutput(
-          buildResult, buildOutput);
-      context.output(SummaryOutput.output(SummaryOutput.Prefix.TIMESTAMP, "BEP outputs have been processed."));
-      return blazeBuildOutputs;
+      return BlazeBuildOutputs.fromParsedBepOutput(
+          buildResult, buildResultHelper.getBuildOutput());
     } catch (GetArtifactsException e) {
       context.output(PrintOutput.log("Failed to get build outputs: " + e.getMessage()));
       context.setHasError();
@@ -148,7 +144,7 @@ public class CommandLineBlazeCommandRunner implements BlazeCommandRunner {
       WorkspaceRoot workspaceRoot = WorkspaceRoot.fromProject(project);
       Function<String, String> rootReplacement =
           WorkspaceRootReplacement.create(workspaceRoot.path(), command);
-
+      boolean isUnitTestMode = ApplicationManager.getApplication().isUnitTestMode();
       int retVal =
           ExternalTask.builder(workspaceRoot)
               .addBlazeCommand(command)
@@ -159,6 +155,10 @@ public class CommandLineBlazeCommandRunner implements BlazeCommandRunner {
                       line -> {
                         line = rootReplacement.apply(line);
                         // errors are expected, so limit logging to info level
+                        if (isUnitTestMode) {
+                          // This is essential output in bazel-in-bazel tests if they fail.
+                          System.out.println(line.stripTrailing());
+                        }
                         Logger.getInstance(this.getClass()).info(line.stripTrailing());
                         context.output(PrintOutput.output(line.stripTrailing()));
                         return true;

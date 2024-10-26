@@ -5,10 +5,6 @@ load(
     "//aspect/testing/rules:intellij_aspect_test_fixture.bzl",
     "intellij_aspect_test_fixture",
 )
-load(
-    "//aspect/testing/rules:fast_build_aspect_test_fixture.bzl",
-    "fast_build_aspect_test_fixture",
-)
 
 java_test(
     name = "FooTest",
@@ -44,7 +40,7 @@ java_test(
     deps = ["@junit//jar"],
 )
 
-fast_build_aspect_test_fixture(
+intellij_aspect_test_fixture(
     name = "footest_no_launcher_fast_build_fixture",
     deps = [":FooTestNoLauncher"],
 )
@@ -62,7 +58,7 @@ java_test(
     deps = ["@junit//jar"],
 )
 
-fast_build_aspect_test_fixture(
+intellij_aspect_test_fixture(
     name = "footest_with_custom_launcher_fast_build_fixture",
     deps = [":FooTestWithCustomLauncher"],
 )
@@ -76,25 +72,7 @@ java_test(
     deps = ["@junit//jar"],
 )
 
-fast_build_aspect_test_fixture(
+intellij_aspect_test_fixture(
     name = "footest_with_custom_main_class_fast_build_fixture",
     deps = [":FooTestWithCustomMainClass"],
-)
-
-java_test(
-    name = "JavaTestFastBuildAspectTest",
-    srcs = ["JavaTestFastBuildAspectTest.java"],
-    data = [
-        ":footest_no_launcher_fast_build_fixture",
-        ":footest_with_custom_launcher_fast_build_fixture",
-        ":footest_with_custom_main_class_fast_build_fixture",
-    ],
-    deps = [
-        "//aspect/testing:guava",
-        "//aspect/testing/rules:FastBuildAspectLoader",
-        "//aspect/testing/rules:fast_build_aspect_test_fixture_java_proto",
-        "//intellij_platform_sdk:test_libs",
-        "//proto:fast_build_info_java_proto",
-        "@junit//jar",
-    ],
 )

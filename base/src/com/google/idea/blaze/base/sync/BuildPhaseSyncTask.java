@@ -416,7 +416,7 @@ public final class BuildPhaseSyncTask {
       String fileBugSuggestion =
           Blaze.getBuildSystemName(project) == BuildSystemName.Bazel
               ? ""
-              : " Please run 'Blaze > File a Bug'";
+              : " Please run 'Help > File a Bug'";
       IssueOutput.error(
               "Querying blaze targets building project source files failed." + fileBugSuggestion)
           .submit(context);

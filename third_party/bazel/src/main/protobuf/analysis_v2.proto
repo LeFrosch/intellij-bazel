@@ -232,10 +232,10 @@ message FragmentOptions {
 // A fragment option.
 message Option {
   // The name of the option.
-  optional string name = 1;
+  string name = 1;
 
   // The value of the option.
-  optional string value = 2;
+  string value = 2;
 }
 
 message KeyValuePair {
