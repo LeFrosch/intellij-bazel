@@ -57,7 +57,7 @@ public class SnapshotDeserializer {
     if (proto.hasVcsState()) {
       visitVcsState(proto.getVcsState());
     }
-    if (proto.hasBazelVersion()) {
+    if (!proto.getBazelVersion().isEmpty()) {
       snapshot.setBazelVersion(Optional.of(proto.getBazelVersion()));
     }
     visitQuerySummay(proto.getQuerySummary());
@@ -74,8 +74,7 @@ public class SnapshotDeserializer {
             proto.getIncludePathsList().stream().map(Path::of).collect(toImmutableSet()),
             proto.getExcludePathsList().stream().map(Path::of).collect(toImmutableSet()),
             QuerySyncLanguage.fromProtoList(proto.getLanguageClassesList()),
-            ImmutableSet.copyOf(proto.getTestSourcesList()),
-            ImmutableSet.copyOf(proto.getSystemExcludesList())));
+            ImmutableSet.copyOf(proto.getTestSourcesList())));
   }
 
   private void visitVcsState(SnapshotProto.VcsState proto) {

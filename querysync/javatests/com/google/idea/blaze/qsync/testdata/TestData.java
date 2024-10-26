@@ -30,6 +30,7 @@ public enum TestData {
 
   ANDROID_AIDL_SOURCE_QUERY("aidl"),
   ANDROID_LIB_QUERY("android"),
+  DOES_DEPENDENCY_PATH_CONTAIN_RULES("deppathkinds"),
   JAVA_EXPORTED_DEP_QUERY("exports"),
   JAVA_LIBRARY_EXTERNAL_DEP_QUERY("externaldep"),
   JAVA_LIBRARY_INTERNAL_DEP_QUERY("internaldep", "nodeps"),
@@ -55,8 +56,7 @@ public enum TestData {
     this.srcPaths = stream(paths).map(Path::of).collect(toImmutableList());
   }
 
-  // TODO: Probably there's a better way to do this.
-  private static final String WORKSPACE_NAME = "_main";
+  private static final String WORKSPACE_NAME = "__main__";
 
   public static final Path ROOT =
       Path.of(
@@ -83,7 +83,10 @@ public enum TestData {
    */
   public ImmutableList<Label> getAssumedLabels() {
     return srcPaths.stream()
-        .map(p -> Label.fromPackageAndName(ROOT.resolve(p), p.toString()))
+        .map(
+            p ->
+                Label.fromWorkspacePackageAndName(
+                    Label.ROOT_WORKSPACE, ROOT.resolve(p), p.toString()))
         .collect(toImmutableList());
   }
 

@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.idea.blaze.qsync.testdata.grpc;
+package com.google.idea.blaze.qsync;
 
-import com.google.idea.blaze.qsync.testdata.testservice.proto.ProtoServiceGrpc;
+import com.google.idea.blaze.common.Context;
+import com.google.idea.blaze.exception.BuildException;
 
-public class TestGrpcClass {
-  private final ProtoServiceGrpc.ProtoServiceFutureStub serviceStub;
-
-  public TestGrpcClass(ProtoServiceGrpc.ProtoServiceFutureStub stub) {
-    serviceStub = stub;
-  }
-
-  public ProtoServiceGrpc.ProtoServiceFutureStub getStub() {
-    return serviceStub;
-  }
+/** A listener interface for new project snapshots. */
+public interface QuerySyncProjectListener {
+  /**
+   * A new snapshot has been created, replacing any existing instance.
+   *
+   * <p>This will be called on a background thread (from the {@link
+   * com.google.idea.blaze.base.async.executor.BlazeExecutor} pool.
+   */
+  void onNewProjectSnapshot(Context<?> context, QuerySyncProjectSnapshot instance)
+      throws BuildException;
 }

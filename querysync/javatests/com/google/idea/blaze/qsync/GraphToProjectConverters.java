@@ -43,8 +43,6 @@ abstract class GraphToProjectConverters {
 
   public abstract ImmutableSet<String> testSources();
 
-  public abstract ImmutableSet<String> systemExcludes();
-
   static Builder builder() {
     return new AutoValue_GraphToProjectConverters.Builder()
         .setPackageReader(EMPTY_PACKAGE_READER)
@@ -52,7 +50,6 @@ abstract class GraphToProjectConverters {
         .setLanguageClasses(ImmutableSet.of())
         .setProjectIncludes(ImmutableSet.of())
         .setProjectExcludes(ImmutableSet.of())
-        .setSystemExcludes(ImmutableSet.of())
         .setTestSources(ImmutableSet.of());
   }
 
@@ -70,8 +67,6 @@ abstract class GraphToProjectConverters {
 
     abstract Builder setTestSources(ImmutableSet<String> value);
 
-    abstract Builder setSystemExcludes(ImmutableSet<String> value);
-
     abstract GraphToProjectConverters autoBuild();
 
     public GraphToProjectConverter build() {
@@ -84,10 +79,8 @@ abstract class GraphToProjectConverters {
               info.projectIncludes(),
               info.projectExcludes(),
               info.languageClasses(),
-              info.testSources(),
-              info.systemExcludes()),
-          newDirectExecutorService(),
-          false);
+              info.testSources()),
+          newDirectExecutorService());
     }
   }
 }

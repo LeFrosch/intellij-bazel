@@ -1,13 +1,12 @@
-load("@rules_java//java:defs.bzl", "java_library")
-
 java_library(
     name = "qsync",
     srcs = glob(["*.java"]),
     visibility = [
-        "//javatests/com/google/devtools/intellij/blaze/plugin/aswb:__pkg__",
         "//querysync:__subpackages__",
+        "//javatests/com/google/devtools/intellij/blaze/plugin/aswb:__pkg__",
     ],
     deps = [
+        "@jsr305_annotations//jar",
         "//querysync/java/com/google/idea/blaze/qsync/cc",
         "//querysync/java/com/google/idea/blaze/qsync/deps",
         "//querysync/java/com/google/idea/blaze/qsync/java",
@@ -22,6 +21,5 @@ java_library(
         "//third_party/auto_value",
         "@com_google_guava_guava//jar",
         "@error_prone_annotations//jar",
-        "@jsr305_annotations//jar",
     ],
 )

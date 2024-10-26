@@ -1,8 +1,8 @@
 load("@rules_java//java:defs.bzl", "java_library")
 
 package(default_visibility = [
-    "//javatests/com/google/devtools/intellij/blaze/plugin/aswb:__pkg__",
     "//querysync:__subpackages__",
+    "//javatests/com/google/devtools/intellij/blaze/plugin/aswb:__subpackages__",
 ])
 
 proto_library(
@@ -10,6 +10,9 @@ proto_library(
     srcs = ["java_target_info.proto"],
     visibility = [
         "//proto:__pkg__",
+    ],
+    deps = [
+        "//querysync/java/com/google/idea/blaze/qsync/artifacts:build_artifact_proto",
     ],
 )
 
@@ -30,5 +33,7 @@ java_library(
         "//shared:artifact",
         "//third_party/auto_value",
         "@com_google_guava_guava//jar",
+        "@jsr305_annotations//jar",
+        "@error_prone_annotations//jar",
     ],
 )

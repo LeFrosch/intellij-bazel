@@ -34,31 +34,27 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * Builds a {@link BlazeProjectSnapshot} for a test project by running the logic from the various
- * sync stages on the testdata query output.
+ * Builds a {@link QuerySyncProjectSnapshot} for a test project by running the logic from the
+ * various sync stages on the testdata query output.
  */
 public class TestDataSyncRunner {
 
   private final Context<?> context;
   private final PackageReader packageReader;
-  private final boolean useNewArtifactLogic;
 
   public TestDataSyncRunner(
-      Context<?> context, PackageReader packageReader, boolean useNewArtifactLogic) {
+      Context<?> context, PackageReader packageReader) {
     this.context = context;
     this.packageReader = packageReader;
-    this.useNewArtifactLogic = useNewArtifactLogic;
   }
 
-  public BlazeProjectSnapshot sync(TestData testProject) throws IOException, BuildException {
+  public QuerySyncProjectSnapshot sync(TestData testProject) throws IOException, BuildException {
     ProjectDefinition projectDefinition =
         ProjectDefinition.create(
             /* includes= */ ImmutableSet.copyOf(testProject.getRelativeSourcePaths()),
             /* excludes= */ ImmutableSet.of(),
             /* languageClasses= */ ImmutableSet.of(),
-            /* testSources= */ ImmutableSet.of(),
-            /* systemExcludes = */ ImmutableSet.of()
-);
+            /* testSources= */ ImmutableSet.of());
     QuerySummary querySummary = getQuerySummary(testProject);
     PostQuerySyncData pqsd =
         PostQuerySyncData.builder()
@@ -75,10 +71,9 @@ public class TestDataSyncRunner {
             Predicates.alwaysTrue(),
             context,
             projectDefinition,
-            newDirectExecutorService(),
-            useNewArtifactLogic);
+            newDirectExecutorService());
     Project project = converter.createProject(buildGraphData);
-    return BlazeProjectSnapshot.builder()
+    return QuerySyncProjectSnapshot.builder()
         .queryData(pqsd)
         .graph(new BlazeQueryParser(querySummary, context, ImmutableSet.of()).parse())
         .artifactState(ArtifactTracker.State.EMPTY)

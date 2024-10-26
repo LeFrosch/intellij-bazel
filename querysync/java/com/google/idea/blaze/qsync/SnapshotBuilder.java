@@ -34,7 +34,7 @@ import java.util.function.Supplier;
  * Project refresher creates an appropriate {@link RefreshOperation} based on the project and
  * current VCS state.
  */
-public class BlazeProjectSnapshotBuilder {
+public class SnapshotBuilder {
 
   private final ListeningExecutorService executor;
   private final PackageReader workspaceRelativePackageReader;
@@ -42,31 +42,28 @@ public class BlazeProjectSnapshotBuilder {
   private final ImmutableSet<String> handledRuleKinds;
   private final Supplier<Boolean> useNewResDirLogic;
   private final Supplier<Boolean> guessAndroidResPackages;
-  private final boolean useNewBuildArtifactLogic;
 
-  public BlazeProjectSnapshotBuilder(
+  public SnapshotBuilder(
       ListeningExecutorService executor,
       PackageReader workspaceRelativePackageReader,
       Path workspaceRoot,
       ImmutableSet<String> handledRuleKinds,
       Supplier<Boolean> useNewResDirLogic,
-      Supplier<Boolean> guessAndroidResPackages,
-      boolean useNewBuildArtifactLogic) {
+      Supplier<Boolean> guessAndroidResPackages) {
     this.executor = executor;
     this.workspaceRelativePackageReader = workspaceRelativePackageReader;
     this.workspaceRoot = workspaceRoot;
     this.handledRuleKinds = handledRuleKinds;
     this.useNewResDirLogic = useNewResDirLogic;
     this.guessAndroidResPackages = guessAndroidResPackages;
-    this.useNewBuildArtifactLogic = useNewBuildArtifactLogic;
   }
 
   /**
-   * Creates a {@link BlazeProjectSnapshot}, which includes an expected IDE project structure, from
-   * the {@code postQuerySyncData} and a function {@code applyBuiltDependenciesTransform} that
+   * Creates a {@link QuerySyncProjectSnapshot}, which includes an expected IDE project structure,
+   * from the {@code postQuerySyncData} and a function {@code applyBuiltDependenciesTransform} that
    * applies transformations required to account for any currently synced(i.e. built) dependencies.
    */
-  public BlazeProjectSnapshot createBlazeProjectSnapshot(
+  public QuerySyncProjectSnapshot createBlazeProjectSnapshot(
       Context<?> context,
       PostQuerySyncData postQuerySyncData,
       ArtifactTracker.State artifactTrackerState,
@@ -84,13 +81,12 @@ public class BlazeProjectSnapshotBuilder {
             postQuerySyncData.projectDefinition(),
             executor,
             useNewResDirLogic,
-            guessAndroidResPackages,
-            useNewBuildArtifactLogic);
+            guessAndroidResPackages);
     QuerySummary querySummary = postQuerySyncData.querySummary();
     BuildGraphData graph = new BlazeQueryParser(querySummary, context, handledRuleKinds).parse();
     Project project =
         projectProtoTransform.apply(graphToProjectConverter.createProject(graph), graph, context);
-    return BlazeProjectSnapshot.builder()
+    return QuerySyncProjectSnapshot.builder()
         .queryData(postQuerySyncData)
         .graph(graph)
         .artifactState(artifactTrackerState)

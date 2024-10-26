@@ -23,25 +23,25 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
-/** Keeps a reference to the most up-to date {@link BlazeProjectSnapshot} instance. */
-public class BlazeProject {
+/** Keeps a reference to the most up-to date {@link QuerySyncProjectSnapshot} instance. */
+public class SnapshotHolder {
 
   private final Object lock = new Object();
-  @Nullable private BlazeProjectSnapshot currentInstance = null;
+  @Nullable private QuerySyncProjectSnapshot currentInstance = null;
 
-  private final List<BlazeProjectListener> listeners = Lists.newArrayList();
+  private final List<QuerySyncProjectListener> listeners = Lists.newArrayList();
 
-  public BlazeProject() {}
+  public SnapshotHolder() {}
 
-  public void addListener(BlazeProjectListener listener) {
+  public void addListener(QuerySyncProjectListener listener) {
     synchronized (lock) {
       listeners.add(listener);
     }
   }
 
-  public void setCurrent(Context<?> context, BlazeProjectSnapshot newInstance)
+  public void setCurrent(Context<?> context, QuerySyncProjectSnapshot newInstance)
       throws BuildException {
-    ImmutableList<BlazeProjectListener> listeners;
+    ImmutableList<QuerySyncProjectListener> listeners;
     synchronized (lock) {
       if (currentInstance == newInstance) {
         return;
@@ -49,12 +49,12 @@ public class BlazeProject {
       currentInstance = newInstance;
       listeners = ImmutableList.copyOf(this.listeners);
     }
-    for (BlazeProjectListener l : listeners) {
+    for (QuerySyncProjectListener l : listeners) {
       l.onNewProjectSnapshot(context, newInstance);
     }
   }
 
-  public Optional<BlazeProjectSnapshot> getCurrent() {
+  public Optional<QuerySyncProjectSnapshot> getCurrent() {
     synchronized (lock) {
       return Optional.ofNullable(currentInstance);
     }

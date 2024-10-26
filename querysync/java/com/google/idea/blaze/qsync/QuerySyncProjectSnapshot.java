@@ -18,6 +18,7 @@ package com.google.idea.blaze.qsync;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.idea.blaze.common.BuildTarget;
@@ -25,28 +26,35 @@ import com.google.idea.blaze.common.Label;
 import com.google.idea.blaze.qsync.deps.ArtifactIndex;
 import com.google.idea.blaze.qsync.deps.ArtifactTracker;
 import com.google.idea.blaze.qsync.project.BuildGraphData;
+import com.google.idea.blaze.qsync.project.PendingExternalDeps;
 import com.google.idea.blaze.qsync.project.PostQuerySyncData;
 import com.google.idea.blaze.qsync.project.ProjectProto;
 import com.google.idea.blaze.qsync.project.ProjectTarget;
 import com.google.idea.blaze.qsync.query.PackageSet;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
  * A fully sync'd project at a point in time. This consists of:
  *
  * <ul>
- *   <li>The IntelliJ project structure, presented as a proto.
- *   <li>The {@link PostQuerySyncData} that is was derived from.
+ *   <li>The output from the query part of sync, {@link #queryData()}.
+ *   <li>Build graph information derived form the sync data, {@link #graph()}.
+ *   <li>The output from all dependency builds to date, {@link #artifactState()}.
+ *   <li>The IntelliJ project structure derived from the above, presented as a proto, {@link
+ *       #project()}.
  * </ul>
  *
  * <p>This class is immutable, any modifications to the project will yield a new instance.
  */
 @AutoValue
-public abstract class BlazeProjectSnapshot {
+public abstract class QuerySyncProjectSnapshot {
 
   @VisibleForTesting
-  public static final BlazeProjectSnapshot EMPTY =
+  public static final QuerySyncProjectSnapshot EMPTY =
       builder()
           .graph(BuildGraphData.EMPTY)
           .project(ProjectProto.Project.getDefaultInstance())
@@ -63,8 +71,16 @@ public abstract class BlazeProjectSnapshot {
   /** Project proto reflecting the structure of the IJ project. */
   public abstract ProjectProto.Project project();
 
+  @Memoized
+  public PendingExternalDeps<Label> pendingExternalDeps() {
+    return new PendingExternalDeps<>(
+        graph().transitiveExternalDeps(),
+        artifactState().depsMap().keySet(),
+        graph()::getDependencyTrackingBehaviors);
+  }
+
   public static Builder builder() {
-    return new AutoValue_BlazeProjectSnapshot.Builder();
+    return new AutoValue_QuerySyncProjectSnapshot.Builder();
   }
 
   public abstract Builder toBuilder();
@@ -113,7 +129,36 @@ public abstract class BlazeProjectSnapshot {
     return ArtifactIndex.create(artifactState(), project().getArtifactDirectories());
   }
 
-  /** Builder for {@link BlazeProjectSnapshot}. */
+  /**
+   * For given project targets, returns all dependency targets that are {@link
+   * BuildGraphData#projectDeps()} external} to the project, from which build artifacts are needed
+   * for the targets sources to be edited fully. This method returns the dependencies for the target
+   * with fewest pending so that if dependencies have been built for one, the empty set will be
+   * returned even if others have pending dependencies.
+   *
+   * @param projectTargets The set of project targets which include a given source file.
+   */
+  public Set<Label> getPendingExternalDeps(Set<Label> projectTargets) {
+    return projectTargets.stream()
+        .map(pendingExternalDeps()::get)
+        .min(Comparator.comparingInt(Collection::size))
+        .map(Set.class::cast)
+        .orElse(ImmutableSet.of());
+  }
+
+  /** Recursively get all the transitive deps outside the project */
+  public Set<Label> getPendingTargets(Path workspaceRelativePath) {
+    Preconditions.checkState(!workspaceRelativePath.isAbsolute(), workspaceRelativePath);
+
+    return getPendingExternalDeps(getTargetOwners(workspaceRelativePath));
+  }
+
+  @VisibleForTesting
+  public QuerySyncProjectSnapshot withArtifactState(ArtifactTracker.State state) {
+    return toBuilder().artifactState(state).build();
+  }
+
+  /** Builder for {@link QuerySyncProjectSnapshot}. */
   @AutoValue.Builder
   public abstract static class Builder {
 
@@ -125,6 +170,6 @@ public abstract class BlazeProjectSnapshot {
 
     public abstract Builder project(ProjectProto.Project value);
 
-    public abstract BlazeProjectSnapshot build();
+    public abstract QuerySyncProjectSnapshot build();
   }
 }
