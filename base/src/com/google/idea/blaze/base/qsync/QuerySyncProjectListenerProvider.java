@@ -15,14 +15,14 @@
  */
 package com.google.idea.blaze.base.qsync;
 
-import com.google.idea.blaze.qsync.BlazeProjectListener;
+import com.google.idea.blaze.qsync.QuerySyncProjectListener;
 import com.intellij.openapi.extensions.ExtensionPointName;
 
-/** Extension point to provide {@link BlazeProjectListener} instances. */
-public interface BlazeProjectListenerProvider {
+/** Extension point to provide {@link QuerySyncProjectListener} instances. */
+public interface QuerySyncProjectListenerProvider {
 
-  ExtensionPointName<BlazeProjectListenerProvider> EXTENSION_POINT =
-      ExtensionPointName.create("com.google.idea.blaze.qsync.BlazeProjectListenerProvider");
+  ExtensionPointName<QuerySyncProjectListenerProvider> EXTENSION_POINT =
+      ExtensionPointName.create("com.google.idea.blaze.qsync.QuerySyncListenerProvider");
 
   static void registerListenersFor(QuerySyncProject querySyncProject) {
     EXTENSION_POINT.getExtensionList().stream()
@@ -30,5 +30,5 @@ public interface BlazeProjectListenerProvider {
         .forEach(querySyncProject.getSnapshotHolder()::addListener);
   }
 
-  BlazeProjectListener createListener(QuerySyncProject project);
+  QuerySyncProjectListener createListener(QuerySyncProject project);
 }

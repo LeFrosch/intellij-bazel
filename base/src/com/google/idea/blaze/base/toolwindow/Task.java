@@ -161,7 +161,6 @@ public final class Task {
     BUILD_CLEANER("Build Cleaner"),
     FIX_DEPS("Fix Deps"),
     SUGGESTED_FIXES("Suggested Fixes"),
-    FAST_BUILD("Fast Build"),
     DEPLOYABLE_JAR("DeployableJar"),
     MAKE("Make"),
     BEFORE_LAUNCH("Before Launch"),

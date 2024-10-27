@@ -15,27 +15,23 @@
  */
 package com.google.idea.blaze.base.qsync.action;
 
+import com.google.idea.blaze.base.logging.utils.querysync.QuerySyncActionStatsScope;
 import com.google.idea.blaze.base.qsync.QuerySyncManager;
-import com.google.idea.blaze.qsync.deps.ArtifactTracker;
+import com.google.idea.blaze.base.qsync.QuerySyncManager.TaskOrigin;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.DumbAwareAction;
-import java.io.IOException;
 import org.jetbrains.annotations.NotNull;
 
-/** An internal action to clean query sync dependencies */
-public final class CleanDependencies extends DumbAwareAction {
-
-  static final Logger logger = Logger.getInstance(CleanDependencies.class.getName());
+/**
+ * An internal action to clear query sync dependencies, i.e. remove all dependencies from the
+ * project.
+ */
+public final class ClearDependencies extends DumbAwareAction {
 
   @Override
   public void actionPerformed(@NotNull AnActionEvent e) {
-    ArtifactTracker<?> artifactTracker =
-        QuerySyncManager.getInstance(e.getProject()).getArtifactTracker();
-    try {
-      artifactTracker.clear();
-    } catch (IOException ex) {
-      logger.warn("Failed to invalidate dependencies", ex);
-    }
+    QuerySyncManager qsm = QuerySyncManager.getInstance(e.getProject());
+    qsm.clearAllDependencies(
+        QuerySyncActionStatsScope.create(getClass(), e), TaskOrigin.USER_ACTION);
   }
 }

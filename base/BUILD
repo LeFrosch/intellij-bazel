@@ -147,6 +147,7 @@ java_library(
         "//proto:proto_deps",
         "//shared",
         "//third_party/auto_value",
+        "@error_prone_annotations//jar",
     ],
 )
 
@@ -330,6 +331,7 @@ java_library(
         "//intellij_platform_sdk:plugin_api",
         "//proto:proto_deps",
         "//shared",
+        "@error_prone_annotations//jar",
     ],
 )
 
@@ -351,6 +353,7 @@ java_library(
         "//intellij_platform_sdk:jsr305",
         "//intellij_platform_sdk:plugin_api",
         "//third_party/auto_value",
+        "@error_prone_annotations//jar",
     ],
 )
 
@@ -399,6 +402,7 @@ java_library(
         "//intellij_platform_sdk:plugin_api",
         "//proto:proto_deps",
         "//shared:artifact",
+        "@error_prone_annotations//jar",
     ],
 )
 
@@ -432,6 +436,7 @@ java_library(
         "//intellij_platform_sdk:plugin_api",
         "//proto:proto_deps",
         "//shared:artifact",
+        "@error_prone_annotations//jar",
     ],
 )
 
@@ -452,6 +457,7 @@ java_library(
         "//intellij_platform_sdk:plugin_api",
         "//shared",
         "//shared:artifact",
+        "@error_prone_annotations//jar",
     ],
 )
 
@@ -464,26 +470,6 @@ java_library(
     deps = [
         "//intellij_platform_sdk:plugin_api",
         "@com_google_guava_guava//jar",
-    ],
-)
-
-java_library(
-    name = "qsync-extensions",
-    srcs = ["src/com/google/idea/blaze/base/qsync/HandledRulesProvider.java"],
-    neverlink = 1,
-    visibility = ["//java/com/google/devtools/intellij/protobuf:__subpackages__"],
-    deps = [
-        "//intellij_platform_sdk:plugin_api",
-    ],
-)
-
-java_library(
-    name = "qsync-extensions-for-tests",
-    testonly = 1,
-    srcs = ["src/com/google/idea/blaze/base/qsync/HandledRulesProvider.java"],
-    visibility = ["//javatests/com/google/devtools/intellij/protobuf:__subpackages__"],
-    deps = [
-        "//intellij_platform_sdk:plugin_api",
     ],
 )
 
@@ -547,9 +533,6 @@ intellij_plugin(
     name = "base_integration_test_plugin",
     testonly = 1,
     plugin_xml = ":base_plugin_xml",
-    tags = [
-        "incomplete-deps",  # remove this suppression and add any missing deps, see go/java-import-deps-checking-lsc
-    ],
     deps = [":plugin_library"],
 )
 
@@ -585,6 +568,7 @@ intellij_unit_test_suite(
 intellij_integration_test_suite(
     name = "integration_tests",
     srcs = glob(["tests/integrationtests/**/*.java"]),
+    plugins = [":com.google.idea.blaze.base"],
     required_plugins = "com.google.idea.blaze.base",
     test_package_root = "com.google.idea.blaze.base",
     visibility = DEFAULT_TEST_VISIBILITY,
@@ -595,6 +579,10 @@ intellij_integration_test_suite(
         ":base",
         ":integration_test_utils",
         ":unit_test_utils",
+        "//querysync",
+        "//querysync/javatests/com/google/idea/blaze/qsync/artifacts:mock_artifact_cache",
+        "//shared:exception",
+        "//shared/javatests/com/google/idea/blaze/common:test_utils",
         "//intellij_platform_sdk:jsr305",
         "//intellij_platform_sdk:plugin_api_for_tests",  # unuseddeps: keep
         "//intellij_platform_sdk:test_libs",
