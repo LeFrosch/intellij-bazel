@@ -54,8 +54,6 @@ import com.google.idea.blaze.base.settings.BlazeUserSettings;
 import com.google.idea.blaze.base.settings.BuildSystemName;
 import com.google.idea.blaze.base.sync.workspace.WorkspacePathResolver;
 import com.google.idea.blaze.java.JavaBlazeRules;
-import com.google.idea.blaze.java.fastbuild.FastBuildInfo;
-import com.google.idea.blaze.java.fastbuild.FastBuildService;
 import com.google.idea.blaze.java.run.hotswap.HotSwapCommandBuilder;
 import com.google.idea.blaze.java.sync.source.JavaLikeLanguage;
 import com.google.idea.common.experiments.ExperimentService;
@@ -98,7 +96,6 @@ public class BlazeJavaRunProfileStateTest extends BlazeTestCase {
     kindProviderEp.registerExtension(new JavaBlazeRules(), testDisposable);
     applicationServices.register(Kind.ApplicationState.class, new Kind.ApplicationState());
 
-    projectServices.register(FastBuildService.class, new DisabledFastBuildService());
     projectServices.register(ProjectViewManager.class, new MockProjectViewManager());
 
     ExtensionPointImpl<TargetFinder> targetFinderEp =
@@ -183,24 +180,6 @@ public class BlazeJavaRunProfileStateTest extends BlazeTestCase {
                       ExecutorType.RUN,
                       null)
               .build().toList())
-            .containsExactly(
-                    "/usr/bin/blaze",
-                    "test",
-                    BlazeFlags.getToolTagFlag(),
-                    "--test_env", "HELLO=world",
-                    "--",
-                    "//label:rule"
-            ).inOrder();
-
-    // Fast build
-    assertThat(BlazeJavaRunProfileState
-            .getBlazeCommandBuilder(
-                    project,
-                    configuration,
-                    ImmutableList.of(),
-                    ExecutorType.FAST_BUILD_RUN,
-                    null)
-            .build().toList())
             .containsExactly(
                     "/usr/bin/blaze",
                     "test",
@@ -361,23 +340,6 @@ public class BlazeJavaRunProfileStateTest extends BlazeTestCase {
         BlazeContext context, WorkspacePathResolver workspacePathResolver) {
       return ProjectViewSet.EMPTY;
     }
-  }
-
-  private static class DisabledFastBuildService implements FastBuildService {
-
-    @Override
-    public boolean supportsFastBuilds(BuildSystemName buildSystemName, Kind kind) {
-      return false;
-    }
-
-    @Override
-    public Future<FastBuildInfo> createBuild(
-        BlazeContext context, Label label, String blazeBinaryPath, List<String> blazeFlags) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void resetBuild(Label label) {}
   }
 
   private static class FakeFileOperationProvider extends FileOperationProvider {
