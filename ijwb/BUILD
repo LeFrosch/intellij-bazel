@@ -123,20 +123,11 @@ repackaged_files(
     java_copts = ["-source", "8", "-target", "8"],
 )
 
-repackaged_files(
-    name = "fast_build_javac",
-    srcs = ["//java:fast_build_javac"],
-    prefix = "ijwb/lib",
-    visibility = IJWB_PACKAGES_VISIBILITY,
-    java_copts = ["-source", "8", "-target", "8"],
-)
-
 intellij_plugin_debug_target(
     name = "ijwb_bazel_dev",
     deps = [
         ":aspect_directory",
         ":aspect_template_directory",
-        ":fast_build_javac",
         ":plugin_jar",
     ],
 )
@@ -146,7 +137,6 @@ plugin_deploy_zip(
     srcs = [
         ":aspect_directory",
         ":aspect_template_directory",
-        ":fast_build_javac",
         ":plugin_jar",
     ],
     zip_filename = "ijwb_bazel.zip",
