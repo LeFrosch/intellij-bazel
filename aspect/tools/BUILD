@@ -54,11 +54,11 @@ java_library(
     name = "test_lib",
     testonly = 1,
     exports = [
-        ":guava",
         ":lib",
         "//intellij_platform_sdk:jsr305",
         "//intellij_platform_sdk:truth",
         "//proto:proto_deps",
+        "@com_google_guava_guava//jar",
         "@junit//jar",
     ],
 )
