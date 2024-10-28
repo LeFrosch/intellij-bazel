@@ -31,13 +31,13 @@ java_library(
     deps = [
         "//base",
         "//common/experiments",
-        "//intellij_platform_sdk:jsr305",  # unuseddeps: keep
-        "//intellij_platform_sdk:kotlin",
-        "//intellij_platform_sdk:plugin_api",
         "//java",
         "//proto:proto_deps",
         "//sdkcompat",
         "//shared",
+        "//intellij_platform_sdk:plugin_api",
+        "//intellij_platform_sdk:jsr305",  # unuseddeps: keep
+        "//intellij_platform_sdk:kotlin",
         "@error_prone_annotations//jar",
     ],
 )
@@ -56,6 +56,26 @@ intellij_plugin_library(
     deps = [":kotlin"],
 )
 
+intellij_unit_test_suite(
+    name = "unit_tests",
+    srcs = glob(["tests/unittests/**/*.java"]),
+    tags = ["noci:studio-win"],
+    test_package_root = "com.google.idea.blaze",
+    deps = [
+        ":kotlin",
+        "//base",
+        "//base:unit_test_utils",
+        "//common/experiments",
+        "//common/experiments:unit_test_utils",
+        "//java",
+        "//intellij_platform_sdk:kotlin_for_tests",
+        "//intellij_platform_sdk:plugin_api_for_tests",
+        "//intellij_platform_sdk:test_libs",
+        "@junit//jar",
+        "@com_google_guava_guava//jar",
+    ],
+)
+
 stamped_plugin_xml(
     name = "kotlin_plugin_xml",
     plugin_id = "com.google.idea.blaze.kotlin",
@@ -67,32 +87,10 @@ intellij_plugin(
     testonly = 1,
     optional_plugin_xmls = [":optional_xml"],
     plugin_xml = ":kotlin_plugin_xml",
-    tags = [
-        "incomplete-deps",  # remove this suppression and add any missing deps, see go/java-import-deps-checking-lsc
-    ],
     deps = [
         ":plugin_library",
         "//base:plugin_library",
         "//java:plugin_library",
-    ],
-)
-
-intellij_unit_test_suite(
-    name = "unit_tests",
-    srcs = glob(["tests/unittests/**/*.java"]),
-    test_package_root = "com.google.idea.blaze",
-    deps = [
-        ":kotlin",
-        "//base",
-        "//base:unit_test_utils",
-        "//common/experiments",
-        "//common/experiments:unit_test_utils",
-        "//intellij_platform_sdk:kotlin_for_tests",
-        "//intellij_platform_sdk:plugin_api_for_tests",
-        "//intellij_platform_sdk:test_libs",
-        "//java",
-        "@com_google_guava_guava//jar",
-        "@junit//jar",
     ],
 )
 
@@ -109,12 +107,12 @@ intellij_integration_test_suite(
         "//base:unit_test_utils",
         "//common/experiments",
         "//common/experiments:unit_test_utils",
+        "//java",
+        "//proto:proto_deps",
         "//intellij_platform_sdk:jsr305",
         "//intellij_platform_sdk:kotlin_for_tests",
         "//intellij_platform_sdk:plugin_api_for_tests",
         "//intellij_platform_sdk:test_libs",
-        "//java",
-        "//proto:proto_deps",
         "//third_party/auto_value",
         "@com_google_guava_guava//jar",
         "@junit//jar",
