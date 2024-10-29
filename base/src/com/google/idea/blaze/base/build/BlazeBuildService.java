@@ -116,8 +116,7 @@ public class BlazeBuildService {
         new NotificationScope(
             project, "Make", title, title + " completed successfully", title + " failed"),
         title,
-        buildSystem,
-        SyncStrategy.SERIAL);
+        buildSystem);
   }
 
 
@@ -144,29 +143,8 @@ public class BlazeBuildService {
                     "Make" + folderName + "/...:all completed successfully",
                     "Make" + folderName + "/...:all failed"),
             "Make " + folderName + "/...:all",
-            buildSystem,
-            SyncStrategy.SERIAL_NOT_EXPAND);
+            buildSystem);
   }
-
-  /**
-   * Builds compose dependencies for a single Kotlin file
-   */
-  // currently unused and breaks CLion build
-  // public void buildComposeDependenciesForFile(VirtualFile file) {
-  //   // Building project is not applicable for QuerySync projects, so updating the last build timestamp to mark the build as done is good enough.
-  //   // TODO(b/336620315): Migrate to new preview design
-  //   project.putUserData(PROJECT_LAST_BUILD_TIMESTAMP_KEY, System.currentTimeMillis());
-  //   PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
-  //   // Compose only supports Kotlin files
-  //   if (psiFile != null && psiFile.getLanguage() == KotlinLanguage.INSTANCE) {
-  //     QuerySyncManager.getInstance(project)
-  //         .generateRenderJar(
-  //             psiFile,
-  //             // TODO(b/336622303): Check if ActionEvent needs to be sent to stats instead of null.
-  //             QuerySyncActionStatsScope.createForFile(getClass(), null, psiFile.getVirtualFile()),
-  //             TaskOrigin.USER_ACTION);
-  //   }
-  // }
 
   public void buildProject() {
     if (!Blaze.isBlazeProject(project)) {
@@ -210,8 +188,7 @@ public class BlazeBuildService {
             "Make project completed successfully",
             "Make project failed"),
         "Make project",
-        buildSystem,
-        SyncStrategy.SERIAL);
+        buildSystem);
 
     // In case the user touched a file, but didn't change its content. The user will get a false
     // positive for class file out of date. We need a way for the user to suppress the false
@@ -226,8 +203,7 @@ public class BlazeBuildService {
       ScopedFunction<List<TargetExpression>> targetsFunction,
       NotificationScope notificationScope,
       String taskName,
-      BuildSystem buildSystem,
-      SyncStrategy syncStrategy) {
+      BuildSystem buildSystem) {
     if (ApplicationManager.getApplication().isUnitTestMode()) {
       // a gross hack to avoid breaking change detector tests. We had a few tests which relied on
       // this never being called *and* relied on PROJECT_LAST_BUILD_TIMESTAMP_KEY being set
@@ -277,7 +253,7 @@ public class BlazeBuildService {
                             projectData.getWorkspacePathResolver(),
                             targets,
                             buildInvoker,
-                            syncStrategy);
+                            SyncStrategy.SERIAL);
                     if (shardedTargets.buildResult.status == BuildResult.Status.FATAL_ERROR) {
                       return null;
                     }
