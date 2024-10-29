@@ -61,7 +61,7 @@ public class BlazeApkDeployInfoProtoHelper {
         log.warn("Local execroot: " + bepOutput.getLocalExecRoot());
         log.warn("All output artifacts:");
         for (OutputArtifact outputArtifact : bepOutput.getAllOutputArtifacts(path -> true)) {
-          log.warn(outputArtifact.getRelativePath() + " -> " + outputArtifact.getRelativePath());
+          log.warn(outputArtifact.getBazelOutRelativePath() + " -> " + outputArtifact.getBazelOutRelativePath());
         }
         log.warn("All local artifacts for " + target + ":");
         ImmutableSet<OutputArtifact> allBuildArtifacts =
@@ -85,7 +85,7 @@ public class BlazeApkDeployInfoProtoHelper {
       throw new GetDeployInfoException(
           "More than one deploy info proto artifact found: "
               + outputArtifacts.stream()
-                  .map(OutputArtifact::getRelativePath)
+                  .map(OutputArtifact::getBazelOutRelativePath)
                   .collect(Collectors.joining(", ", "[", "]")));
     }
 
