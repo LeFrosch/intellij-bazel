@@ -78,6 +78,7 @@ intellij_plugin_library(
     visibility = PLUGIN_PACKAGES_VISIBILITY,
     deps = [
         ":base",
+        "//aswb/src/com/android/tools/idea/rendering/tokens",
         "//base/src/com/google/idea/blaze/base/project/indexing",
     ],
 )
