@@ -1,0 +1,11 @@
+---
+tasks:
+  Querysync:
+    name: Querysync
+    platform: ubuntu2204
+    build_targets:
+      - //querysync/...
+    test_flags:
+      - --test_output=errors
+    test_targets:
+      - //querysync/...
