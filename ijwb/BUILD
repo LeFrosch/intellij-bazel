@@ -157,7 +157,7 @@ intellij_unit_test_suite(
         "//intellij_platform_sdk:plugin_api_for_tests",
         "//intellij_platform_sdk:test_libs",
         "@com_google_guava_guava//jar",
-        "@junit//jar",
+        "//third_party/java/junit",
     ],
 )
 
@@ -178,7 +178,7 @@ intellij_integration_test_suite(
         "//intellij_platform_sdk:plugin_api_for_tests",
         "//intellij_platform_sdk:test_libs",
         "@com_google_guava_guava//jar",
-        "@junit//jar",
+        "//third_party/java/junit",
         "@org_opentest4j_opentest4j//jar",
     ],
 )

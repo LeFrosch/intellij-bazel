@@ -47,6 +47,6 @@ java_library(
         "//intellij_platform_sdk:jsr305",
         "//proto:common_java_proto",
         "//proto:intellij_ide_info_java_proto",
-        "@junit//jar",
+        "//third_party/java/junit",
     ],
 )
