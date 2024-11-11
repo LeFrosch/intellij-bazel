@@ -26,6 +26,7 @@ import com.google.idea.blaze.common.artifact.BuildArtifactCache;
 import com.google.idea.blaze.common.artifact.OutputArtifact;
 import com.google.idea.blaze.exception.BuildException;
 import com.google.idea.blaze.qsync.artifacts.ArtifactDirectoryUpdate;
+import com.google.idea.blaze.qsync.artifacts.ArtifactTransformRegistry;
 import com.google.idea.blaze.qsync.project.ProjectProto;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -101,7 +102,7 @@ public class AppInspectorArtifactTrackerImpl implements AppInspectorArtifactTrac
   private void updateArtifactDirectory(ProjectProto.ArtifactDirectoryContents artifactDirectoryContents) throws BuildException {
     try {
       new ArtifactDirectoryUpdate(
-        artifactCache, workspaceRoot, inspectorsDir, artifactDirectoryContents, null, false)
+        artifactCache, workspaceRoot, inspectorsDir, artifactDirectoryContents)
         .update();
     }
     catch (IOException e) {

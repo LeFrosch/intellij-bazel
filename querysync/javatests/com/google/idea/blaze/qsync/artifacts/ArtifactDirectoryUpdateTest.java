@@ -77,9 +77,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.COPY)
                         .setBuildArtifact(BuildArtifact.newBuilder().setDigest("abcde"))
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
 
     assertThat(readContents()).containsExactly(Path.of("somefile.txt"));
@@ -103,9 +101,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.COPY)
                         .setWorkspaceRelativePath("workspace/path/to/file.txt")
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
 
     assertThat(readContents()).containsExactly(Path.of("anotherfile.txt"));
@@ -133,9 +129,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.UNZIP)
                         .setBuildArtifact(BuildArtifact.newBuilder().setDigest("zipdigest"))
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
 
     assertThat(readContents())
@@ -161,9 +155,7 @@ public class ArtifactDirectoryUpdateTest {
             cache,
             workspaceRoot,
             root,
-            ArtifactDirectoryContents.getDefaultInstance(),
-            FileTransform.COPY,
-            false);
+            ArtifactDirectoryContents.getDefaultInstance());
     update.update();
 
     assertThat(Files.exists(root)).isFalse();
@@ -185,9 +177,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.COPY)
                         .setBuildArtifact(BuildArtifact.newBuilder().setDigest("abcde"))
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
 
     Path contentsProtoPath = root.resolveSibling(root.getFileName() + ".contents");
@@ -199,9 +189,7 @@ public class ArtifactDirectoryUpdateTest {
             cache,
             workspaceRoot,
             root,
-            ArtifactDirectoryContents.getDefaultInstance(),
-            FileTransform.COPY,
-            false);
+            ArtifactDirectoryContents.getDefaultInstance());
     update.update();
 
     assertThat(Files.exists(root)).isFalse();
@@ -228,9 +216,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.UNZIP)
                         .setBuildArtifact(BuildArtifact.newBuilder().setDigest("zipdigest"))
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
 
     assertThat(readContents())
@@ -256,9 +242,7 @@ public class ArtifactDirectoryUpdateTest {
                             .setTransform(ArtifactTransform.UNZIP)
                             .setBuildArtifact(BuildArtifact.newBuilder().setDigest("zipdigest"))
                             .build()))
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
 
     assertThat(readContents()).containsExactly(Path.of("dir/file1.txt"));
@@ -281,9 +265,7 @@ public class ArtifactDirectoryUpdateTest {
                             .setTransform(ArtifactTransform.COPY)
                             .setBuildArtifact(BuildArtifact.newBuilder().setDigest("abcde"))
                             .build()))
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
 
     assertThat(readContents()).containsExactly(Path.of("dir"));
@@ -312,9 +294,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.COPY)
                         .setBuildArtifact(BuildArtifact.newBuilder().setDigest("abcdf"))
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
 
     assertThat(readContents())
@@ -343,9 +323,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.COPY)
                         .setBuildArtifact(BuildArtifact.newBuilder().setDigest("file2digest"))
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     populate.update();
     cache.takeRequestedDigests();
 
@@ -368,9 +346,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.COPY)
                         .setBuildArtifact(BuildArtifact.newBuilder().setDigest("file2digest"))
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
     assertThat(update.getUpdatedPaths()).isEmpty();
     assertThat(cache.takeRequestedDigests()).isEmpty();
@@ -396,9 +372,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.COPY)
                         .setBuildArtifact(BuildArtifact.newBuilder().setDigest("defg"))
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     populate.update();
     cache.takeRequestedDigests();
 
@@ -421,9 +395,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.COPY)
                         .setBuildArtifact(BuildArtifact.newBuilder().setDigest("efgh"))
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
     assertThat(update.getUpdatedPaths()).containsExactly(root.resolve("file2.txt"));
     assertThat(cache.takeRequestedDigests()).containsExactly("efgh");
@@ -448,9 +420,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.COPY)
                         .setWorkspaceRelativePath("workspacefile")
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     populate.update();
 
     Files.writeString(
@@ -470,9 +440,7 @@ public class ArtifactDirectoryUpdateTest {
                         .setTransform(ArtifactTransform.COPY)
                         .setWorkspaceRelativePath("workspacefile")
                         .build())
-                .build(),
-            FileTransform.COPY,
-            false);
+                .build());
     update.update();
     assertThat(update.getUpdatedPaths()).containsExactly(root.resolve("file1.txt"));
     assertThat(Files.readAllLines(root.resolve("file1.txt")))

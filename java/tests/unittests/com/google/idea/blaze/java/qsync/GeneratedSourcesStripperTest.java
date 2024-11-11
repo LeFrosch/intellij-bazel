@@ -1,4 +1,4 @@
-package com.google.idea.blaze.base.qsync.artifacts;
+package com.google.idea.blaze.java.qsync;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -17,7 +17,7 @@ public class GeneratedSourcesStripperTest extends LightJavaCodeInsightFixtureTes
 
   @Before
   public void createGeneratedClassStripper() {
-    gcs = new GeneratedSourcesStripper(getFixture().getProject());
+    gcs = new com.google.idea.blaze.java.qsync.GeneratedSourcesStripper(getFixture().getProject());
   }
 
   @Test

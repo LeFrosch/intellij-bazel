@@ -17,7 +17,6 @@ package com.google.idea.blaze.qsync.artifacts;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -63,39 +62,33 @@ public class ArtifactDirectoryUpdate {
   private final Path root;
   private final ArtifactDirectoryContents contents;
   private final Set<Path> updatedPaths;
-  private final FileTransform stripGeneratedSourcesTransform;
-  private final Supplier<Boolean> buildGeneratedSrcJars;
+  private final ArtifactTransformRegistry artifactTransformer;
 
   public ArtifactDirectoryUpdate(
       BuildArtifactCache artifactCache,
       Path workspaceRoot,
       Path root,
       ArtifactDirectoryContents contents,
-      FileTransform stripGeneratedSourcesTransform,
-      Supplier<Boolean> buildGeneratedSrcJars) {
+      ArtifactTransformRegistry artifactTransformer) {
     this.artifactCache = artifactCache;
     this.workspaceRoot = workspaceRoot;
     this.root = root;
     this.contents = contents;
     updatedPaths = Sets.newHashSet();
-    this.stripGeneratedSourcesTransform = stripGeneratedSourcesTransform;
-    this.buildGeneratedSrcJars = buildGeneratedSrcJars;
+    this.artifactTransformer = artifactTransformer;
   }
 
   public ArtifactDirectoryUpdate(
       BuildArtifactCache artifactCache,
       Path workspaceRoot,
       Path root,
-      ArtifactDirectoryContents contents,
-      FileTransform stripGeneratedSourcesTransform,
-      Boolean buildGeneratedSrcJarsVal) {
+      ArtifactDirectoryContents contents) {
     this(
         artifactCache,
         workspaceRoot,
         root,
         contents,
-        stripGeneratedSourcesTransform,
-        () -> buildGeneratedSrcJarsVal);
+        new ArtifactTransformRegistry());
   }
 
   public static Path getContentsFile(Path artifactDir) {
@@ -219,24 +212,10 @@ public class ArtifactDirectoryUpdate {
       if (src.isEmpty()) {
         return false;
       }
-      switch (srcArtifact.getTransform()) {
-        case COPY:
-          updatedPaths.addAll(FileTransform.COPY.copyWithTransform(src.get(), dest));
-          break;
-        case UNZIP:
-          updatedPaths.addAll(FileTransform.UNZIP.copyWithTransform(src.get(), dest));
-          break;
-        case STRIP_SUPPORTED_GENERATED_SOURCES:
-          if (buildGeneratedSrcJars.get()) {
-            updatedPaths.addAll(stripGeneratedSourcesTransform.copyWithTransform(src.get(), dest));
-          } else {
-            updatedPaths.addAll(FileTransform.COPY.copyWithTransform(src.get(), dest));
-          }
-          break;
-        default:
-          throw new IllegalArgumentException(
-              "Invalid transform " + srcArtifact.getTransform() + " in " + srcArtifact);
-      }
+
+      FileTransform transform = artifactTransformer.get(srcArtifact.getTransform()).orElseThrow(
+          () -> new IllegalArgumentException("Invalid transform " + srcArtifact.getTransform() + " in " + srcArtifact));
+      updatedPaths.addAll(transform.copyWithTransform(src.get(), dest));
     }
     return true;
   }

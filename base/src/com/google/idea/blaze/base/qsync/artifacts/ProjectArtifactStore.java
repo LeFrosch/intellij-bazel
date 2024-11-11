@@ -30,6 +30,8 @@ import com.google.idea.blaze.common.artifact.BuildArtifactCache;
 import com.google.idea.blaze.exception.BuildException;
 import com.google.idea.blaze.qsync.QuerySyncProjectSnapshot;
 import com.google.idea.blaze.qsync.artifacts.ArtifactDirectoryUpdate;
+import com.google.idea.blaze.qsync.artifacts.ArtifactTransformRegistry;
+import com.google.idea.blaze.qsync.artifacts.FileTransform;
 import com.google.idea.blaze.qsync.project.ProjectProto.ArtifactDirectories;
 import com.google.idea.blaze.qsync.project.ProjectProto.ArtifactDirectoryContents;
 import com.intellij.openapi.diagnostic.Logger;
@@ -56,7 +58,7 @@ public class ProjectArtifactStore {
   private final Path workspacePath;
   private final BuildArtifactCache artifactCache;
   private final FileRefresher fileRefresher;
-  private final GeneratedSourcesStripper sourcesStripper;
+  private final ArtifactTransformRegistry artifactTransformer;
   private final Path projectDirectoriesFile;
 
   public ProjectArtifactStore(
@@ -64,12 +66,12 @@ public class ProjectArtifactStore {
       Path workspacePath,
       BuildArtifactCache artifactCache,
       FileRefresher fileRefresher,
-      GeneratedSourcesStripper sourcesStripper) {
+      ArtifactTransformRegistry artifactTransformer) {
     this.projectDir = projectDir;
     this.workspacePath = workspacePath;
     this.artifactCache = artifactCache;
     this.fileRefresher = fileRefresher;
-    this.sourcesStripper = sourcesStripper;
+    this.artifactTransformer = artifactTransformer;
     this.projectDirectoriesFile = projectDir.resolve(".project-artifact-dirs");
   }
 
@@ -109,14 +111,14 @@ public class ProjectArtifactStore {
     ImmutableSet.Builder<Label> incompleteTargets = ImmutableSet.builder();
     for (Map.Entry<String, ArtifactDirectoryContents> entry : toUpdate.entrySet()) {
       Path root = projectDir.resolve(entry.getKey());
+
       ArtifactDirectoryUpdate dirUpdate =
           new ArtifactDirectoryUpdate(
               artifactCache,
               workspacePath,
               root,
               entry.getValue(),
-              sourcesStripper,
-              BazelDependencyBuilder.buildGeneratedSrcJars::getValue);
+              artifactTransformer);
       try {
         incompleteTargets.addAll(dirUpdate.update());
       } catch (IOException e) {

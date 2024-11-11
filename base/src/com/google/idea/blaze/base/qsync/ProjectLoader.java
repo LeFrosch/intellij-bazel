@@ -28,7 +28,7 @@ import com.google.idea.blaze.base.projectview.ProjectViewManager;
 import com.google.idea.blaze.base.projectview.ProjectViewSet;
 import com.google.idea.blaze.base.projectview.section.Glob;
 import com.google.idea.blaze.base.projectview.section.sections.TestSourceSection;
-import com.google.idea.blaze.base.qsync.artifacts.GeneratedSourcesStripper;
+import com.google.idea.blaze.base.qsync.artifacts.ArtifactTransformProvider;
 import com.google.idea.blaze.base.qsync.artifacts.ProjectArtifactStore;
 import com.google.idea.blaze.base.qsync.cache.ArtifactFetchers;
 import com.google.idea.blaze.base.qsync.cc.CcProjectProtoTransform;
@@ -54,6 +54,7 @@ import com.google.idea.blaze.qsync.ProjectRefresher;
 import com.google.idea.blaze.qsync.SnapshotBuilder;
 import com.google.idea.blaze.qsync.SnapshotHolder;
 import com.google.idea.blaze.qsync.VcsStateDiffer;
+import com.google.idea.blaze.qsync.artifacts.ArtifactTransformRegistry;
 import com.google.idea.blaze.qsync.deps.ArtifactDirectories;
 import com.google.idea.blaze.qsync.deps.ArtifactTracker;
 import com.google.idea.blaze.qsync.deps.NewArtifactTracker;
@@ -62,7 +63,7 @@ import com.google.idea.blaze.qsync.java.PackageStatementParser;
 import com.google.idea.blaze.qsync.java.ParallelPackageReader;
 import com.google.idea.blaze.qsync.project.ProjectDefinition;
 import com.google.idea.blaze.qsync.project.ProjectPath;
-import com.google.idea.blaze.qsync.query.QuerySpec;
+import com.google.idea.blaze.qsync.project.ProjectProto.ProjectArtifact.ArtifactTransform;
 import com.google.idea.blaze.qsync.query.QuerySpec.QueryStrategy;
 import com.google.idea.common.experiments.BoolExperiment;
 import com.intellij.openapi.project.Project;
@@ -185,13 +186,19 @@ public class ProjectLoader {
         new RenderJarTrackerImpl(graph, renderJarBuilder, renderJarArtifactTracker);
     AppInspectorTracker appInspectorTracker =
         new AppInspectorTrackerImpl(appInspectorBuilder, appInspectorArtifactTracker);
+
+    ArtifactTransformRegistry artifactTransformRegistry = new ArtifactTransformRegistry();
+    ArtifactTransformProvider.get(project, ArtifactTransform.STRIP_SUPPORTED_GENERATED_SOURCES)
+        .filter(it -> BazelDependencyBuilder.buildGeneratedSrcJars.getValue())
+        .ifPresent(it -> artifactTransformRegistry.add(ArtifactTransform.STRIP_SUPPORTED_GENERATED_SOURCES, it));
+
     ProjectArtifactStore artifactStore =
         new ProjectArtifactStore(
             ideProjectBasePath,
             workspaceRoot.path(),
             artifactCache,
             new FileRefresher(project),
-            new GeneratedSourcesStripper(project));
+            artifactTransformRegistry);
     DependencyTracker dependencyTracker =
         new DependencyTrackerImpl(graph, dependencyBuilder, artifactTracker);
     ProjectRefresher projectRefresher =
