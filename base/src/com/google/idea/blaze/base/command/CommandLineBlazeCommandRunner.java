@@ -23,12 +23,11 @@ import com.google.idea.blaze.base.async.process.LineProcessingOutputStream;
 import com.google.idea.blaze.base.async.process.PrintOutputLineProcessor;
 import com.google.idea.blaze.base.bazel.BazelExitCodeException;
 import com.google.idea.blaze.base.bazel.BazelExitCodeException.ThrowOption;
+import com.google.idea.blaze.base.buildview.BazelExecService;
 import com.google.idea.blaze.base.command.buildresult.BuildResultHelper;
 import com.google.idea.blaze.base.command.buildresult.BuildResultHelper.GetArtifactsException;
-import com.google.idea.blaze.base.command.buildresult.BuildResultHelperBep;
 import com.google.idea.blaze.base.command.buildresult.ParsedBepOutput;
 import com.google.idea.blaze.base.command.mod.BlazeModException;
-import com.google.idea.blaze.base.console.BlazeConsoleLineProcessorProvider;
 import com.google.idea.blaze.base.execution.BazelGuard;
 import com.google.idea.blaze.base.execution.ExecutionDeniedException;
 import com.google.idea.blaze.base.logging.utils.querysync.BuildDepsStatsScope;
@@ -78,8 +77,7 @@ public class CommandLineBlazeCommandRunner implements BlazeCommandRunner {
       return BlazeBuildOutputs.noOutputs(BuildResult.FATAL_ERROR);
     }
 
-    BuildResult buildResult =
-        issueBuild(blazeCommandBuilder, WorkspaceRoot.fromProject(project), envVars, context);
+    BuildResult buildResult = issueBuild(project, blazeCommandBuilder, envVars, context);
     BuildDepsStatsScope.fromContext(context)
         .ifPresent(stats -> stats.setBazelExitCode(buildResult.exitCode));
     if (buildResult.status == Status.FATAL_ERROR) {
@@ -123,8 +121,7 @@ public class CommandLineBlazeCommandRunner implements BlazeCommandRunner {
       blazeCommandBuilder.addBlazeFlags(BlazeFlags.TEST_ENV, String.format("%s=%s", env.getKey(), env.getValue()));
     }
 
-    BuildResult buildResult =
-        issueBuild(blazeCommandBuilder, WorkspaceRoot.fromProject(project), envVars, context);
+    BuildResult buildResult = issueBuild(project, blazeCommandBuilder, envVars, context);
     if (buildResult.status == Status.FATAL_ERROR) {
       return BlazeTestResults.NO_RESULTS;
     }
@@ -264,20 +261,11 @@ public class CommandLineBlazeCommandRunner implements BlazeCommandRunner {
   }
 
   private BuildResult issueBuild(
-      BlazeCommand.Builder blazeCommandBuilder, WorkspaceRoot workspaceRoot, Map<String, String> envVars, BlazeContext context) {
+      Project project, BlazeCommand.Builder blazeCommandBuilder, Map<String, String> envVars, BlazeContext context) {
     blazeCommandBuilder.addBlazeFlags(getExtraBuildFlags(blazeCommandBuilder));
-    int retVal =
-        ExternalTask.builder(workspaceRoot)
-            .addBlazeCommand(blazeCommandBuilder.build())
-            .environmentVars(envVars)
-            .context(context)
-            .stderr(
-                LineProcessingOutputStream.of(
-                    BlazeConsoleLineProcessorProvider.getAllStderrLineProcessors(context)))
-            .ignoreExitCode(true)
-            .build()
-            .run();
-    return BuildResult.fromExitCode(retVal);
+    blazeCommandBuilder.addEnvironmentVars(envVars);
+
+    return BazelExecService.instance(project).exec(context, blazeCommandBuilder, true);
   }
 
   @Override
@@ -311,5 +299,13 @@ public class CommandLineBlazeCommandRunner implements BlazeCommandRunner {
     } catch (ExecutionDeniedException e) {
       throw new BuildException(e);
     }
+  }
+
+  @Override
+  public boolean canUseCli() {
+    // This forces build issued by the BlazeCommandGenericRunConfigurationRunner to go the here rather than using some
+    // custom cli runner. The custom cli runner does not provide the same flags and environment and therefore can evict
+    // the build cache in some cases.
+    return false;
   }
 }

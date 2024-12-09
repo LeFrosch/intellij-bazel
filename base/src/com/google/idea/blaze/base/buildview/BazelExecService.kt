@@ -11,6 +11,7 @@ import com.google.idea.blaze.base.sync.aspects.BlazeBuildOutputs
 import com.google.idea.blaze.base.sync.aspects.BuildResult
 import com.google.idea.blaze.common.PrintOutput
 import com.google.protobuf.CodedInputStream
+import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.configurations.PtyCommandLine
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessEvent
@@ -22,11 +23,14 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.intellij.util.EnvironmentUtil
+import com.intellij.util.applyIf
 import com.intellij.util.io.LimitedInputStream
 import com.intellij.util.ui.EDT
 import kotlinx.coroutines.*
 import java.io.BufferedInputStream
 import java.io.FileInputStream
+import kotlin.coroutines.coroutineContext
 import kotlin.io.path.pathString
 
 private val LOG: Logger = Logger.getInstance(BazelExecService::class.java)
@@ -40,6 +44,10 @@ class BazelExecService(private val project: Project) : Disposable {
 
   // #api223 use the injected scope
   private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+  private val path: Deferred<String?> = scope.async(start = CoroutineStart.LAZY) {
+    EnvironmentUtil.ShellEnvReader(20_000L).readShellEnv(null, null)["PATH"]
+  }
 
   override fun dispose() {
     scope.cancel()
@@ -82,6 +90,12 @@ class BazelExecService(private val project: Project) : Disposable {
       .withParameters(cmd.toArgumentList())
       .apply { setWorkDirectory(root.pathString) } // required for backwards compatability
       .withRedirectErrorStream(true)
+      .withEnvironment(cmd.environment)
+      .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
+
+    // bazel invalidates the cache if the PATH changes, to keep bazel from rebuilding when switching between the
+    // terminal and the IDE use the terminal's PATH variable here
+    path.await()?.let { cmdLine.withEnvironment("PATH", it) }
 
     var handler: OSProcessHandler? = null
     val exitCode = try {
@@ -103,10 +117,6 @@ class BazelExecService(private val project: Project) : Disposable {
       handler.exitCode ?: 1
     } finally {
       handler?.destroyProcess()
-    }
-
-    if (exitCode != 0) {
-      ctx.setHasError()
     }
 
     return exitCode
@@ -166,6 +176,9 @@ class BazelExecService(private val project: Project) : Disposable {
     }
   }
 
+  /**
+   * Executes a bazel build command. Also parses all build events.
+   */
   fun build(ctx: BlazeContext, cmdBuilder: BlazeCommand.Builder): BlazeBuildOutputs {
     assertNonBlocking()
     LOG.assertTrue(cmdBuilder.name == BlazeCommandName.BUILD)
@@ -178,6 +191,10 @@ class BazelExecService(private val project: Project) : Disposable {
       val exitCode = execute(ctx, cmdBuilder)
       val result = BuildResult.fromExitCode(exitCode)
 
+      if (exitCode != 0) {
+        ctx.setHasError()
+      }
+
       parseJob.cancelAndJoin()
 
       if (result.status == BuildResult.Status.FATAL_ERROR) {
@@ -185,6 +202,23 @@ class BazelExecService(private val project: Project) : Disposable {
       } else {
         BlazeBuildOutputs.fromParsedBepOutput(result, provider.getBuildOutput())
       }
+    }
+  }
+
+  /**
+   * Executes any bazel command.
+   */
+  fun exec(ctx: BlazeContext, cmdBuilder: BlazeCommand.Builder, ignoreExitCode: Boolean = false): BuildResult {
+    assertNonBlocking()
+
+    return ctx.pushJob(scope) {
+      val exitCode = execute(ctx, cmdBuilder)
+
+      if (exitCode != 0 && !ignoreExitCode) {
+        ctx.setHasError()
+      }
+
+      BuildResult.fromExitCode(exitCode)
     }
   }
 }
