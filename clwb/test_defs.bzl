@@ -10,14 +10,6 @@ load(
 )
 load("@bazel_binaries//:defs.bzl", "bazel_binaries")
 
-# version specific flags can be removed if version is dropped in MODULE.bazel
-version_specific_args = {
-    "5.4.1": {
-        # mac CI runners ship invalid flags in system rc file
-        "startup_options": "--nosystem_rc",
-     },
-}
-
 def clwb_integration_test(name, project, srcs, deps = []):
     runner = name + "_runner"
 
@@ -28,7 +20,7 @@ def clwb_integration_test(name, project, srcs, deps = []):
         runtime_deps = [":clwb_bazel"],
         data = [
             "//aspect:aspect_files",
-            "//aspect_template:aspect_files",
+            "//aspect:aspect_template_files",
         ],
         jvm_flags = [
             # disables the default bazel security manager, causes tests to fail on windows
@@ -71,8 +63,6 @@ def clwb_integration_test(name, project, srcs, deps = []):
             },
             # inherit bash shell and visual studio path from host for windows
             additional_env_inherit = ["BAZEL_SH", "BAZEL_VC"],
-            # add version specific arguments, since some older versions cannot handle newer flags
-            **version_specific_args.get(version, {})
         )
 
     native.test_suite(

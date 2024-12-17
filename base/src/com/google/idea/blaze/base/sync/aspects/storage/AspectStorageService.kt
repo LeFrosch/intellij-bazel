@@ -100,21 +100,6 @@ interface AspectPrinter {
 class DefaultAspectPrinter : AspectPrinter {
   private val SUBDIRECTORY = "sync";
 
-  private val FILES = listOf(
-    "artifacts.bzl",
-    "build_compose_dependencies.bzl",
-    "build_dependencies.bzl",
-    "build_dependencies_deps.bzl",
-    "fast_build_info_bundled.bzl",
-    "flag_hack.bzl",
-    "intellij_info.bzl",
-    "intellij_info_bundled.bzl",
-    "intellij_info_impl_bundled.bzl",
-    "java_classpath.bzl",
-    "make_variables.bzl",
-    "BUILD.bazel",
-  )
-
   override fun print(root: Path, project: Project) {
     val aspects = AspectRepositoryProvider.findAspectDirectory()
       .map(File::toPath)
@@ -129,9 +114,8 @@ class DefaultAspectPrinter : AspectPrinter {
     }
 
     try {
-      for (file in FILES) {
-        Files.copy(aspects.resolve(file), realizedAspectsPath.resolve(file), StandardCopyOption.REPLACE_EXISTING)
-      }
+      @OptIn(ExperimentalPathApi::class)
+      aspects.copyToRecursively(realizedAspectsPath, overwrite = true, followLinks = false)
     } catch (e: IOException) {
       throw SyncFailedException("Couldn't copy aspects", e)
     }
