@@ -609,6 +609,7 @@
     <extensionPoint qualifiedName="com.google.idea.blaze.ExperimentLoader" interface="com.google.idea.common.experiments.ExperimentLoader"/>
     <extensionPoint qualifiedName="com.google.idea.blaze.EmptyLibraryFilterSettings" interface="com.google.idea.blaze.java.sync.importer.emptylibrary.EmptyLibraryFilterSettings" />
     <extensionPoint qualifiedName="com.google.idea.blaze.BuildEventParser" interface="com.google.idea.blaze.base.buildview.events.BuildEventParser" />
+    <extensionPoint qualifiedName="com.google.idea.blaze.AspectPrinter" interface="com.google.idea.blaze.base.sync.aspects.storage.AspectPrinter" />
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.google.idea.blaze">
@@ -626,11 +627,9 @@
     <SyncListener implementation="com.google.idea.blaze.base.command.info.BlazeInfoProvider$Invalidator"/>
     <SyncListener implementation="com.google.idea.blaze.base.model.ExternalWorkspaceDataProvider$Invalidator"/>
     <SyncListener implementation="com.google.idea.blaze.base.qsync.QuerySyncAsyncFileListener$QuerySyncListener"/>
-    <SyncListener implementation="com.google.idea.blaze.base.sync.aspects.strategy.SyncAspectTemplateProvider"/>
     <SyncPlugin implementation="com.google.idea.blaze.base.lang.buildfile.sync.BuildLangSyncPlugin"/>
     <SyncPlugin implementation="com.google.idea.blaze.base.sync.libraries.ExternalLibraryManager$SyncPlugin"/>
     <BuildFlagsProvider implementation="com.google.idea.blaze.base.command.BuildFlagsProviderImpl"/>
-    <BuildFlagsProvider implementation="com.google.idea.blaze.base.sync.aspects.AspectBuildFlagsProvider"/>
     <BuildFlagsProvider implementation="com.google.idea.blaze.base.run.coverage.CoverageBuildFlagsProvider"/>
     <VcsHandler implementation="com.google.idea.blaze.base.vcs.git.GitBlazeVcsHandlerProvider"/>
     <VcsHandler implementation="com.google.idea.blaze.base.vcs.FallbackBlazeVcsHandlerProvider" order="last" id="fallback"/>
@@ -707,6 +706,8 @@
     <BlazeGuard implementation="com.google.idea.blaze.base.execution.TrustedProjectGuard"/>
     <BuildEventParser implementation="com.google.idea.blaze.base.buildview.events.AbortedParser"/>
     <BuildEventParser implementation="com.google.idea.blaze.base.buildview.events.ActionCompletedParser"/>
+    <AspectPrinter implementation="com.google.idea.blaze.base.sync.aspects.strategy.SyncAspectTemplateProvider"/>
+    <AspectPrinter implementation="com.google.idea.blaze.base.sync.aspects.storage.DefaultAspectPrinter"/>
   </extensions>
 
   <extensions defaultExtensionNs="com.google.idea.blaze.qsync">

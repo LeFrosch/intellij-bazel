@@ -17,6 +17,7 @@ package com.google.idea.blaze.base.sync.aspects.strategy;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.idea.blaze.base.command.info.BlazeInfo;
 import com.google.idea.blaze.base.model.BlazeProjectData;
 import com.google.idea.blaze.base.model.primitives.LanguageClass;
 import com.google.idea.blaze.base.projectview.ProjectViewManager;
@@ -25,6 +26,7 @@ import com.google.idea.blaze.base.scope.BlazeContext;
 import com.google.idea.blaze.base.sync.SyncListener;
 import com.google.idea.blaze.base.sync.SyncMode;
 import com.google.idea.blaze.base.sync.SyncScope.SyncFailedException;
+import com.google.idea.blaze.base.sync.aspects.storage.AspectPrinter;
 import com.google.idea.blaze.base.sync.codegenerator.CodeGeneratorRuleNameHelper;
 import com.google.idea.blaze.base.sync.data.BlazeProjectDataManager;
 import com.google.idea.blaze.base.sync.projectview.WorkspaceLanguageSettings;
@@ -41,8 +43,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class SyncAspectTemplateProvider implements SyncListener {
+public class SyncAspectTemplateProvider implements AspectPrinter {
+  private final static String SUBDIRECTORY = "sync";
 
   private final static String TEMPLATE_JAVA = "java_info.template.bzl";
   private final static String REALIZED_JAVA = "java_info.bzl";
@@ -52,40 +56,27 @@ public class SyncAspectTemplateProvider implements SyncListener {
   private final static String REALIZED_CODE_GENERATOR = "code_generator_info.bzl";
 
   @Override
-  public void onSyncStart(Project project, BlazeContext context, SyncMode syncMode) throws SyncFailedException {
-    prepareProjectAspect(project);
+  public @NotNull Path resolve(@NotNull Path root, @NotNull String file) {
+    return root.resolve(SUBDIRECTORY).resolve(file);
   }
 
   @Override
-  public void onQuerySyncStart(Project project, BlazeContext context) {
-      try {
-          prepareProjectAspect(project);
-      } catch (SyncFailedException e) {
-          throw new RuntimeException(e);
-      }
-  }
-
-  private void prepareProjectAspect(Project project) throws SyncFailedException {
+  public void print(@NotNull Path root, @NotNull Project project) throws SyncFailedException {
     var manager = BlazeProjectDataManager.getInstance(project);
 
     if (manager == null) {
-      return;
+      throw new SyncFailedException("Couldn't get BlazeProjectDataManager");
     }
 
-    var realizedAspectsPath = AspectRepositoryProvider
-            .getProjectAspectDirectory(project)
-            .map(File::toPath)
-            .orElseThrow(() -> new SyncFailedException("Couldn't find project aspect directory"));
+    var realizedAspectsPath = root.resolve(SUBDIRECTORY);
 
     try {
       Files.createDirectories(realizedAspectsPath);
-      Files.writeString(realizedAspectsPath.resolve("WORKSPACE"), "");
-      Files.writeString(realizedAspectsPath.resolve("BUILD"), "");
     } catch (IOException e) {
       throw new SyncFailedException("Couldn't create realized aspects", e);
     }
 
-    final var templateAspects = AspectRepositoryProvider.findAspectTemplateDirectory()
+    final var templateAspects = AspectRepositoryProvider.findAspectDirectory()
             .orElseThrow(() -> new SyncFailedException("Couldn't find aspect template directory"));
 
     writeLanguageInfos(manager, realizedAspectsPath, templateAspects, project);
@@ -106,7 +97,7 @@ public class SyncAspectTemplateProvider implements SyncListener {
     List<LanguageClassRuleNames> languageClassRuleNames = languageClasses.stream()
         .sorted()
         .map(lc -> new LanguageClassRuleNames(lc, ruleNamesForLanguageClass(lc, viewSet)))
-        .collect(Collectors.toUnmodifiableList());
+        .toList();
 
     var realizedFile = realizedAspectsPath.resolve(REALIZED_CODE_GENERATOR);
     var templateWriter = new TemplateWriter(templateAspects.toPath());

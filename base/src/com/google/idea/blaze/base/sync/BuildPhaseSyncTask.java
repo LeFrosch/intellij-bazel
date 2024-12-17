@@ -59,6 +59,7 @@ import com.google.idea.blaze.base.sync.SyncScope.SyncFailedException;
 import com.google.idea.blaze.base.sync.aspects.BlazeBuildOutputs;
 import com.google.idea.blaze.base.sync.aspects.BlazeIdeInterface;
 import com.google.idea.blaze.base.sync.aspects.BuildResult;
+import com.google.idea.blaze.base.sync.aspects.storage.AspectStorageService;
 import com.google.idea.blaze.base.sync.aspects.strategy.AspectStrategy.OutputGroup;
 import com.google.idea.blaze.base.sync.projectview.ImportRoots;
 import com.google.idea.blaze.base.sync.sharding.BlazeBuildTargetSharder;
@@ -133,6 +134,8 @@ public final class BuildPhaseSyncTask {
 
   private BlazeSyncBuildResult run(BlazeContext parentContext)
       throws SyncCanceledException, SyncFailedException, ExecutionException, InterruptedException {
+    AspectStorageService.of(project).prepare(parentContext);
+
     // run under a child context to capture all timing information before finalizing the stats
     try (BlazeContext context = BlazeContext.create(parentContext)) {
       TimingScope timingScope = new TimingScope("Build phase", EventType.Other);
