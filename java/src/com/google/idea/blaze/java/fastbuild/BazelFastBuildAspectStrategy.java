@@ -18,7 +18,7 @@ package com.google.idea.blaze.java.fastbuild;
 import com.google.common.collect.ImmutableSet;
 import com.google.idea.blaze.base.model.BlazeVersionData;
 import com.google.idea.blaze.base.settings.BuildSystemName;
-import com.google.idea.blaze.base.sync.aspects.strategy.AspectRepositoryProvider;
+import com.google.idea.blaze.base.sync.aspects.storage.AspectRepositoryProvider;
 import com.intellij.openapi.project.Project;
 
 import java.util.Arrays;

@@ -18,14 +18,19 @@ import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 
 public class SyncOutput {
+
   private final List<IssueOutput> issues = new ArrayList<>();
   private final List<String> messages = new ArrayList<>();
 
   void install(BlazeContext context) {
-    addOutputSink(context, IssueOutput.class, issues::add);
     addOutputSink(context, PrintOutput.class, (it) -> messages.add(it.getText()));
     addOutputSink(context, StatusOutput.class, (it) -> messages.add(it.getStatus()));
     addOutputSink(context, SummaryOutput.class, (it) -> messages.add(it.getText()));
+
+    addOutputSink(context, IssueOutput.class, (it) -> {
+      messages.add(String.format("ISSUE: %s - %s", it.getTitle(), it.getDescription()));
+      issues.add(it);
+    });
   }
 
   private <T extends Output> void addOutputSink(BlazeContext context, Class<T> clazz, Consumer<T> consumer) {

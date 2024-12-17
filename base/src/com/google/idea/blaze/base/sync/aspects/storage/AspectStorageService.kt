@@ -6,23 +6,18 @@ import com.google.idea.blaze.base.scope.scopes.ToolWindowScope
 import com.google.idea.blaze.base.settings.BlazeImportSettings
 import com.google.idea.blaze.base.settings.BlazeImportSettingsManager
 import com.google.idea.blaze.base.sync.SyncScope.SyncFailedException
-import com.google.idea.blaze.base.sync.aspects.strategy.AspectRepositoryProvider
 import com.google.idea.blaze.base.sync.data.BlazeDataStorage
 import com.google.idea.blaze.base.toolwindow.Task
 import com.google.idea.blaze.common.Label
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
-import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import java.io.IOException
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
-import kotlin.io.path.ExperimentalPathApi
-import kotlin.io.path.copyToRecursively
 
-private const val TASK_TITLE = "Print Aspects"
+private const val ASPECT_TASK_TITLE = "Print Aspects"
+private const val ASPECT_DIRECTORY = "aspects"
 
 @Service(Service.Level.PROJECT)
 class AspectStorageService(private val project: Project) {
@@ -32,9 +27,15 @@ class AspectStorageService(private val project: Project) {
     fun of(project: Project): AspectStorageService = project.service()
   }
 
+  /**
+   * Copies all bundled aspects to a workspace relative directory.
+   * This should be called as one of the first steps in the sync workflow.
+   *
+   * Register a [AspectWriter] to provide aspect files.
+   */
   @Throws(SyncFailedException::class)
   fun prepare(ctx: BlazeContext) {
-    val task = ToolWindowScope.Builder(project, Task(project, TASK_TITLE, Task.Type.SYNC)).build()
+    val task = ToolWindowScope.Builder(project, Task(project, ASPECT_TASK_TITLE, Task.Type.SYNC)).build()
 
     Scope.push(ctx) { ctx ->
       ctx.push(task)
@@ -53,8 +54,8 @@ class AspectStorageService(private val project: Project) {
         throw SyncFailedException("Could not create aspect directory", e)
       }
 
-      for (printer in AspectPrinter.EP_NAME.extensionList) {
-        printer.print(directory, project)
+      for (printer in AspectWriter.EP_NAME.extensionList) {
+        printer.write(directory, project)
       }
     }
   }
@@ -63,10 +64,8 @@ class AspectStorageService(private val project: Project) {
     val settings = BlazeImportSettingsManager.getInstance(project).importSettings ?: return null
     val directory = aspectDirectory(settings) ?: return null
 
-    val file = AspectPrinter.EP_NAME.extensionList.asSequence()
-      .map { it.resolve(directory, file) }
-      .firstOrNull { Files.exists(it) }
-      ?: return null
+    val file = directory.resolve(file)
+    if (!Files.exists(file)) return null
 
     val path = Path.of(settings.workspaceRoot).relativize(file)
     return Label.fromWorkspacePackageAndName("", path.parent, path.fileName)
@@ -78,7 +77,7 @@ class AspectStorageService(private val project: Project) {
 
     // if the project data path is contained in the workspace, the aspects can be placed in there
     if (projectPath.startsWith(workspacePath)) {
-      return projectPath
+      return projectPath.resolve(ASPECT_DIRECTORY)
     }
 
     // if this is not the case, fallback to .ijwb_aspects or .clwb_aspects
@@ -86,42 +85,3 @@ class AspectStorageService(private val project: Project) {
   }
 }
 
-interface AspectPrinter {
-  companion object {
-    val EP_NAME = ExtensionPointName.create<AspectPrinter>("com.google.idea.blaze.AspectPrinter");
-  }
-
-  @Throws(SyncFailedException::class)
-  fun print(root: Path, project: Project)
-
-  fun resolve(root: Path, file: String): Path
-}
-
-class DefaultAspectPrinter : AspectPrinter {
-  private val SUBDIRECTORY = "sync";
-
-  override fun print(root: Path, project: Project) {
-    val aspects = AspectRepositoryProvider.findAspectDirectory()
-      .map(File::toPath)
-      .orElseThrow { SyncFailedException("Couldn't find aspect directory") }
-
-    val realizedAspectsPath = root.resolve(SUBDIRECTORY);
-
-    try {
-      Files.createDirectories(realizedAspectsPath)
-    } catch (e: IOException) {
-      throw SyncFailedException("Couldn't create realized aspects", e)
-    }
-
-    try {
-      @OptIn(ExperimentalPathApi::class)
-      aspects.copyToRecursively(realizedAspectsPath, overwrite = true, followLinks = false)
-    } catch (e: IOException) {
-      throw SyncFailedException("Couldn't copy aspects", e)
-    }
-  }
-
-  override fun resolve(root: Path, file: String): Path {
-    return root.resolve(SUBDIRECTORY).resolve(file);
-  }
-}

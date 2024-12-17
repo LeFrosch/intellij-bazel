@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.idea.blaze.base.sync.aspects.strategy;
+package com.google.idea.blaze.base.sync.aspects.storage;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.idea.blaze.base.command.info.BlazeInfo;
 import com.google.idea.blaze.base.model.BlazeProjectData;
 import com.google.idea.blaze.base.model.primitives.LanguageClass;
 import com.google.idea.blaze.base.projectview.ProjectViewManager;
 import com.google.idea.blaze.base.projectview.ProjectViewSet;
-import com.google.idea.blaze.base.scope.BlazeContext;
-import com.google.idea.blaze.base.sync.SyncListener;
-import com.google.idea.blaze.base.sync.SyncMode;
 import com.google.idea.blaze.base.sync.SyncScope.SyncFailedException;
-import com.google.idea.blaze.base.sync.aspects.storage.AspectPrinter;
 import com.google.idea.blaze.base.sync.codegenerator.CodeGeneratorRuleNameHelper;
 import com.google.idea.blaze.base.sync.data.BlazeProjectDataManager;
 import com.google.idea.blaze.base.sync.projectview.WorkspaceLanguageSettings;
@@ -43,11 +38,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-public class SyncAspectTemplateProvider implements AspectPrinter {
-  private final static String SUBDIRECTORY = "sync";
-
+public class TemplateAspectWriter implements AspectWriter {
   private final static String TEMPLATE_JAVA = "java_info.template.bzl";
   private final static String REALIZED_JAVA = "java_info.bzl";
   private final static String TEMPLATE_PYTHON = "python_info.template.bzl";
@@ -56,31 +48,18 @@ public class SyncAspectTemplateProvider implements AspectPrinter {
   private final static String REALIZED_CODE_GENERATOR = "code_generator_info.bzl";
 
   @Override
-  public @NotNull Path resolve(@NotNull Path root, @NotNull String file) {
-    return root.resolve(SUBDIRECTORY).resolve(file);
-  }
-
-  @Override
-  public void print(@NotNull Path root, @NotNull Project project) throws SyncFailedException {
+  public void write(@NotNull Path dst, @NotNull Project project) throws SyncFailedException {
     var manager = BlazeProjectDataManager.getInstance(project);
 
     if (manager == null) {
       throw new SyncFailedException("Couldn't get BlazeProjectDataManager");
     }
 
-    var realizedAspectsPath = root.resolve(SUBDIRECTORY);
-
-    try {
-      Files.createDirectories(realizedAspectsPath);
-    } catch (IOException e) {
-      throw new SyncFailedException("Couldn't create realized aspects", e);
-    }
-
     final var templateAspects = AspectRepositoryProvider.findAspectDirectory()
             .orElseThrow(() -> new SyncFailedException("Couldn't find aspect template directory"));
 
-    writeLanguageInfos(manager, realizedAspectsPath, templateAspects, project);
-    writeCodeGeneratorInfo(manager, project, realizedAspectsPath, templateAspects);
+    writeLanguageInfos(manager, dst, templateAspects, project);
+    writeCodeGeneratorInfo(manager, project, dst, templateAspects);
   }
 
   private void writeCodeGeneratorInfo(

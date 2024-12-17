@@ -18,9 +18,9 @@ package com.google.idea.blaze.base.sync.aspects.strategy;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.idea.blaze.base.model.BlazeVersionData;
 import com.google.idea.blaze.base.settings.BuildSystemName;
+import com.google.idea.blaze.base.sync.aspects.storage.AspectRepositoryProvider;
 import com.google.idea.blaze.base.sync.aspects.storage.AspectStorageService;
 import com.intellij.ide.plugins.PluginManager;
-import com.intellij.openapi.extensions.PluginDescriptor;
 import com.intellij.openapi.project.Project;
 
 import java.io.File;

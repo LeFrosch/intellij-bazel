@@ -156,6 +156,7 @@ public final class ToolWindowScope implements BlazeScope {
         (output) -> {
           tasksToolWindowController.output(task, output);
           activateIfNeeded(output.getOutputType());
+          System.out.println(output.getText());
           return Propagation.Stop;
         };
     statusSink =

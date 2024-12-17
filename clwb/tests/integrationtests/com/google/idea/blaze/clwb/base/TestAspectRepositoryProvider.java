@@ -1,6 +1,6 @@
 package com.google.idea.blaze.clwb.base;
 
-import com.google.idea.blaze.base.sync.aspects.strategy.AspectRepositoryProvider;
+import com.google.idea.blaze.base.sync.aspects.storage.AspectRepositoryProvider;
 import com.google.idea.testing.runfiles.Runfiles;
 
 import java.io.File;
