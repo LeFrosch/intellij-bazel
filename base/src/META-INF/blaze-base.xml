@@ -706,8 +706,8 @@
     <BlazeGuard implementation="com.google.idea.blaze.base.execution.TrustedProjectGuard"/>
     <BuildEventParser implementation="com.google.idea.blaze.base.buildview.events.AbortedParser"/>
     <BuildEventParser implementation="com.google.idea.blaze.base.buildview.events.ActionCompletedParser"/>
-    <AspectPrinter implementation="com.google.idea.blaze.base.sync.aspects.storage.TemplateAspectWriter"/>
-    <AspectPrinter implementation="com.google.idea.blaze.base.sync.aspects.storage.SyncAspectWriter"/>
+    <AspectPrinter implementation="com.google.idea.blaze.base.sync.aspects.storage.AspectTemplateWriter"/>
+    <AspectPrinter implementation="com.google.idea.blaze.base.sync.aspects.storage.AspectWriterImpl"/>
   </extensions>
 
   <extensions defaultExtensionNs="com.google.idea.blaze.qsync">

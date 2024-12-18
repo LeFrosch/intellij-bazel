@@ -47,6 +47,12 @@ public class AspectStrategyBazel extends AspectStrategy {
       return Optional.ofNullable(PluginManager.getPluginByClass(AspectStrategy.class))
           .map((it) -> new File(it.getPath(), "aspect"));
     }
+
+    @Override
+    public Optional<File> aspectTemplateDirectory() {
+      return Optional.ofNullable(PluginManager.getPluginByClass(AspectStrategy.class))
+          .map((it) -> new File(it.getPath(), "aspect_template"));
+    }
   }
 
   @VisibleForTesting
@@ -58,7 +64,7 @@ public class AspectStrategyBazel extends AspectStrategy {
   @Override
   @VisibleForTesting
   public Optional<String> getAspectFlag(Project project) {
-    return Optional.ofNullable(AspectStorageService.of(project).resolve("intellij_info_bundled.bzl"))
+    return AspectStorageService.of(project).resolve("intellij_info_bundled.bzl")
         .map(label -> String.format("--aspects=%s%%intellij_info_aspect", label));
   }
 

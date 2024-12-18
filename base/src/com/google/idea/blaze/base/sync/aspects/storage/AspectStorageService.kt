@@ -15,6 +15,7 @@ import com.intellij.openapi.project.Project
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Optional
 
 private const val ASPECT_TASK_TITLE = "Print Aspects"
 private const val ASPECT_DIRECTORY = "aspects"
@@ -60,15 +61,15 @@ class AspectStorageService(private val project: Project) {
     }
   }
 
-  fun resolve(file: String): Label? {
-    val settings = BlazeImportSettingsManager.getInstance(project).importSettings ?: return null
-    val directory = aspectDirectory(settings) ?: return null
+  fun resolve(file: String): Optional<Label> {
+    val settings = BlazeImportSettingsManager.getInstance(project).importSettings ?: return Optional.empty()
+    val directory = aspectDirectory(settings) ?: return Optional.empty()
 
     val file = directory.resolve(file)
-    if (!Files.exists(file)) return null
+    if (!Files.exists(file)) return Optional.empty()
 
     val path = Path.of(settings.workspaceRoot).relativize(file)
-    return Label.fromWorkspacePackageAndName("", path.parent, path.fileName)
+    return Optional.of(Label.fromWorkspacePackageAndName("", path.parent, path.fileName))
   }
 
   private fun aspectDirectory(settings: BlazeImportSettings): Path? {

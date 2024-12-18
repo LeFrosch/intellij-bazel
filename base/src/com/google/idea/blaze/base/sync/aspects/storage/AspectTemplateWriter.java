@@ -28,8 +28,6 @@ import com.google.idea.blaze.base.sync.projectview.WorkspaceLanguageSettings;
 import com.google.idea.blaze.base.util.TemplateWriter;
 import com.intellij.openapi.project.Project;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -39,7 +37,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 
-public class TemplateAspectWriter implements AspectWriter {
+public class AspectTemplateWriter implements AspectWriter {
+
   private final static String TEMPLATE_JAVA = "java_info.template.bzl";
   private final static String REALIZED_JAVA = "java_info.bzl";
   private final static String TEMPLATE_PYTHON = "python_info.template.bzl";
@@ -55,7 +54,7 @@ public class TemplateAspectWriter implements AspectWriter {
       throw new SyncFailedException("Couldn't get BlazeProjectDataManager");
     }
 
-    final var templateAspects = AspectRepositoryProvider.findAspectDirectory()
+    final var templateAspects = AspectRepositoryProvider.findAspectTemplateDirectory()
             .orElseThrow(() -> new SyncFailedException("Couldn't find aspect template directory"));
 
     writeLanguageInfos(manager, dst, templateAspects, project);

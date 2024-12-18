@@ -56,7 +56,7 @@ import com.google.idea.blaze.base.settings.BuildSystemName;
 import com.google.idea.blaze.base.sync.aspects.BlazeBuildOutputs;
 import com.google.idea.blaze.base.sync.aspects.BlazeIdeInterface;
 import com.google.idea.blaze.base.sync.aspects.BuildResult;
-import com.google.idea.blaze.base.sync.aspects.storage.TemplateAspectWriter;
+import com.google.idea.blaze.base.sync.aspects.storage.AspectTemplateWriter;
 import com.google.idea.blaze.base.sync.aspects.strategy.AspectStrategy.OutputGroup;
 import com.google.idea.blaze.base.sync.data.BlazeDataStorage;
 import com.google.idea.blaze.base.sync.projectview.LanguageSupport;
@@ -122,7 +122,7 @@ public abstract class BlazeSyncIntegrationTestCase extends BlazeIntegrationTestC
     ServiceHelper.registerExtension(
         BlazeVcsHandlerProvider.EP_NAME, new MockBlazeVcsHandlerProvider(), thisClassDisposable);
     ServiceHelper.unregisterExtension(
-        SyncListener.EP_NAME, TemplateAspectWriter.class, thisClassDisposable);
+        SyncListener.EP_NAME, AspectTemplateWriter.class, thisClassDisposable);
     blazeInfoData = new MockBlazeInfoRunner();
     blazeModData = new MockBlazeModRunner();
     blazeIdeInterface = new MockBlazeIdeInterface();

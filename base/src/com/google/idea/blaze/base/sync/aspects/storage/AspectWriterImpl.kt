@@ -8,7 +8,8 @@ import java.nio.file.Path
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.copyToRecursively
 
-class SyncAspectWriter : AspectWriter {
+class AspectWriterImpl : AspectWriter {
+
   override fun write(dst: Path, project: Project) {
     val src = AspectRepositoryProvider.findAspectDirectory()
       .map(File::toPath)
