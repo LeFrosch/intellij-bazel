@@ -90,6 +90,7 @@ intellij_plugin(
         "//scala:plugin_library",
         "//skylark:plugin_library",
         "//terminal:plugin_library",
+        "//base/src/com/google/idea/blaze/base/lang/bazelrc",
     ] + select_for_ide(
         intellij = [],
         intellij_ue = [

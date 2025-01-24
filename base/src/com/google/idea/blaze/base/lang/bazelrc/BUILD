@@ -1,15 +1,7 @@
 load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library")
-load("//build_defs:build_defs.bzl", "optional_plugin_xml")
+load("//build_defs:build_defs.bzl", "intellij_plugin_library")
 
 licenses(["notice"])
-
-package(default_visibility = ["//visibility:public"])
-
-optional_plugin_xml(
-    name = "plugin_xml",
-    module = ["org.jetbrains.plugins.clion.radler"],
-    plugin_xml = "plugin.xml",
-)
 
 kt_jvm_library(
     name = "lib",
@@ -17,7 +9,13 @@ kt_jvm_library(
     deps = [
         "//base",
         "//intellij_platform_sdk:plugin_api",
-        "//intellij_platform_sdk:jsr305",  # unuseddeps: keep for @Nullable
+        "//intellij_platform_sdk:jsr305",
     ],
 )
 
+intellij_plugin_library(
+    name = "bazelrc",
+    deps = [":lib"],
+    plugin_xmls = ["plugin.xml"],
+    visibility = ["//visibility:public"],
+)

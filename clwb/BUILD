@@ -35,7 +35,6 @@ intellij_plugin_library(
     name = "plugin_library",
     optional_plugin_xmls = [
         "optional_clwb_oclang",
-        "//base/src/com/google/idea/blaze/base/lang/bazelrc:plugin_xml"
     ] + select_since(
         "2024.3",
         ["//clwb/src/com/google/idea/blaze/clwb/radler:plugin_xml"],
@@ -77,7 +76,6 @@ java_library(
     visibility = ["//clwb:__subpackages__"],
     deps = [
         "//base",
-        "//base/src/com/google/idea/blaze/base/lang/bazelrc:lib",
         "//clwb/sdkcompat",
         "//common/actions",
         "//common/experiments",
@@ -105,6 +103,7 @@ intellij_plugin(
         "//python:plugin_library",
         "//skylark:plugin_library",
         "//terminal:plugin_library",
+        "//base/src/com/google/idea/blaze/base/lang/bazelrc"
     ],
 )
 
