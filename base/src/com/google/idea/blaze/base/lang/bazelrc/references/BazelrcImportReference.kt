@@ -1,7 +1,5 @@
 package com.google.idea.blaze.base.lang.bazelrc.references
 
-import com.google.idea.blaze.base.lang.bazelrc.BazelrcFileType
-import com.google.idea.blaze.base.lang.bazelrc.psi.BazelrcImport
 import com.google.idea.blaze.base.model.primitives.WorkspaceRoot
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Condition
@@ -11,6 +9,8 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.resolve.reference.impl.providers.FileReference
 import com.intellij.psi.impl.source.resolve.reference.impl.providers.FileReferenceSet
+import com.google.idea.blaze.base.lang.bazelrc.BazelrcFileType
+import com.google.idea.blaze.base.lang.bazelrc.psi.BazelrcImport
 
 class BazelrcImportReference(
   referenceSet: FileReferenceSet,
