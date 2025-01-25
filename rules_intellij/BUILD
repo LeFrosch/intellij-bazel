@@ -27,6 +27,8 @@ intellij_module(
 intellij_plugin(
     name = "plugin",
     package = "com.test.plugin",
+    vendor = "JetBrains",
+    version = "123",
     plugin_id = "com.test.plugin",
     plugin_xml = "resources/plugin.xml",
     deps = [":mod3"],

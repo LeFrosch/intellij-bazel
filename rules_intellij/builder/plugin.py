@@ -1,5 +1,5 @@
-from rules_intellij.xml_builder.utils import *
-from rules_intellij.xml_builder.plugin_pb2 import Arguments
+from rules_intellij.builder.utils import *
+from rules_intellij.builder.plugin_pb2 import Arguments
 
 
 def main():
@@ -12,14 +12,20 @@ def main():
   # set the package attribute of the root 'idea-plugin' node
   dom.documentElement.setAttribute('package', plugin.package)
 
-  # ensure that the content node was not added manually
-  nodes = dom.documentElement.getElementsByTagName('content')
-  if len(nodes) > 0:
-    raise RuntimeError('plugin xml must not contain a <content> node')
+  # add plugin id node
+  id = create_node(dom, 'id')
+  id.appendChild(dom.createTextNode(plugin.id))
+
+  # add vendor node
+  vendor = create_node(dom, 'vendor')
+  vendor.appendChild(dom.createTextNode(plugin.vendor))
+
+  # add version node
+  version = create_node(dom, 'version')
+  version.appendChild(dom.createTextNode(plugin.version))
 
   # add all direct dependencies to the content node
-  content = dom.createElement('content')
-  dom.documentElement.appendChild(content)
+  content = create_node(dom, 'content')
 
   for dep in plugin.deps:
     node = dom.createElement('module')

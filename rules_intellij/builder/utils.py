@@ -53,3 +53,19 @@ def get_or_create_node(dom: Document, name: str) -> Node:
   dom.documentElement.appendChild(child)
 
   return child
+
+
+def create_node(dom: Document, name: str) -> Node:
+  """
+  Creates a new child node from the document root node. Raises an exception if
+  the node already exists.
+  """
+
+  child = dom.documentElement.getElementsByTagName(name)
+  if len(child) > 0:
+    raise RuntimeError('plugin xml must not contain a <%s> node' % name)
+
+  node = dom.createElement(name)
+  dom.documentElement.appendChild(node)
+
+  return node

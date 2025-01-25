@@ -9,8 +9,10 @@ message Plugin {
   string id = 1;
   string package = 2;
   string plugin_xml = 3;
+  string vendor = 4;
+  string version = 5;
 
-  repeated Dependency deps = 5;
+  repeated Dependency deps = 6;
 }
 
 message Arguments {

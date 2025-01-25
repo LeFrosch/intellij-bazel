@@ -37,3 +37,21 @@ py_binary(
     python_version = "PY3",
     visibility = ["//visibility:public"],
 )
+
+proto_library(
+    name = "jar_arguments",
+    srcs = ["jar.proto"],
+)
+
+py_proto_library(
+    name = "jar_arguments_pb2",
+    deps = [":jar_arguments"],
+)
+
+py_binary(
+    name = "jar",
+    srcs = ["jar.py", "utils.py"],
+    deps = [":jar_arguments_pb2"],
+    python_version = "PY3",
+    visibility = ["//visibility:public"],
+)

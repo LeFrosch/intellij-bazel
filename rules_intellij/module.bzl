@@ -24,9 +24,13 @@ def _intellij_module_impl(ctx):
         package = ctx.attr.package,
     )
 
+    java_info = java_common.merge(
+        [dep[JavaInfo] for dep in ctx.attr.deps] + [ctx.attr.impl[JavaInfo]]
+    )
+
     # TODO: check that all classes are in the right package ?
 
-    return [ctx.attr.impl[JavaInfo], module_info]
+    return [java_info, module_info]
 
 _intellij_module = rule(
     implementation = _intellij_module_impl,

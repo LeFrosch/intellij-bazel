@@ -1,5 +1,5 @@
-from rules_intellij.xml_builder.utils import *
-from rules_intellij.xml_builder.module_pb2 import Arguments
+from rules_intellij.builder.utils import *
+from rules_intellij.builder.module_pb2 import Arguments
 
 from xml.dom.minidom import Document
 

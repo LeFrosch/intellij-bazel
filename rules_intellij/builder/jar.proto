@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message Plugin {
+  string impl_jar = 1;
+  string plugin_xml = 2;
+
+  repeated string module_xmls = 3;
+}
+
+message Arguments {
+  Plugin plugin = 1;
+  string output = 2;
+}
