@@ -5,7 +5,8 @@ ModuleInfo = provider(
     fields = {
         "name": "The name of this module",
         "plugin_xml": "The plugin xml files for this module",
-        "deps": "List of IntellijModule dependencies",
+        "deps_direct": "Depset of direct IntellijModule dependencies",
+        "deps_transitive": "Depset of all IntellijModule dependencies",
         "optional": "Whether is module is optional or not",
         "package": "JVM package where all module classes are located",
     },
@@ -17,13 +18,11 @@ def _intellij_module_impl(ctx):
     module_info = ModuleInfo(
         name = "%s.%s" % (ctx.label.package.replace('/', '.'), ctx.label.name),
         plugin_xml = ctx.file.plugin_xml,
-        deps = depset(deps, transitive = [dep.deps for dep in deps]),
+        deps_direct = depset(deps),
+        deps_transitive = depset(deps, transitive = [dep.deps_transitive for dep in deps]),
         optional = ctx.attr.optional,
         package = ctx.attr.package,
     )
-
-    if (module_info.optional and len(module_info.plugins) == 0):
-        fail("module is optional but has no plugin dependencies")
 
     # TODO: check that all classes are in the right package ?
 
@@ -42,7 +41,7 @@ _intellij_module = rule(
 
 def intellij_module(
         name,
-        package = "",
+        package,
         deps = [],
         srcs = [],
         plugin_xml = None,

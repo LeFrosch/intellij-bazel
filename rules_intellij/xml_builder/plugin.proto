@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message Dependency {
+  string name = 1;
+  bool optional = 2;
+}
+
+message Plugin {
+  string id = 1;
+  string package = 2;
+  string plugin_xml = 3;
+
+  repeated Dependency deps = 5;
+}
+
+message Arguments {
+  Plugin plugin = 1;
+  string output = 2;
+}
