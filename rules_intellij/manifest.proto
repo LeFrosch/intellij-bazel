@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+message Module {
+  string name = 1;
+  string package = 2;
+  string plugin_xml = 3;
+  bool optional = 4;
+
+  repeated string deps = 5;
+}
+
+message Input {
+  string plugin_id = 1;
+  string module = 2;
+  string output = 3;
+}

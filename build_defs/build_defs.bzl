@@ -11,6 +11,7 @@ load(
 # Re-export these symbols
 intellij_plugin = _intellij_plugin
 intellij_plugin_library = _intellij_plugin_library
+
 optional_plugin_xml = _optional_plugin_xml
 
 def merged_plugin_xml(name, srcs, **kwargs):

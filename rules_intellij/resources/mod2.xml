@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<idea-plugin>
+
+  <extensions defaultExtensionNs="com.google.idea.blaze">
+    <TestContextProvider implementation="intellij.mod2.Mod2"/>
+  </extensions>
+
+</idea-plugin>
