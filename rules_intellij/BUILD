@@ -40,5 +40,6 @@ intellij_plugin(
     plugin_id = "com.test.plugin",
     plugin_xml = "resources/plugin.xml",
     plugin_name = "Test Plugin",
+    plugin_lib = "testchen",
     deps = [":impl"],
 )

@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_import")
+
 # file suffix hardcoded in com.google.idea.blaze.plugin.run.BlazeIntellijPluginDeployer
 SUFFIX = "intellij-plugin-debug-target-deploy-info"
 
@@ -52,3 +54,21 @@ intellij_plugin_debug_target = rule(
         "deps": attr.label_list(aspects = [_deploy_aspect]),
     },
 )
+
+def intellij_debug(name, plugin_jar, resources):
+    # TODO: create bazel task for running the plugin, should be possible after switching to installers
+    # Refer to how the gradle plugin does it
+
+    import_name = "%s_import" % name
+
+    # included (with tag) as a hack so that IJwB can recognize this is an intellij plugin
+    java_import(
+        name = import_name,
+        jars = [plugin_jar],
+        tags = ["intellij-plugin"],
+    )
+
+    intellij_plugin_debug_target(
+        name = name,
+        deps = [import_name] + resources,
+    )
