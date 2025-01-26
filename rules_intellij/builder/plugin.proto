@@ -7,12 +7,13 @@ message Dependency {
 
 message Plugin {
   string id = 1;
-  string package = 2;
-  string plugin_xml = 3;
-  string vendor = 4;
-  string version = 5;
+  string name = 2;
+  string package = 3;
+  string plugin_xml = 4;
+  string vendor = 5;
+  string version = 6;
 
-  repeated Dependency deps = 6;
+  repeated Dependency deps = 7;
 }
 
 message Arguments {

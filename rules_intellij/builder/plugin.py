@@ -5,8 +5,6 @@ from rules_intellij.builder.plugin_pb2 import Arguments
 def main():
   args = read_arguments(Arguments())
   plugin = args.plugin
-
-  # parse the existing plugin xml file
   dom = parse_plugin_xml(plugin.plugin_xml)
 
   # set the package attribute of the root 'idea-plugin' node
@@ -15,6 +13,10 @@ def main():
   # add plugin id node
   id = create_node(dom, 'id')
   id.appendChild(dom.createTextNode(plugin.id))
+
+  # add plugin name node
+  id = create_node(dom, 'name')
+  id.appendChild(dom.createTextNode(plugin.name))
 
   # add vendor node
   vendor = create_node(dom, 'vendor')

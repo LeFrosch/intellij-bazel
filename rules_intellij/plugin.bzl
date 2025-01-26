@@ -57,10 +57,11 @@ def _write_plugin_xml(ctx):
         output = module_xml_file.path,
         plugin = struct(
             id = plugin_id,
+            name = ctx.attr.plugin_name,
             vendor = ctx.attr.vendor,
             version = ctx.attr.version,
             package = ctx.attr.package,
-            plugin_xml = plugin_xml_file.path,
+            plugin_xml = plugin_xml_file.path if plugin_xml_file else "",
             deps = deps,
         ),
     ))
@@ -68,7 +69,7 @@ def _write_plugin_xml(ctx):
     ctx.actions.run(
         executable = ctx.executable._plugin_xml_builder,
         arguments = [input],
-        inputs = [plugin_xml_file],
+        inputs = [plugin_xml_file] if plugin_xml_file else [],
         outputs = [module_xml_file],
         progress_message = "Building plugin xml file",
         mnemonic = "BuildPluginXml",
@@ -116,8 +117,9 @@ _intellij_plugin = rule(
         "deps": attr.label_list(providers = [ModuleInfo]),
         "impl": attr.label(mandatory = True, allow_single_file = [".jar"]),
         "package": attr.string(mandatory = True),
-        "plugin_xml": attr.label(mandatory = True, allow_single_file = [".xml"]),
+        "plugin_xml": attr.label(allow_single_file = [".xml"]),
         "plugin_id": attr.string(mandatory = True),
+        "plugin_name": attr.string(mandatory = True),
         "vendor": attr.string(mandatory = True),
         "version": attr.string(mandatory = True),
         "_module_xml_builder": attr.label(
@@ -141,10 +143,11 @@ _intellij_plugin = rule(
 def intellij_plugin(
         name,
         package,
-        plugin_xml,
         plugin_id,
+        plugin_name,
         vendor,
         version,
+        plugin_xml = None,
         deps = []):
 
     impl_name = "%s_impl" % name
@@ -162,6 +165,7 @@ def intellij_plugin(
         package = package,
         plugin_xml = plugin_xml,
         plugin_id = plugin_id,
+        plugin_name = plugin_name,
         vendor = vendor,
         version = version,
     )

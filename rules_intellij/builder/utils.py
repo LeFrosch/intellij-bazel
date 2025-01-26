@@ -25,10 +25,27 @@ def _remove_text_nodes(node: Node):
       _remove_text_nodes(child)
 
 
+def _empty_plugin_xml() -> Document:
+  """
+  Creates an XML document with an empty root for an 'idea-plugin'
+  """
+
+  dom = Document()
+
+  root = dom.createElement('idea-plugin')
+  dom.appendChild(root)
+
+  return dom
+
+
 def parse_plugin_xml(path: str) -> Document:
   """
   Parses the given plugin XML file and returns a normalized DOM representation.
+  If the path is empty, an empty plugin XML document is returned.
   """
+
+  if not path:
+    return _empty_plugin_xml()
 
   dom = parse_xml(path)
   _remove_text_nodes(dom)

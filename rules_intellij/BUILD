@@ -24,12 +24,21 @@ intellij_module(
     deps = [":mod2"],
 )
 
+intellij_module(
+    name = "impl",
+    package = "intellij.impl",
+    srcs = ["src/intellij/impl/TestAction.kt"],
+    plugin_xml = "resources/impl.xml",
+    deps = ["//intellij_platform_sdk:plugin_api"],
+)
+
 intellij_plugin(
     name = "plugin",
-    package = "com.test.plugin",
-    vendor = "JetBrains",
+    package = "intellij",
+    vendor = "Test Vendor",
     version = "123",
     plugin_id = "com.test.plugin",
     plugin_xml = "resources/plugin.xml",
-    deps = [":mod3"],
+    plugin_name = "Test Plugin",
+    deps = [":impl"],
 )

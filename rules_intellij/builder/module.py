@@ -1,30 +1,10 @@
 from rules_intellij.builder.utils import *
 from rules_intellij.builder.module_pb2 import Arguments
 
-from xml.dom.minidom import Document
-
-def empty_module_xml() -> Document:
-  """
-  Creates an XML document with an empty root for an 'idea-plugin'
-  """
-
-  dom = Document()
-
-  root = dom.createElement('idea-plugin')
-  dom.appendChild(root)
-
-  return dom
-
-
 def main():
   args = read_arguments(Arguments())
   module = args.module
-
-  # parse the existing xml file or create an empty one
-  if module.plugin_xml:
-    dom = parse_plugin_xml(module.plugin_xml)
-  else:
-    dom = empty_module_xml()
+  dom = parse_plugin_xml(module.plugin_xml)
 
   # set the package attribute of the root 'idea-plugin' node
   dom.documentElement.setAttribute('package', module.package)
