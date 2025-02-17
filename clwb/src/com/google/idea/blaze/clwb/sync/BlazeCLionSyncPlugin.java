@@ -18,11 +18,14 @@ package com.google.idea.blaze.clwb.sync;
 import com.google.common.collect.ImmutableList;
 import com.google.idea.blaze.base.model.BlazeProjectData;
 import com.google.idea.blaze.base.model.primitives.WorkspaceType;
+import com.google.idea.blaze.base.projectview.section.SectionParser;
 import com.google.idea.blaze.base.sync.BlazeSyncPlugin;
 import com.google.idea.blaze.base.sync.GenericSourceFolderProvider;
 import com.google.idea.blaze.base.sync.SourceFolderProvider;
 import com.google.idea.blaze.clwb.BlazeCppModuleType;
+import com.google.idea.blaze.clwb.debug.CcDebugBuildSection;
 import com.intellij.openapi.module.ModuleType;
+import java.util.Collection;
 import javax.annotation.Nullable;
 
 class BlazeCLionSyncPlugin implements BlazeSyncPlugin {
@@ -54,5 +57,10 @@ class BlazeCLionSyncPlugin implements BlazeSyncPlugin {
       return null;
     }
     return GenericSourceFolderProvider.INSTANCE;
+  }
+
+  @Override
+  public Collection<SectionParser> getSections() {
+    return ImmutableList.of(CcDebugBuildSection.PARSER);
   }
 }
