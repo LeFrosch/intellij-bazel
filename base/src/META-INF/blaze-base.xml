@@ -439,6 +439,7 @@
     <completion.contributor language="projectview" implementationClass="com.google.idea.blaze.base.lang.projectview.completion.ProjectViewKeywordCompletionContributor"/>
     <completion.contributor language="projectview" implementationClass="com.google.idea.blaze.base.lang.projectview.completion.WorkspaceTypeCompletionContributor"/>
     <completion.contributor language="projectview" implementationClass="com.google.idea.blaze.base.lang.projectview.completion.AdditionalLanguagesCompletionContributor"/>
+    <completion.contributor language="projectview" implementationClass="com.google.idea.blaze.base.lang.projectview.completion.ScalarCompletionContributor"/>
     <enterHandlerDelegate implementation="com.google.idea.blaze.base.lang.projectview.formatting.ProjectViewEnterHandler"/>
     <filetype.stubBuilder filetype="projectview" implementationClass="com.google.idea.blaze.base.lang.projectview.stubs.ProjectViewFileStubBuilder"/>
     <lang.documentationProvider language="projectview" implementationClass="com.google.idea.blaze.base.lang.projectview.documentation.ProjectViewDocumentationProvider"/>

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package com.google.idea.blaze.base.projectview.section.sections;
+import com.google.common.collect.ImmutableSet;
 import com.google.idea.blaze.base.projectview.parser.ParseContext;
 import com.google.idea.blaze.base.projectview.parser.ProjectViewParser;
 import com.google.idea.blaze.base.projectview.section.ScalarSection;
@@ -60,6 +61,10 @@ public final class UseQuerySyncSection {
     @Override
     public String quickDocs() {
       return "Enables query sync for your project.";
+    }
+    @Override
+    public ImmutableSet<String> getVariants() {
+      return ImmutableSet.of("true", "false");
     }
   }
   private UseQuerySyncSection() {}

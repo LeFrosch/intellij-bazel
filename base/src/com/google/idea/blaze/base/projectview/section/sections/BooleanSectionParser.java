@@ -15,6 +15,7 @@
  */
 package com.google.idea.blaze.base.projectview.section.sections;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.idea.blaze.base.projectview.parser.ParseContext;
 import com.google.idea.blaze.base.projectview.parser.ProjectViewParser;
 import com.google.idea.blaze.base.projectview.section.ScalarSection;
@@ -61,5 +62,10 @@ public class BooleanSectionParser
     @Override
     public String quickDocs() {
         return quickDocs;
+    }
+
+    @Override
+    public ImmutableSet<String> getVariants() {
+        return ImmutableSet.of("true", "false");
     }
 }

@@ -15,6 +15,7 @@
  */
 package com.google.idea.blaze.base.projectview.section;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.idea.blaze.base.projectview.parser.ParseContext;
 import com.google.idea.blaze.base.projectview.parser.ProjectViewParser;
 import javax.annotation.Nullable;
@@ -74,4 +75,8 @@ public abstract class ScalarSectionParser<T> extends SectionParser {
   protected abstract T parseItem(ProjectViewParser parser, ParseContext parseContext, String rest);
 
   protected abstract void printItem(StringBuilder sb, T value);
+
+  public ImmutableSet<String> getVariants() {
+    return ImmutableSet.of();
+  }
 }
