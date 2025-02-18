@@ -54,33 +54,14 @@ public class BlazeGDBServerProvider {
   private static final BoolExperiment useRemoteDebuggingWrapper =
       new BoolExperiment("cc.remote.debugging.wrapper", true);
 
-  // These flags are used when debugging cc_binary targets when remote debugging
-  // is enabled (cc.remote.debugging)
-  private static final ImmutableList<String> EXTRA_FLAGS_FOR_DEBUG_RUN =
-      ImmutableList.of(
-          "--compilation_mode=dbg", "--strip=never", "--dynamic_mode=off");
-
   // These flags are used when debugging cc_test targets when remote debugging
   // is enabled (cc.remote.debugging)
   private static final ImmutableList<String> EXTRA_FLAGS_FOR_DEBUG_TEST =
       ImmutableList.of(
-          "--compilation_mode=dbg",
-          "--strip=never",
-          "--dynamic_mode=off",
           "--test_timeout=3600",
           BlazeFlags.NO_CACHE_TEST_RESULTS,
           BlazeFlags.EXCLUSIVE_TEST_EXECUTION,
           BlazeFlags.DISABLE_TEST_SHARDING);
-
-  // Allows the fission flag to be disabled as workaround for
-  // https://github.com/bazelbuild/intellij/issues/5604
-  static ImmutableList<String> getOptionalFissionArguments() {
-    if(Registry.is("bazel.clwb.debug.fission.disabled")) {
-      return ImmutableList.of();
-    } else {
-      return ImmutableList.of("--fission=yes");
-    }
-  }
 
   static ImmutableList<String> getFlagsForDebugging(RunConfigurationState state) {
     if (!(state instanceof BlazeCidrRunConfigState)) {
@@ -114,13 +95,10 @@ public class BlazeGDBServerProvider {
       builder.add(runUnderOption);
     }
     if (BlazeCommandName.RUN.equals(commandName)) {
-      builder.addAll(EXTRA_FLAGS_FOR_DEBUG_RUN);
-      builder.addAll(getOptionalFissionArguments());
       return builder.build();
     }
     if (BlazeCommandName.TEST.equals(commandName)) {
       builder.addAll(EXTRA_FLAGS_FOR_DEBUG_TEST);
-      builder.addAll(getOptionalFissionArguments());
       return builder.build();
     }
     return ImmutableList.of();

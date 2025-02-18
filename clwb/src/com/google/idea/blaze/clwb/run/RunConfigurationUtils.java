@@ -51,28 +51,4 @@ public class RunConfigurationUtils {
             || (kind == CppBlazeRules.RuleTypes.CC_BINARY.getKind()
                 && command.equals(BlazeCommandName.RUN))) ;
   }
-
-  public static OCCompilerKind getCompilerKind(BlazeCommandRunConfiguration runConfig) {
-    final var project = runConfig.getProject();
-
-    final var info = BlazeCTargetInfoService.getFirst(project, runConfig.getTargets());
-    if (info == null) {
-      return UnknownCompilerKind.INSTANCE;
-    }
-
-    final var resolveConfig = OCWorkspace.getInstance(project).getConfigurationById(info.getConfigurationId());
-    if (resolveConfig == null) {
-      return UnknownCompilerKind.INSTANCE;
-    }
-
-    return resolveConfig.getCompilerSettings(CLanguageKind.CPP).getCompilerKind();
-  }
-
-  public static BlazeDebuggerKind getDebuggerKind(BlazeCommandRunConfiguration runConfig) {
-    if (Registry.is("bazel.clwb.debug.use.default.toolchain")) {
-      return BlazeDebuggerKind.byDefaultToolchain();
-    } else {
-      return BlazeDebuggerKind.byHeuristic(getCompilerKind(runConfig));
-    }
-  }
 }

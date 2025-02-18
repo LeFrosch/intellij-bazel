@@ -1,9 +1,12 @@
 package com.google.idea.blaze.clwb.debug;
 
+import com.google.idea.blaze.base.projectview.ProjectViewManager;
+import com.google.idea.blaze.base.projectview.ProjectViewSet;
 import com.google.idea.blaze.base.projectview.section.ScalarSection;
 import com.google.idea.blaze.base.projectview.section.SectionKey;
 import com.google.idea.blaze.base.projectview.section.SectionParser;
 import com.google.idea.blaze.base.projectview.section.sections.BooleanSectionParser;
+import com.intellij.openapi.project.Project;
 
 public class CcDebugBuildSection {
 
@@ -14,4 +17,17 @@ public class CcDebugBuildSection {
   public static final SectionKey<Boolean, ScalarSection<Boolean>> KEY = SectionKey.of("cc_debug_build");
 
   public static final SectionParser PARSER = new BooleanSectionParser(KEY, DOCUMENTATION);
+
+  public static boolean isEnabled(Project project) {
+    final var projectViewSet = ProjectViewManager.getInstance(project).getProjectViewSet();
+    if (projectViewSet == null) {
+      return false;
+    }
+
+    return isEnabled(projectViewSet);
+  }
+
+  public static boolean isEnabled(ProjectViewSet projectViewSet) {
+    return projectViewSet.getScalarValue(KEY).orElse(false);
+  }
 }

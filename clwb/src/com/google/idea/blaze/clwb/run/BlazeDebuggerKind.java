@@ -48,7 +48,7 @@ public enum BlazeDebuggerKind {
    * configured by the user. Therefore, this could return different values depending on the
    * installation.
    */
-  public static BlazeDebuggerKind byDefaultToolchain() {
+  private static BlazeDebuggerKind byDefaultToolchain() {
     final var kind = ToolchainUtils.getToolchain().getDebuggerKind();
 
     return switch (kind) {
@@ -61,7 +61,7 @@ public enum BlazeDebuggerKind {
    * Determines the debugger kind based on the given compiler kind and system information. Falls
    * back to byDefaultToolchain if the system is not linux, mac or windows.
    */
-  public static BlazeDebuggerKind byHeuristic(OCCompilerKind compilerKind) {
+  public static BlazeDebuggerKind byHeuristic() {
     if (SystemInfo.isLinux) {
       return gdbBundledOrServer();
     }

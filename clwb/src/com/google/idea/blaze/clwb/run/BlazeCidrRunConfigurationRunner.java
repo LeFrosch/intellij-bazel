@@ -27,12 +27,12 @@ import com.google.idea.blaze.base.command.buildresult.BuildResultParser;
 import com.google.idea.blaze.base.command.buildresult.LocalFileArtifact;
 import com.google.idea.blaze.base.model.primitives.Label;
 import com.google.idea.blaze.base.model.primitives.TargetExpression;
-import com.google.idea.blaze.base.model.primitives.WorkspaceRoot;
 import com.google.idea.blaze.base.run.BlazeBeforeRunCommandHelper;
 import com.google.idea.blaze.base.run.BlazeCommandRunConfiguration;
 import com.google.idea.blaze.base.run.ExecutorType;
 import com.google.idea.blaze.base.run.confighandler.BlazeCommandRunConfigurationRunner;
 import com.google.idea.blaze.base.util.SaveUtil;
+import com.google.idea.blaze.clwb.debug.CcDebugBuildSection;
 import com.google.idea.blaze.common.Interners;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.Executor;
@@ -41,8 +41,7 @@ import com.intellij.execution.configurations.RunProfileState;
 import com.intellij.execution.executors.DefaultDebugExecutor;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.runners.ExecutionUtil;
-import com.intellij.openapi.util.SystemInfo;
-import com.intellij.openapi.util.registry.Registry;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.util.PathUtil;
 import com.jetbrains.cidr.execution.CidrCommandLineState;
@@ -68,6 +67,16 @@ public class BlazeCidrRunConfigurationRunner implements BlazeCommandRunConfigura
 
   @Override
   public RunProfileState getRunProfileState(Executor executor, ExecutionEnvironment env) {
+    if (isDebugging(env) && !CcDebugBuildSection.isEnabled(env.getProject())) {
+      Messages.showErrorDialog(
+          env.getProject(),
+          "Please enable debug builds in your project view file.",
+          "Cannot Debug"
+      );
+
+      return null;
+    }
+    
     return new CidrCommandLineState(env, new BlazeCidrLauncher(configuration, this, env));
   }
 
@@ -104,34 +113,14 @@ public class BlazeCidrRunConfigurationRunner implements BlazeCommandRunConfigura
     return (Label) targets.get(0);
   }
 
-  private ImmutableList<String> getExtraDebugFlags(ExecutionEnvironment env) {
-    if (Registry.is("bazel.clwb.debug.extraflags.disabled")) {
-      return ImmutableList.of();
-    }
+  private ImmutableList<String> getExtraDebugFlags() {
+    final var debuggerKind = BlazeDebuggerKind.byHeuristic();
 
-    final var debuggerKind = RunConfigurationUtils.getDebuggerKind(configuration);
     if (debuggerKind == BlazeDebuggerKind.GDB_SERVER) {
       return BlazeGDBServerProvider.getFlagsForDebugging(configuration.getHandler().getState());
+    } else {
+      return ImmutableList.of(); // geneal debug build flags are injected by CcDebugBuildFlagsProvider
     }
-
-    final var flagsBuilder = ImmutableList.<String>builder();
-
-    if (debuggerKind == BlazeDebuggerKind.BUNDLED_LLDB && !Registry.is("bazel.trim.absolute.path.disabled")) {
-      flagsBuilder.add("--copt=-fdebug-compilation-dir=" + WorkspaceRoot.fromProject(env.getProject()));
-
-      if (SystemInfo.isMac) {
-        flagsBuilder.add("--linkopt=-Wl,-oso_prefix,.");
-      }
-    }
-
-    flagsBuilder.add("--compilation_mode=dbg");
-    flagsBuilder.add("--copt=-O0");
-    flagsBuilder.add("--copt=-g");
-    flagsBuilder.add("--strip=never");
-    flagsBuilder.add("--dynamic_mode=off");
-    flagsBuilder.addAll(BlazeGDBServerProvider.getOptionalFissionArguments());
-
-    return flagsBuilder.build();
   }
 
   /**
@@ -149,7 +138,7 @@ public class BlazeCidrRunConfigurationRunner implements BlazeCommandRunConfigura
               configuration,
               buildResultHelper,
               ImmutableList.of(),
-              getExtraDebugFlags(env),
+              getExtraDebugFlags(),
               BlazeInvocationContext.runConfigContext(
                   ExecutorType.fromExecutor(env.getExecutor()), configuration.getType(), true),
               "Building debug binary");

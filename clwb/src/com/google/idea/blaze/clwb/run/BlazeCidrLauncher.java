@@ -235,7 +235,7 @@ public final class BlazeCidrLauncher extends CidrLauncher {
     WorkspaceRoot workspaceRoot = WorkspaceRoot.fromProject(project);
     File workspaceRootDirectory = workspaceRoot.directory();
 
-    final var debuggerKind = RunConfigurationUtils.getDebuggerKind(configuration);
+    final var debuggerKind = BlazeDebuggerKind.byHeuristic();
     if (debuggerKind != BlazeDebuggerKind.GDB_SERVER) {
 
       File workingDir =
