@@ -34,7 +34,6 @@ import com.google.idea.blaze.base.projectview.section.sections.TestSourceSection
 import com.google.idea.blaze.base.qsync.artifacts.GeneratedSourcesStripperProvider;
 import com.google.idea.blaze.base.qsync.artifacts.ProjectArtifactStore;
 import com.google.idea.blaze.base.qsync.cache.ArtifactFetchers;
-import com.google.idea.blaze.base.qsync.cc.CcProjectProtoTransform;
 import com.google.idea.blaze.base.scope.BlazeContext;
 import com.google.idea.blaze.base.settings.BlazeImportSettings;
 import com.google.idea.blaze.base.settings.BlazeImportSettingsManager;
@@ -185,7 +184,6 @@ public class ProjectLoader {
             latestProjectDef,
             projectPathResolver,
             QuerySync.ATTACH_DEP_SRCJARS::getValue));
-    projectTransformRegistry.add(new CcProjectProtoTransform());
 
     artifactTracker = tracker;
     renderJarArtifactTracker = new RenderJarArtifactTrackerImpl();
