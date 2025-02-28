@@ -16,15 +16,12 @@
 package com.google.idea.blaze.qsync.cc;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import com.google.idea.blaze.common.PrintOutput;
 import com.google.idea.blaze.exception.BuildException;
 import com.google.idea.blaze.qsync.artifacts.BuildArtifact;
@@ -40,12 +37,7 @@ import com.google.idea.blaze.qsync.deps.ProjectProtoUpdateOperation;
 import com.google.idea.blaze.qsync.deps.TargetBuildInfo;
 import com.google.idea.blaze.qsync.project.LanguageClassProto.LanguageClass;
 import com.google.idea.blaze.qsync.project.ProjectPath;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilationContext;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerFlag;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerFlagSet;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerSettings;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcLanguage;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcSourceFile;
+import com.google.idea.blaze.qsync.project.ProjectProto;
 import com.google.idea.blaze.qsync.project.ProjectTarget;
 import com.google.idea.blaze.qsync.project.ProjectTarget.SourceType;
 import java.nio.file.Path;
@@ -77,12 +69,12 @@ public class ConfigureCcCompilation {
   private final ProjectProtoUpdate update;
 
   /* Map from toolchain ID -> language -> flags for that toolchain & language. */
-  private final Map<String, Map<CcLanguage, List<CcCompilerFlag>>> toolchainLanguageFlags = Maps.newHashMap();
+  private final Map<String, Map<ProjectProto.CcLanguage, List<ProjectProto.CcCompilerFlag>>> toolchainLanguageFlags = Maps.newHashMap();
 
   /* Map of unique sets of compiler flags to an ID to identify them.
    * We do this as the downstream code turns each set of flags into a CidrCompilerSwitches instance
    * which can have a large memory footprint. */
-  private final Map<Set<CcCompilerFlag>, String> uniqueFlagSetIds = Maps.newHashMap();
+  private final Map<Set<ProjectProto.CcCompilerFlag>, String> uniqueFlagSetIds = Maps.newHashMap();
 
   ConfigureCcCompilation(State artifactState, ProjectProtoUpdate projectUpdate) {
     this.artifactState = artifactState;
@@ -126,8 +118,14 @@ public class ConfigureCcCompilation {
 
     toolchainLanguageFlags.put(
         toolchain.id(),
-        ImmutableMap.of(CcLanguage.C, cFlags, CcLanguage.CPP, cppFlags)
+        ImmutableMap.of(ProjectProto.CcLanguage.C, cFlags, ProjectProto.CcLanguage.CPP, cppFlags)
     );
+
+    update.project().getCcWorkspaceBuilder().addToolchains(ProjectProto.CcToolchain.newBuilder()
+        .setName(toolchain.compiler())
+        .setCpu(toolchain.cpu())
+        .setExecutable(toolchain.compilerExecutable().toProto())
+        .setId(toolchain.id()));
   }
 
   private void visitTarget(CcCompilationInfo ccInfo, DependencyBuildContext buildContext) {
@@ -143,8 +141,8 @@ public class ConfigureCcCompilation {
         Preconditions.checkNotNull(
             artifactState.ccToolchainMap().get(ccInfo.toolchainId()), ccInfo.toolchainId());
 
-    ImmutableList<CcCompilerFlag> targetFlags =
-        ImmutableList.<CcCompilerFlag>builder()
+    ImmutableList<ProjectProto.CcCompilerFlag> targetFlags =
+        ImmutableList.<ProjectProto.CcCompilerFlag>builder()
             .addAll(projectTarget.copts().stream().map(d -> makeStringFlag(d, "")).iterator())
             .addAll(ccInfo.defines().stream().map(d -> makeStringFlag("-D", d)).iterator())
             .addAll(ccInfo.includeDirectories().stream().map(p -> makePathFlag("-I", p)).iterator())
@@ -162,15 +160,15 @@ public class ConfigureCcCompilation {
                     .iterator())
             .build();
 
-    final var srcsBuilder = ImmutableList.<CcSourceFile>builder();
+    final var srcsBuilder = ImmutableList.<ProjectProto.CcSourceFile>builder();
     for (Path srcPath : update.buildGraph().getTargetSources(ccInfo.target(), SourceType.all())) {
-      Optional<CcLanguage> lang = getLanguage(srcPath);
+      final var lang = getLanguage(srcPath);
       if (lang.isEmpty()) {
         continue;
       }
 
       srcsBuilder.add(
-          CcSourceFile.newBuilder()
+          ProjectProto.CcSourceFile.newBuilder()
               .setLanguage(lang.get())
               .setWorkspacePath(srcPath.toString())
               .build());
@@ -179,12 +177,12 @@ public class ConfigureCcCompilation {
     // TODO(mathewi): The handling of flag sets here is not optimal, since we recalculate an
     //  identical flag set for each source of the same language, then immediately de-dupe them in
     //  the addFlagSet call. For large flag sets this may be slow.
-    final var compilerSettingsBuilder = ImmutableList.<CcCompilerSettings>builder();
+    final var compilerSettingsBuilder = ImmutableList.<ProjectProto.CcCompilerSettings>builder();
     for (final var entry : toolchainLanguageFlags.get(toolchain.id()).entrySet()) {
       final var flags = Stream.concat(entry.getValue().stream(), targetFlags.stream()).collect(toImmutableList());
 
-      final var settings = CcCompilerSettings.newBuilder()
-          .setCompilerExecutablePath(toolchain.compilerExecutable().toProto())
+      final var settings = ProjectProto.CcCompilerSettings.newBuilder()
+          .setToolchainId(toolchain.id())
           .setLanguage(entry.getKey())
           .setFlagSetId(addFlagSet(flags))
           .build();
@@ -192,7 +190,7 @@ public class ConfigureCcCompilation {
       compilerSettingsBuilder.add(settings);
     }
 
-    final var targetContext = CcCompilationContext.newBuilder()
+    final var targetContext = ProjectProto.CcCompilationContext.newBuilder()
         .setId(ccInfo.target() + "%" + toolchain.targetGnuSystemName())
         .setHumanReadableName(ccInfo.target() + " - " + toolchain.targetGnuSystemName())
         .addAllSources(srcsBuilder.build())
@@ -209,9 +207,9 @@ public class ConfigureCcCompilation {
   }
 
   /** Ensure that the given flagset exists, adding it if necessary, and return its unique ID. */
-  private String addFlagSet(Collection<CcCompilerFlag> flags) {
+  private String addFlagSet(Collection<ProjectProto.CcCompilerFlag> flags) {
     // Create a set so that two flags sets are considered equivalent if their flag order differs.
-    ImmutableSet<CcCompilerFlag> canonicalFlagSet = ImmutableSet.copyOf(flags);
+    final var canonicalFlagSet = ImmutableSet.copyOf(flags);
     String flagSetId = uniqueFlagSetIds.get(canonicalFlagSet);
 
     if (flagSetId == null) {
@@ -220,33 +218,33 @@ public class ConfigureCcCompilation {
       update
           .project()
           .getCcWorkspaceBuilder()
-          .putFlagSets(flagSetId, CcCompilerFlagSet.newBuilder().addAllFlags(flags).build());
+          .putFlagSets(flagSetId, ProjectProto.CcCompilerFlagSet.newBuilder().addAllFlags(flags).build());
     }
     return flagSetId;
   }
 
-  private CcCompilerFlag makeStringFlag(String flag, String value) {
-    return CcCompilerFlag.newBuilder().setFlag(flag).setPlainValue(value).build();
+  private ProjectProto.CcCompilerFlag makeStringFlag(String flag, String value) {
+    return ProjectProto.CcCompilerFlag.newBuilder().setFlag(flag).setPlainValue(value).build();
   }
 
-  private CcCompilerFlag makePathFlag(String flag, ProjectPath path) {
-    return CcCompilerFlag.newBuilder().setFlag(flag).setPath(path.toProto()).build();
+  private ProjectProto.CcCompilerFlag makePathFlag(String flag, ProjectPath path) {
+    return ProjectProto.CcCompilerFlag.newBuilder().setFlag(flag).setPath(path.toProto()).build();
   }
 
-  private static final ImmutableMap<String, CcLanguage> EXTENSION_TO_LANGUAGE_MAP =
+  private static final ImmutableMap<String, ProjectProto.CcLanguage> EXTENSION_TO_LANGUAGE_MAP =
       ImmutableMap.of(
-          "c", CcLanguage.C,
-          "cc", CcLanguage.CPP,
-          "cpp", CcLanguage.CPP,
-          "cxx", CcLanguage.CPP,
-          "c++", CcLanguage.CPP,
-          "C", CcLanguage.C);
+          "c", ProjectProto.CcLanguage.C,
+          "cc", ProjectProto.CcLanguage.CPP,
+          "cpp", ProjectProto.CcLanguage.CPP,
+          "cxx", ProjectProto.CcLanguage.CPP,
+          "c++", ProjectProto.CcLanguage.CPP,
+          "C", ProjectProto.CcLanguage.C);
   /* Files we ignore because they are not top level source files: */
 
   private static final ImmutableSet<String> IGNORE_SRC_FILE_EXTENSIONS =
       ImmutableSet.of("h", "hh", "hpp", "hxx", "inc", "inl", "H", "S", "a", "lo", "so", "o");
 
-  private Optional<CcLanguage> getLanguage(Path srcPath) {
+  private Optional<ProjectProto.CcLanguage> getLanguage(Path srcPath) {
     // logic in here based on https://bazel.build/reference/be/c-cpp#cc_library.srcs
     int lastDot = srcPath.getFileName().toString().lastIndexOf('.');
     if (lastDot < 0) {
@@ -254,7 +252,7 @@ public class ConfigureCcCompilation {
       update
           .context()
           .output(PrintOutput.log("No extension for c/c++ source file %s; assuming cpp", srcPath));
-      return Optional.of(CcLanguage.CPP);
+      return Optional.of(ProjectProto.CcLanguage.CPP);
     }
     String ext = srcPath.getFileName().toString().substring(lastDot + 1);
     if (IGNORE_SRC_FILE_EXTENSIONS.contains(ext)) {
@@ -268,6 +266,6 @@ public class ConfigureCcCompilation {
         .output(
             PrintOutput.log(
                 "Unrecognized extension %s for c/c++ source file %s; assuming cpp", ext, srcPath));
-    return Optional.of(CcLanguage.CPP);
+    return Optional.of(ProjectProto.CcLanguage.CPP);
   }
 }

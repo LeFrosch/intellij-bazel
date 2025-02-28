@@ -205,8 +205,7 @@ public class CcProjectModelUpdateOperation implements Disposable {
     try {
       var toolEnvironment = new CidrToolEnvironment();
       session.setExpectedJobsCount(resolveConfigs.size());
-      for (Map.Entry<String, OCResolveConfiguration.ModifiableModel> e :
-          resolveConfigs.entrySet()) {
+      for (Map.Entry<String, OCResolveConfiguration.ModifiableModel> e : resolveConfigs.entrySet()) {
         session.schedule(
             e.getKey(),
             e.getValue(),
