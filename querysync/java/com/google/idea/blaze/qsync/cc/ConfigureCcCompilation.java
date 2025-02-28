@@ -50,10 +50,12 @@ import com.google.idea.blaze.qsync.project.ProjectTarget;
 import com.google.idea.blaze.qsync.project.ProjectTarget.SourceType;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /** Adds C/C++ compilation information and headers to the project proto. */
 public class ConfigureCcCompilation {
@@ -75,8 +77,7 @@ public class ConfigureCcCompilation {
   private final ProjectProtoUpdate update;
 
   /* Map from toolchain ID -> language -> flags for that toolchain & language. */
-  private final Map<String, Multimap<CcLanguage, CcCompilerFlag>> toolchainLanguageFlags =
-      Maps.newHashMap();
+  private final Map<String, Map<CcLanguage, List<CcCompilerFlag>>> toolchainLanguageFlags = Maps.newHashMap();
 
   /* Map of unique sets of compiler flags to an ID to identify them.
    * We do this as the downstream code turns each set of flags into a CidrCompilerSwitches instance
@@ -109,30 +110,24 @@ public class ConfigureCcCompilation {
   }
 
   private void visitToolchain(CcToolchain toolchain) {
+    final var commonFlags = toolchain.builtInIncludeDirectories().stream()
+        .map(p -> makePathFlag("-I", p))
+        .collect(toImmutableList());
 
-    ImmutableList<CcCompilerFlag> commonFlags =
-        toolchain.builtInIncludeDirectories().stream()
-            .map(p -> makePathFlag("-I", p))
-            .collect(toImmutableList());
+    final var cFlags = Stream.concat(
+        commonFlags.stream(),
+        toolchain.cOptions().stream().map(f -> makeStringFlag(f, ""))
+    ).collect(toImmutableList());
+
+    final var cppFlags = Stream.concat(
+        commonFlags.stream(),
+        toolchain.cppOptions().stream().map(f -> makeStringFlag(f, ""))
+    ).collect(toImmutableList());
 
     toolchainLanguageFlags.put(
         toolchain.id(),
-        ImmutableListMultimap.<CcLanguage, CcCompilerFlag>builder()
-            .putAll(
-                CcLanguage.C,
-                ImmutableList.<CcCompilerFlag>builder()
-                    .addAll(commonFlags)
-                    .addAll(
-                        toolchain.cOptions().stream().map(f -> makeStringFlag(f, "")).iterator())
-                    .build())
-            .putAll(
-                CcLanguage.CPP,
-                ImmutableList.<CcCompilerFlag>builder()
-                    .addAll(commonFlags)
-                    .addAll(
-                        toolchain.cppOptions().stream().map(f -> makeStringFlag(f, "")).iterator())
-                    .build())
-            .build());
+        ImmutableMap.of(CcLanguage.C, cFlags, CcLanguage.CPP, cppFlags)
+    );
   }
 
   private void visitTarget(CcCompilationInfo ccInfo, DependencyBuildContext buildContext) {
@@ -167,49 +162,43 @@ public class ConfigureCcCompilation {
                     .iterator())
             .build();
 
-    ImmutableList.Builder<CcSourceFile> srcsBuilder = ImmutableList.builder();
+    final var srcsBuilder = ImmutableList.<CcSourceFile>builder();
+    for (Path srcPath : update.buildGraph().getTargetSources(ccInfo.target(), SourceType.all())) {
+      Optional<CcLanguage> lang = getLanguage(srcPath);
+      if (lang.isEmpty()) {
+        continue;
+      }
+
+      srcsBuilder.add(
+          CcSourceFile.newBuilder()
+              .setLanguage(lang.get())
+              .setWorkspacePath(srcPath.toString())
+              .build());
+    }
+
     // TODO(mathewi): The handling of flag sets here is not optimal, since we recalculate an
     //  identical flag set for each source of the same language, then immediately de-dupe them in
     //  the addFlagSet call. For large flag sets this may be slow.
-    for (Path srcPath : update.buildGraph().getTargetSources(ccInfo.target(), SourceType.all())) {
-      Optional<CcLanguage> lang = getLanguage(srcPath);
-      if (lang.isPresent()) {
-        srcsBuilder.add(
-            CcSourceFile.newBuilder()
-                .setLanguage(lang.get())
-                .setWorkspacePath(srcPath.toString())
-                .setCompilerSettings(
-                    CcCompilerSettings.newBuilder()
-                        .setCompilerExecutablePath(toolchain.compilerExecutable().toProto())
-                        .setFlagSetId(
-                            addFlagSet(
-                                ImmutableList.<CcCompilerFlag>builder()
-                                    .addAll(targetFlags)
-                                    .addAll(
-                                        toolchainLanguageFlags.get(toolchain.id()).get(lang.get()))
-                                    .build())))
-                .build());
-      }
-    }
-    ImmutableList<CcSourceFile> srcs = srcsBuilder.build();
+    final var compilerSettingsBuilder = ImmutableList.<CcCompilerSettings>builder();
+    for (final var entry : toolchainLanguageFlags.get(toolchain.id()).entrySet()) {
+      final var flags = Stream.concat(entry.getValue().stream(), targetFlags.stream()).collect(toImmutableList());
 
-    CcCompilationContext targetContext =
-        CcCompilationContext.newBuilder()
-            .setId(ccInfo.target() + "%" + toolchain.targetGnuSystemName())
-            .setHumanReadableName(ccInfo.target() + " - " + toolchain.targetGnuSystemName())
-            .addAllSources(srcs)
-            .putAllLanguageToCompilerSettings(
-                toolchainLanguageFlags.get(toolchain.id()).asMap().entrySet().stream()
-                    .collect(
-                        toImmutableMap(
-                            e -> e.getKey().getValueDescriptor().getName(),
-                            e ->
-                                CcCompilerSettings.newBuilder()
-                                    .setCompilerExecutablePath(
-                                        toolchain.compilerExecutable().toProto())
-                                    .setFlagSetId(addFlagSet(e.getValue()))
-                                    .build())))
-            .build();
+      final var settings = CcCompilerSettings.newBuilder()
+          .setCompilerExecutablePath(toolchain.compilerExecutable().toProto())
+          .setLanguage(entry.getKey())
+          .setFlagSetId(addFlagSet(flags))
+          .build();
+
+      compilerSettingsBuilder.add(settings);
+    }
+
+    final var targetContext = CcCompilationContext.newBuilder()
+        .setId(ccInfo.target() + "%" + toolchain.targetGnuSystemName())
+        .setHumanReadableName(ccInfo.target() + " - " + toolchain.targetGnuSystemName())
+        .addAllSources(srcsBuilder.build())
+        .addAllCompilerSettings(compilerSettingsBuilder.build())
+        .build();
+
     update.project().getCcWorkspaceBuilder().addContexts(targetContext);
 
     ArtifactDirectoryBuilder headersDir =

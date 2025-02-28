@@ -55,6 +55,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /** Updates the IJ project model based a {@link CcWorkspace} proto message. */
@@ -100,48 +101,57 @@ public class CcProjectModelUpdateOperation implements Disposable {
   }
 
   private void visitCompilationContext(CcCompilationContext ccCc) {
-    OCResolveConfiguration.ModifiableModel config =
-        modifiableOcWorkspace.addConfiguration(ccCc.getId(), ccCc.getHumanReadableName());
+    final var config = modifiableOcWorkspace.addConfiguration(ccCc.getId(), ccCc.getHumanReadableName());
 
-    visitLanguageCompilerSettingsMap(ccCc.getLanguageToCompilerSettingsMap(), config);
+    final var compilerSettings = ccCc.getCompilerSettingsList();
+    visitLanguageCompilerSettingsMap(compilerSettings, config);
+
     for (CcSourceFile source : ccCc.getSourcesList()) {
-      visitSourceFile(source, config);
+      visitSourceFile(compilerSettings, source, config);
     }
+
     resolveConfigs.put(ccCc.getId(), config);
   }
 
   private void visitLanguageCompilerSettingsMap(
-      Map<String, CcCompilerSettings> map, OCResolveConfiguration.ModifiableModel config) {
-    for (Map.Entry<String, CcCompilerSettings> e : map.entrySet()) {
-      CidrCompilerSwitches switches =
-          checkNotNull(compilerSwitches.get(e.getValue().getFlagSetId()));
+      List<CcCompilerSettings> list,
+      OCResolveConfiguration.ModifiableModel config
+  ) {
+    for (CcCompilerSettings e : list) {
+      final var switches = checkNotNull(compilerSwitches.get(e.getFlagSetId()));
       if (!CppSupportChecker.isSupportedCppConfiguration(switches, compilerWorkingDir.toPath())) {
         return;
       }
-      CLanguageKind lang =
-          getLanguageKind(
-              ProjectProto.CcLanguage.valueOf(
-                  ProjectProto.CcLanguage.getDescriptor().findValueByName(e.getKey())),
-              "compiler settings");
-      OCCompilerSettings.ModifiableModel compilerSettings =
-          config.getLanguageCompilerSettings(lang);
-      compilerSettings.setCompiler(
-          ClangCompilerKind.INSTANCE, getCompilerExecutable(e.getValue()), compilerWorkingDir);
+
+      CLanguageKind lang = getLanguageKind(e.getLanguage(), "compiler settings");
+      OCCompilerSettings.ModifiableModel compilerSettings = config.getLanguageCompilerSettings(lang);
+      compilerSettings.setCompiler(ClangCompilerKind.INSTANCE, getCompilerExecutable(e), compilerWorkingDir);
       compilerSettings.setCompilerSwitches(switches);
     }
   }
 
-  private void visitSourceFile(CcSourceFile source, OCResolveConfiguration.ModifiableModel config) {
-    CidrCompilerSwitches switches =
-        checkNotNull(compilerSwitches.get(source.getCompilerSettings().getFlagSetId()));
-    if (!CppSupportChecker.isSupportedCppConfiguration(
-        switches, pathResolver.resolve(ProjectPath.WORKSPACE_ROOT))) {
+  private void visitSourceFile(
+      List<CcCompilerSettings> compilerSettings,
+      CcSourceFile source,
+      OCResolveConfiguration.ModifiableModel config
+  ) {
+    final var compilerSetting = compilerSettings.stream()
+        .filter((it) -> it.getLanguage().equals(source.getLanguage()))
+        .findFirst()
+        .orElse(null);
+
+    if (compilerSetting == null) {
+      return;
+    }
+
+    CidrCompilerSwitches switches = checkNotNull(compilerSwitches.get(compilerSetting.getFlagSetId()));
+    if (!CppSupportChecker.isSupportedCppConfiguration(switches, pathResolver.resolve(ProjectPath.WORKSPACE_ROOT))) {
       // Ignore the file if it's not supported by the current IDE.
       return;
     }
+
     Path srcPath = Path.of(source.getWorkspacePath());
-    CLanguageKind language =
-        getLanguageKind(source.getLanguage(), "Source file " + source.getWorkspacePath());
+    CLanguageKind language = getLanguageKind(source.getLanguage(), "Source file " + source.getWorkspacePath());
     srcPath = pathResolver.resolve(ProjectPath.workspaceRelative(srcPath));
     if (!Files.exists(srcPath)) {
       logger.warn("Src file not found: " + srcPath);
@@ -151,7 +161,7 @@ public class CcProjectModelUpdateOperation implements Disposable {
     perSourceCompilerSettings.setCompilerSwitches(switches);
     perSourceCompilerSettings.setCompiler(
         ClangCompilerKind.INSTANCE,
-        getCompilerExecutable(source.getCompilerSettings()),
+        getCompilerExecutable(compilerSetting),
         compilerWorkingDir);
   }
 

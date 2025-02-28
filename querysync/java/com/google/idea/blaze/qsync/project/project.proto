@@ -196,7 +196,6 @@ enum CcLanguage {
 message CcSourceFile {
   string workspace_path = 1;
   CcLanguage language = 2;
-  CcCompilerSettings compiler_settings = 4;
 }
 
 /**
@@ -207,8 +206,8 @@ message CcSourceFile {
 message CcCompilationContext {
   string id = 1;
   string human_readable_name = 2;
-  // Map keys are CcLanguage.name:
-  map<string, CcCompilerSettings> language_to_compiler_settings = 3;
+  // list of all compiler settings, should contain at most one instance per language
+  repeated CcCompilerSettings compiler_settings = 3;
   repeated CcSourceFile sources = 4;
 }
 
@@ -221,6 +220,8 @@ message CcCompilerSettings {
   ProjectPath compiler_executable_path = 1;
   // ID of the flag set within CcWorkspace.flag_sets
   string flag_set_id = 2;
+  // the language for which the compiler settings apply
+  CcLanguage language = 3;
 }
 
 /**
