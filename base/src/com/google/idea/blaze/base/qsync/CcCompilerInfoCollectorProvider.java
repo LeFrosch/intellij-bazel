@@ -26,7 +26,7 @@ import com.intellij.openapi.project.Project;
 public interface CcCompilerInfoCollectorProvider {
 
   ExtensionPointName<CcCompilerInfoCollectorProvider> EP_NAME =
-    ExtensionPointName.create("com.google.idea.blaze.base.qsync.CcCompilerInfoCollectorProvider");
+    ExtensionPointName.create("com.google.idea.blaze.qsync.CcCompilerInfoCollectorProvider");
 
   CcCompilerInfoCollector create(Project project);
 

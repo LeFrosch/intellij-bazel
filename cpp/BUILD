@@ -59,6 +59,7 @@ intellij_plugin_library(
     name = "plugin_library",
     optional_plugin_xmls = [":optional_cidr"],
     plugin_xmls = [":non_optional_cidr"],
+    plugin_deps = ["//cpp/src/com/google/idea/blaze/cpp/qsync"],
     visibility = PLUGIN_PACKAGES_VISIBILITY,
     deps = [":cpp"],
 )

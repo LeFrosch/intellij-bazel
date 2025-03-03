@@ -24,7 +24,6 @@ import com.google.common.collect.Maps;
 import com.google.idea.blaze.base.scope.output.IssueOutput;
 import com.google.idea.blaze.base.util.UrlUtil;
 import com.google.idea.blaze.common.Context;
-import com.google.idea.blaze.cpp.CppSupportChecker;
 import com.google.idea.blaze.qsync.cc.FlagResolver;
 import com.google.idea.blaze.qsync.project.ProjectPath;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilationContext;
@@ -127,9 +126,6 @@ public class CcProjectModelUpdateOperation implements Disposable {
       }
 
       final var switches = checkNotNull(compilerSwitches.get(e.getFlagSetId()));
-      if (!CppSupportChecker.isSupportedCppConfiguration(switches, compilerWorkingDir.toPath())) {
-        return;
-      }
 
       CLanguageKind lang = getLanguageKind(e.getLanguage(), "compiler settings");
       OCCompilerSettings.ModifiableModel compilerSettings = config.getLanguageCompilerSettings(lang);
@@ -164,10 +160,6 @@ public class CcProjectModelUpdateOperation implements Disposable {
     }
 
     CidrCompilerSwitches switches = checkNotNull(compilerSwitches.get(compilerSetting.getFlagSetId()));
-    if (!CppSupportChecker.isSupportedCppConfiguration(switches, pathResolver.resolve(ProjectPath.WORKSPACE_ROOT))) {
-      // Ignore the file if it's not supported by the current IDE.
-      return;
-    }
 
     Path srcPath = Path.of(source.getWorkspacePath());
     CLanguageKind language = getLanguageKind(source.getLanguage(), "Source file " + source.getWorkspacePath());

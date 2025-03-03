@@ -532,7 +532,7 @@
       interface="com.google.idea.blaze.base.qsync.AnnotationProcessorOverride"/>
     <extensionPoint qualifiedName="com.google.idea.blaze.base.qsync.GeneratedSourcesStripperProvider"
       interface="com.google.idea.blaze.base.qsync.artifacts.GeneratedSourcesStripperProvider"/>
-    <extensionPoint qualifiedName="com.google.idea.blaze.base.qsync.CcCompilerInfoCollectorProvider"
+    <extensionPoint qualifiedName="com.google.idea.blaze.qsync.CcCompilerInfoCollectorProvider"
                     interface="com.google.idea.blaze.base.qsync.CcCompilerInfoCollectorProvider"/>
 
   </extensionPoints>
