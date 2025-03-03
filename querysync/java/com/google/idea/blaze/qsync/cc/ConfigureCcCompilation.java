@@ -55,18 +55,23 @@ public class ConfigureCcCompilation {
   /** An update operation to configure CC compilation. */
   public static class UpdateOperation implements ProjectProtoUpdateOperation {
 
-    public UpdateOperation() {}
+    private final CcCompilerInfoCollector collector;
+
+    public UpdateOperation(CcCompilerInfoCollector collector) {
+      this.collector = collector;
+    }
 
     @Override
     public void update(ProjectProtoUpdate update, ArtifactTracker.State artifactState)
         throws BuildException {
-      new ConfigureCcCompilation(artifactState, update).update();
+      new ConfigureCcCompilation(artifactState, update, collector).update();
     }
   }
 
   private static final AtomicInteger nextFlagSetId = new AtomicInteger(0);
   private final State artifactState;
   private final ProjectProtoUpdate update;
+  private final CcCompilerInfoCollector collector;
 
   /* Map from toolchain ID -> language -> flags for that toolchain & language. */
   private final Map<String, Map<ProjectProto.CcLanguage, List<ProjectProto.CcCompilerFlag>>> toolchainLanguageFlags = Maps.newHashMap();
@@ -76,9 +81,10 @@ public class ConfigureCcCompilation {
    * which can have a large memory footprint. */
   private final Map<Set<ProjectProto.CcCompilerFlag>, String> uniqueFlagSetIds = Maps.newHashMap();
 
-  ConfigureCcCompilation(State artifactState, ProjectProtoUpdate projectUpdate) {
+  ConfigureCcCompilation(State artifactState, ProjectProtoUpdate projectUpdate, CcCompilerInfoCollector collector) {
     this.artifactState = artifactState;
     this.update = projectUpdate;
+    this.collector = collector;
   }
 
   public void update() throws BuildException {
@@ -120,6 +126,10 @@ public class ConfigureCcCompilation {
         toolchain.id(),
         ImmutableMap.of(ProjectProto.CcLanguage.C, cFlags, ProjectProto.CcLanguage.CPP, cppFlags)
     );
+
+    // TODO: get compiler kind (see com.google.idea.blaze.cpp.CompilerVersionChecker)
+    // TODO: get MSVC data (see com.google.idea.blaze.clwb.MSVCEnvironmentProvider)
+    // TODO: get Xcode data (see com.google.idea.blaze.cpp.XcodeCompilerSettingsProvider)
 
     update.project().getCcWorkspaceBuilder().addToolchains(ProjectProto.CcToolchain.newBuilder()
         .setName(toolchain.compiler())

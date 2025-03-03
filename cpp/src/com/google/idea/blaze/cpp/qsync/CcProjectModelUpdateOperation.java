@@ -24,16 +24,15 @@ import com.google.common.collect.Maps;
 import com.google.idea.blaze.base.scope.output.IssueOutput;
 import com.google.idea.blaze.base.util.UrlUtil;
 import com.google.idea.blaze.common.Context;
-import com.google.idea.blaze.common.PrintOutput;
 import com.google.idea.blaze.cpp.CppSupportChecker;
 import com.google.idea.blaze.qsync.cc.FlagResolver;
 import com.google.idea.blaze.qsync.project.ProjectPath;
-import com.google.idea.blaze.qsync.project.ProjectProto;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilationContext;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerFlagSet;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerSettings;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcLanguage;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcSourceFile;
+import com.google.idea.blaze.qsync.project.ProjectProto.CcToolchain;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcWorkspace;
 import com.intellij.build.events.MessageEvent;
 import com.intellij.openapi.Disposable;
@@ -89,7 +88,7 @@ public class CcProjectModelUpdateOperation implements Disposable {
   public void visitWorkspace(CcWorkspace proto) {
     visitSwitchesMap(proto.getFlagSetsMap());
     for (CcCompilationContext compilationContext : proto.getContextsList()) {
-      visitCompilationContext(compilationContext);
+      visitCompilationContext(proto.getToolchainsList(), compilationContext);
     }
   }
 
@@ -100,24 +99,33 @@ public class CcProjectModelUpdateOperation implements Disposable {
     }
   }
 
-  private void visitCompilationContext(CcCompilationContext ccCc) {
+  private void visitCompilationContext(List<CcToolchain> toolchains, CcCompilationContext ccCc) {
     final var config = modifiableOcWorkspace.addConfiguration(ccCc.getId(), ccCc.getHumanReadableName());
 
     final var compilerSettings = ccCc.getCompilerSettingsList();
-    visitLanguageCompilerSettingsMap(compilerSettings, config);
+    visitLanguageCompilerSettingsMap(toolchains, compilerSettings, config);
 
     for (CcSourceFile source : ccCc.getSourcesList()) {
-      visitSourceFile(compilerSettings, source, config);
+      visitSourceFile(toolchains, compilerSettings, source, config);
     }
 
     resolveConfigs.put(ccCc.getId(), config);
   }
 
   private void visitLanguageCompilerSettingsMap(
+      List<CcToolchain> toolchains,
       List<CcCompilerSettings> list,
       OCResolveConfiguration.ModifiableModel config
   ) {
     for (CcCompilerSettings e : list) {
+      final var toolchain = toolchains.stream()
+          .filter((it) -> it.getId().equals(e.getToolchainId()))
+          .findFirst()
+          .orElse(null);
+      if (toolchain == null) {
+        continue;
+      }
+
       final var switches = checkNotNull(compilerSwitches.get(e.getFlagSetId()));
       if (!CppSupportChecker.isSupportedCppConfiguration(switches, compilerWorkingDir.toPath())) {
         return;
@@ -125,12 +133,16 @@ public class CcProjectModelUpdateOperation implements Disposable {
 
       CLanguageKind lang = getLanguageKind(e.getLanguage(), "compiler settings");
       OCCompilerSettings.ModifiableModel compilerSettings = config.getLanguageCompilerSettings(lang);
-      compilerSettings.setCompiler(ClangCompilerKind.INSTANCE, getCompilerExecutable(e), compilerWorkingDir);
+      compilerSettings.setCompiler(
+          ClangCompilerKind.INSTANCE, // TODO: get kind from toolchain.getKind()
+          getCompilerExecutable(toolchain),
+          compilerWorkingDir);
       compilerSettings.setCompilerSwitches(switches);
     }
   }
 
   private void visitSourceFile(
+      List<CcToolchain> toolchains,
       List<CcCompilerSettings> compilerSettings,
       CcSourceFile source,
       OCResolveConfiguration.ModifiableModel config
@@ -139,8 +151,15 @@ public class CcProjectModelUpdateOperation implements Disposable {
         .filter((it) -> it.getLanguage().equals(source.getLanguage()))
         .findFirst()
         .orElse(null);
-
     if (compilerSetting == null) {
+      return;
+    }
+
+    final var toolchain = toolchains.stream()
+        .filter((it) -> it.getId().equals(compilerSetting.getToolchainId()))
+        .findFirst()
+        .orElse(null);
+    if (toolchain == null) {
       return;
     }
 
@@ -156,12 +175,14 @@ public class CcProjectModelUpdateOperation implements Disposable {
     if (!Files.exists(srcPath)) {
       logger.warn("Src file not found: " + srcPath);
     }
+
+    // TODO: can this logic be deduplicated with visitLanguageCompilerSettingsMap
     OCCompilerSettings.ModifiableModel perSourceCompilerSettings =
         config.addSource(UrlUtil.pathToIdeaDirectoryUrl(srcPath), language);
     perSourceCompilerSettings.setCompilerSwitches(switches);
     perSourceCompilerSettings.setCompiler(
-        ClangCompilerKind.INSTANCE,
-        getCompilerExecutable(compilerSetting),
+        ClangCompilerKind.INSTANCE, // TODO: get kind from toolchain.getKind()
+        getCompilerExecutable(toolchain),
         compilerWorkingDir);
   }
 
@@ -177,9 +198,9 @@ public class CcProjectModelUpdateOperation implements Disposable {
         LANGUAGE_MAP.get(language), "Invalid language " + language + " for " + whatFor);
   }
 
-  private File getCompilerExecutable(CcCompilerSettings compilerSettings) {
+  private File getCompilerExecutable(CcToolchain toolchain) {
     return pathResolver
-        .resolve(ProjectPath.create(compilerSettings.getCompilerExecutablePath()))
+        .resolve(ProjectPath.create(toolchain.getExecutable()))
         .toFile();
   }
 
@@ -203,6 +224,7 @@ public class CcProjectModelUpdateOperation implements Disposable {
     var session = cache.<String>createSession(indicator);
     boolean sessionClosed = false;
     try {
+      // TODO: create environment from toolchain
       var toolEnvironment = new CidrToolEnvironment();
       session.setExpectedJobsCount(resolveConfigs.size());
       for (Map.Entry<String, OCResolveConfiguration.ModifiableModel> e : resolveConfigs.entrySet()) {
