@@ -68,6 +68,7 @@ aspect_library(
         "build_compose_dependencies.bzl",
         "build_dependencies.bzl",
         "build_dependencies_deps.bzl",
+        "xcode_query.bzl",
     ],
     namespace = "aspect/qsync",
     visibility = ["//visibility:public"],
