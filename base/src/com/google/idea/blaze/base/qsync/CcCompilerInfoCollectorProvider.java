@@ -19,6 +19,7 @@ import com.google.idea.blaze.common.Context;
 import com.google.idea.blaze.exception.BuildException;
 import com.google.idea.blaze.qsync.cc.CcCompilerInfoCollector;
 import com.google.idea.blaze.qsync.deps.CcToolchain;
+import com.google.idea.blaze.qsync.project.ProjectPath;
 import com.google.idea.blaze.qsync.project.ProjectProto;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.project.Project;
@@ -28,7 +29,7 @@ public interface CcCompilerInfoCollectorProvider {
   ExtensionPointName<CcCompilerInfoCollectorProvider> EP_NAME =
     ExtensionPointName.create("com.google.idea.blaze.qsync.CcCompilerInfoCollectorProvider");
 
-  CcCompilerInfoCollector create(Project project);
+  CcCompilerInfoCollector create(Project project, ProjectPath.Resolver resolver);
 
   /** Default implementation returned used when CLion is not available */
   class Unavailable implements CcCompilerInfoCollector {
@@ -50,9 +51,9 @@ public interface CcCompilerInfoCollectorProvider {
   }
 
   /** Gets the {@link CcCompilerInfoCollector} if CLion is available or returns a stub. */
-  static CcCompilerInfoCollector get(Project project) {
+  static CcCompilerInfoCollector get(Project project, ProjectPath.Resolver resolver) {
     return EP_NAME.getExtensionList().stream()
-      .map((it) -> it.create(project))
+      .map((it) -> it.create(project, resolver))
       .findFirst()
       .orElse(new Unavailable());
   }

@@ -26,6 +26,7 @@ import com.google.idea.blaze.base.util.UrlUtil;
 import com.google.idea.blaze.common.Context;
 import com.google.idea.blaze.qsync.cc.FlagResolver;
 import com.google.idea.blaze.qsync.project.ProjectPath;
+import com.google.idea.blaze.qsync.project.ProjectPath.Resolver;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilationContext;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerFlagSet;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerSettings;
@@ -46,9 +47,14 @@ import com.jetbrains.cidr.lang.toolchains.CidrToolEnvironment;
 import com.jetbrains.cidr.lang.workspace.OCCompilerSettings;
 import com.jetbrains.cidr.lang.workspace.OCResolveConfiguration;
 import com.jetbrains.cidr.lang.workspace.OCWorkspace;
+import com.jetbrains.cidr.lang.workspace.OCWorkspace.ModifiableModel;
+import com.jetbrains.cidr.lang.workspace.compiler.AppleClangCompilerKind;
 import com.jetbrains.cidr.lang.workspace.compiler.ClangCompilerKind;
 import com.jetbrains.cidr.lang.workspace.compiler.CompilerInfoCache;
 import com.jetbrains.cidr.lang.workspace.compiler.CompilerInfoCache.Message;
+import com.jetbrains.cidr.lang.workspace.compiler.GCCCompilerKind;
+import com.jetbrains.cidr.lang.workspace.compiler.MSVCCompilerKind;
+import com.jetbrains.cidr.lang.workspace.compiler.OCCompilerKind;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,16 +70,16 @@ public class CcProjectModelUpdateOperation implements Disposable {
 
   private static final Logger logger = Logger.getInstance(CcProjectModelUpdateOperation.class);
   private final Context<?> context;
-  private final ProjectPath.Resolver pathResolver;
+  private final Resolver pathResolver;
   private final FlagResolver flagResolver;
-  private final OCWorkspace.ModifiableModel modifiableOcWorkspace;
+  private final ModifiableModel modifiableOcWorkspace;
   private final Map<String, CidrCompilerSwitches> compilerSwitches = Maps.newHashMap();
   private final Map<String, OCResolveConfiguration.ModifiableModel> resolveConfigs =
       Maps.newLinkedHashMap();
   private final File compilerWorkingDir;
 
   CcProjectModelUpdateOperation(
-      Context<?> context, OCWorkspace readonlyOcWorkspace, ProjectPath.Resolver pathResolver) {
+      Context<?> context, OCWorkspace readonlyOcWorkspace, Resolver pathResolver) {
     this.context = context;
     this.pathResolver = pathResolver;
     this.flagResolver = new FlagResolver(pathResolver);
@@ -130,7 +136,7 @@ public class CcProjectModelUpdateOperation implements Disposable {
       CLanguageKind lang = getLanguageKind(e.getLanguage(), "compiler settings");
       OCCompilerSettings.ModifiableModel compilerSettings = config.getLanguageCompilerSettings(lang);
       compilerSettings.setCompiler(
-          ClangCompilerKind.INSTANCE, // TODO: get kind from toolchain.getKind()
+          getCompilerKind(toolchain),
           getCompilerExecutable(toolchain),
           compilerWorkingDir);
       compilerSettings.setCompilerSwitches(switches);
@@ -173,7 +179,7 @@ public class CcProjectModelUpdateOperation implements Disposable {
         config.addSource(UrlUtil.pathToIdeaDirectoryUrl(srcPath), language);
     perSourceCompilerSettings.setCompilerSwitches(switches);
     perSourceCompilerSettings.setCompiler(
-        ClangCompilerKind.INSTANCE, // TODO: get kind from toolchain.getKind()
+        getCompilerKind(toolchain),
         getCompilerExecutable(toolchain),
         compilerWorkingDir);
   }
@@ -194,6 +200,17 @@ public class CcProjectModelUpdateOperation implements Disposable {
     return pathResolver
         .resolve(ProjectPath.create(toolchain.getExecutable()))
         .toFile();
+  }
+
+  private OCCompilerKind getCompilerKind(CcToolchain toolchain) {
+    return switch (toolchain.getKind()) {
+      case APPLE_CLANG -> AppleClangCompilerKind.INSTANCE;
+      case GCC -> GCCCompilerKind.INSTANCE;
+      case MSVC -> MSVCCompilerKind.INSTANCE;
+
+      // fall back to clang if the compiler kind could not be detected
+      default -> ClangCompilerKind.INSTANCE;
+    };
   }
 
   /** Pre-commits the project update. Should be called from a background thread. */

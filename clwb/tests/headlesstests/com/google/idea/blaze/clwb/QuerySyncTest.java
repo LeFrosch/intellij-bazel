@@ -9,8 +9,12 @@ import com.google.idea.blaze.clwb.base.ClwbHeadlessTestCase;
 import com.google.idea.testing.headless.BazelVersionRule;
 import com.google.idea.testing.headless.OSRule;
 import com.google.idea.testing.headless.ProjectViewBuilder;
+import com.intellij.openapi.util.SystemInfo;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.system.OS;
+import com.jetbrains.cidr.lang.workspace.compiler.ClangCompilerKind;
+import com.jetbrains.cidr.lang.workspace.compiler.GCCCompilerKind;
+import com.jetbrains.cidr.lang.workspace.compiler.MSVCCompilerKind;
 import java.util.concurrent.ExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,14 +56,13 @@ public class QuerySyncTest extends ClwbHeadlessTestCase {
   private void checkCompiler() {
     final var compilerSettings = findFileCompilerSettings("main/hello-world.cc");
 
-    // TODO: query sync always uses clang : https://github.com/bazelbuild/intellij/issues/7177
-    // if (SystemInfo.isMac) {
-    //   assertThat(compilerSettings.getCompilerKind()).isEqualTo(ClangCompilerKind.INSTANCE);
-    // } else if (SystemInfo.isLinux) {
-    //   assertThat(compilerSettings.getCompilerKind()).isEqualTo(GCCCompilerKind.INSTANCE);
-    // } else if (SystemInfo.isWindows) {
-    //   assertThat(compilerSettings.getCompilerKind()).isEqualTo(MSVCCompilerKind.INSTANCE);
-    // }
+    if (SystemInfo.isMac) {
+      assertThat(compilerSettings.getCompilerKind()).isEqualTo(ClangCompilerKind.INSTANCE);
+    } else if (SystemInfo.isLinux) {
+      assertThat(compilerSettings.getCompilerKind()).isEqualTo(GCCCompilerKind.INSTANCE);
+    } else if (SystemInfo.isWindows) {
+      assertThat(compilerSettings.getCompilerKind()).isEqualTo(MSVCCompilerKind.INSTANCE);
+    }
 
     assertContainsHeader("iostream", compilerSettings);
   }

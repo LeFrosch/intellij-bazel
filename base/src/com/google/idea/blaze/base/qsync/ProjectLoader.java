@@ -184,7 +184,7 @@ public class ProjectLoader {
             latestProjectDef,
             projectPathResolver,
             QuerySync.ATTACH_DEP_SRCJARS::getValue,
-            CcCompilerInfoCollectorProvider.get(project)));
+            CcCompilerInfoCollectorProvider.get(project, projectPathResolver)));
 
     artifactTracker = tracker;
     renderJarArtifactTracker = new RenderJarArtifactTrackerImpl();
