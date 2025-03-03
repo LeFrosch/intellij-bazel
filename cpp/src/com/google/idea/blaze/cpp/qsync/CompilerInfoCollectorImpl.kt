@@ -15,28 +15,32 @@
  */
 package com.google.idea.blaze.cpp.qsync
 
+import com.google.common.collect.ImmutableMap
+import com.google.idea.blaze.base.buildview.pushJob
 import com.google.idea.blaze.base.projectview.ProjectViewManager
 import com.google.idea.blaze.base.projectview.section.sections.BazelBinarySection
-import com.google.idea.blaze.base.qsync.CcCompilerInfoCollectorProvider
+import com.google.idea.blaze.base.qsync.CompilerInfoCollector
+import com.google.idea.blaze.base.qsync.CompilerInfoCollectorProvider
+import com.google.idea.blaze.base.scope.BlazeContext
+import com.google.idea.blaze.base.scope.output.IssueOutput
 import com.google.idea.blaze.base.settings.BlazeUserSettings
 import com.google.idea.blaze.base.sync.aspects.storage.AspectRepositoryProvider
 import com.google.idea.blaze.base.util.pluginProjectScope
-import com.google.idea.blaze.common.Context
 import com.google.idea.blaze.common.PrintOutput
 import com.google.idea.blaze.exception.BuildException
-import com.google.idea.blaze.qsync.cc.CcCompilerInfoCollector
-import com.google.idea.blaze.qsync.deps.CcToolchain
+import com.google.idea.blaze.qsync.deps.CcCompilerInfo
+import com.google.idea.blaze.qsync.deps.CompilerInfoMap
+import com.google.idea.blaze.qsync.deps.OutputInfo
+import com.google.idea.blaze.qsync.java.cc.CcCompilationInfoOuterClass.CcToolchainInfo
 import com.google.idea.blaze.qsync.project.ProjectPath
 import com.google.idea.blaze.qsync.project.ProjectProto
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.progress.runBlockingMaybeCancellable
 import com.intellij.openapi.project.Project
 import com.intellij.platform.eel.executeProcess
 import com.intellij.platform.eel.getOrThrow
 import com.intellij.platform.eel.impl.utils.awaitProcessResult
 import com.intellij.platform.eel.provider.getEelDescriptor
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
@@ -46,71 +50,86 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.*
 
-private val LOG = logger<CcCompilerInfoCollectorImpl>()
+private val LOG = logger<CompilerInfoCollectorImpl>()
 
-class CcCompilerInfoCollectorImpl private constructor(
+class CompilerInfoCollectorImpl private constructor(
   private val project: Project,
   private val resolver: ProjectPath.Resolver,
-) : CcCompilerInfoCollector {
+) : CompilerInfoCollector {
 
-  class Provider : CcCompilerInfoCollectorProvider {
-    override fun create(project: Project, resolver: ProjectPath.Resolver): CcCompilerInfoCollector {
-      return CcCompilerInfoCollectorImpl(project, resolver)
+  class Provider : CompilerInfoCollectorProvider {
+    override fun create(project: Project, resolver: ProjectPath.Resolver): CompilerInfoCollector {
+      return CompilerInfoCollectorImpl(project, resolver)
     }
   }
 
   @Throws(BuildException::class)
-  override fun getCompilerKind(ctx: Context<*>, toolchain: CcToolchain): ProjectProto.CcCompilerKind {
-    return runJob(ctx, toolchain, ExecutionContext::getCompilerKindImpl)
-  }
-
-  @Throws(BuildException::class)
-  override fun getMsvcData(ctx: Context<*>, toolchain: CcToolchain): ProjectProto.MsvcData {
-    // TODO: implement msvc data collection (see com.google.idea.blaze.clwb.MSVCEnvironmentProvider)
-    return ProjectProto.MsvcData.newBuilder().build()
-  }
-
-  @Throws(BuildException::class)
-  override fun getXcodeData(ctx: Context<*>, toolchain: CcToolchain): ProjectProto.XcodeData {
-    return runJob(ctx, toolchain, ExecutionContext::getXcodeData)
-  }
-
-  @Throws(BuildException::class)
-  private fun <T> runJob(
-    ctx: Context<*>,
-    toolchain: CcToolchain,
-    action: suspend ExecutionContext.() -> T,
-  ): T {
-    val result = pluginProjectScope(project).async { ExecutionContext(project, toolchain, ctx, resolver).action() }
-    ctx.addCancellationHandler { result.cancel() }
-
+  override fun run(ctx: BlazeContext, outputInfo: OutputInfo): CompilerInfoMap {
     return try {
-      runBlockingMaybeCancellable { result.await() }
-    } catch (e: BuildException) {
-      throw e
+      ctx.pushJob(pluginProjectScope(project), "CompilerInfoCollector") {
+        run(ExecutionContext(project, ctx, resolver), outputInfo)
+      }
     } catch (e: Exception) {
-      LOG.error("Unhandled exception", e)
       throw BuildException("Unhandled exception", e)
     }
   }
+
+  private suspend fun run(ctx: ExecutionContext, info: OutputInfo): CompilerInfoMap {
+    val compilerInfos = info.ccCompilationInfo.flatMap { it.toolchainsList }.distinctBy { it.id }
+
+    val builder = ImmutableMap.builder<String, CcCompilerInfo>()
+    for (compilerInfo in compilerInfos) {
+      builder.put(compilerInfo.id, ctx.run(compilerInfo))
+    }
+
+    return CompilerInfoMap(builder.build())
+  }
+}
+
+private suspend fun ExecutionContext.run(toolchain: CcToolchainInfo): CcCompilerInfo {
+  val kind = try {
+    getCompilerKindImpl(toolchain)
+  } catch (e: BuildException) {
+    warn("could not detect compiler kind", "Exception: %s", e.toString())
+    CcCompilerInfo.Kind.UNKNOWN
+  }
+
+  val builder = CcCompilerInfo.builder().kind(kind)
+
+  if (kind == CcCompilerInfo.Kind.APPLE_CLANG) {
+    try {
+      builder.xcode(getXcodeData())
+    } catch (e: BuildException) {
+      warn("could not get xcode info", "Exception: %s", e.toString())
+    }
+  }
+
+  if (kind == CcCompilerInfo.Kind.MSVC) {
+    try {
+      // builder.msvc(getMsvcData())
+    } catch (e: BuildException) {
+      warn("could not get msvc info", "Exception: %s", e.toString())
+    }
+  }
+
+  return builder.build()
 }
 
 private class ExecutionContext(
   val project: Project,
-  val toolchain: CcToolchain,
-  private val ctx: Context<*>,
+  private val ctx: BlazeContext,
   private val resolver: ProjectPath.Resolver,
 ) {
 
-  fun resolve(path: ProjectPath): Path {
-    return resolver.resolve(path)
+  fun resolve(path: String): Path {
+    return resolver.resolve(ProjectPath.execrootRelative(path))
   }
 
-  fun log(format: String, vararg args: Any?) {
+  fun warn(title: String, format: String = "", vararg args: Any?) {
     val msg = String.format(format, *args)
 
-    LOG.info(msg)
-    ctx.output(PrintOutput.log(msg))
+    LOG.warn(String.format("%s: %s", title, msg))
+    IssueOutput.warn(title).withDescription(msg).submit(ctx)
   }
 
   val bazelBinary: Path by lazy {
@@ -135,9 +154,10 @@ private class ExecutionContext(
   }
 }
 
+@Throws(BuildException::class)
 @Suppress("UnstableApiUsage") // EEL API is still unstable
-private suspend fun ExecutionContext.getCompilerKindImpl(): ProjectProto.CcCompilerKind {
-  val executable = resolve(toolchain.compilerExecutable())
+private suspend fun ExecutionContext.getCompilerKindImpl(toolchain: CcToolchainInfo): CcCompilerInfo.Kind {
+  val executable = resolve(toolchain.compilerExecutable)
 
   val result = project.getEelDescriptor().upgrade().exec
     .executeProcess(executable.toString(), "--version")
@@ -151,20 +171,19 @@ private suspend fun ExecutionContext.getCompilerKindImpl(): ProjectProto.CcCompi
   // MSVC does not know the --version flag and will fail. However, the error message does contain
   // the compiler version.
   if (result.stderr.contains("Microsoft")) {
-    return ProjectProto.CcCompilerKind.MSVC
+    return CcCompilerInfo.Kind.MSVC
   }
 
-  log("could not detect compiler kind: ${result.stderr}")
-  return ProjectProto.CcCompilerKind.CC_COMPILER_KIND_UNKNOWN
+  throw BuildException("could not detect compiler kind: ${result.stderr}")
 }
 
-private fun guessCompilerKind(version: String): ProjectProto.CcCompilerKind {
+private fun guessCompilerKind(version: String): CcCompilerInfo.Kind {
   return when {
-    version.startsWith("Apple clang") -> ProjectProto.CcCompilerKind.APPLE_CLANG
-    version.contains("clang") -> ProjectProto.CcCompilerKind.CLANG
-    version.contains("gcc") -> ProjectProto.CcCompilerKind.GCC
-    version.contains("Microsoft") -> ProjectProto.CcCompilerKind.MSVC
-    else -> ProjectProto.CcCompilerKind.CC_COMPILER_KIND_UNKNOWN
+    version.startsWith("Apple clang") -> CcCompilerInfo.Kind.APPLE_CLANG
+    version.contains("clang") -> CcCompilerInfo.Kind.CLANG
+    version.contains("gcc") -> CcCompilerInfo.Kind.GCC
+    version.contains("Microsoft") -> CcCompilerInfo.Kind.MSVC
+    else -> throw BuildException("unknown compiler version: $version")
   }
 }
 
@@ -172,7 +191,7 @@ private val XCODE_QUERY_TEMPLATE =
   "cquery 'deps(@bazel_tools//tools/osx:current_xcode_config)' --output=starlark --starlark:file='%s'"
 
 @Suppress("UnstableApiUsage") // EEL API is still unstable
-private suspend fun ExecutionContext.getXcodeData(): ProjectProto.XcodeData {
+private suspend fun ExecutionContext.getXcodeData(): CcCompilerInfo.Xcode {
   val queryFileSource = AspectRepositoryProvider.aspectQSyncFile("xcode_query.bzl")
 
   val queryFile = try {
@@ -192,8 +211,8 @@ private suspend fun ExecutionContext.getXcodeData(): ProjectProto.XcodeData {
     .awaitProcessResult()
 
   if (result.exitCode == 37) {
-    // if the target `@bazel_tools//tools/osx:xcode-locator` doesn't exist, bazel will crash with error code 37
-    return ProjectProto.XcodeData.getDefaultInstance()
+    // if the target doesn't exist, bazel will exit with code 37
+    throw BuildException("@bazel_tools//tools/osx:xcode-locator not found")
   }
 
   if (result.exitCode != 0) {
@@ -210,10 +229,7 @@ private suspend fun ExecutionContext.getXcodeData(): ProjectProto.XcodeData {
 
   val sdkRoot = Path.of(developerDir.toString(), "SDKs", "MacOSX.sdk")
 
-  return ProjectProto.XcodeData.newBuilder()
-    .setDeveloperDir(developerDir.toString())
-    .setSdkRoot(sdkRoot.toString())
-    .build()
+  return CcCompilerInfo.Xcode(developerDir.toString(), sdkRoot.toString())
 }
 
 private data class XcodeConfig(val version: String?, val sdkVersion: String, val commandLineToolsOnly: Boolean)

@@ -31,6 +31,7 @@ import com.google.idea.blaze.qsync.artifacts.BuildArtifact;
 import com.google.idea.blaze.qsync.java.ArtifactTrackerProto;
 import com.google.idea.blaze.qsync.java.ArtifactTrackerProto.Metadata;
 import com.google.idea.blaze.qsync.project.ProjectPath;
+import com.google.idea.blaze.qsync.project.ProjectProto;
 import com.google.idea.blaze.qsync.project.SnapshotDeserializer;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -107,6 +108,7 @@ public class ArtifactTrackerStateDeserializer {
                     .collect(toImmutableList()))
             .cOptions(ImmutableList.copyOf(proto.getCOptionsList()))
             .cppOptions(ImmutableList.copyOf(proto.getCppOptionsList()))
+            .compilerInfo(CcCompilerInfo.fromProto(proto.getInfo()))
             .build());
   }
 

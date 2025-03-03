@@ -24,9 +24,9 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class QuerySyncTest extends ClwbHeadlessTestCase {
 
-  // currently query sync only works on linux, TODO: fix mac and windows
+  // currently query sync only works on linux and mac, TODO: fix windows
   @Rule
-  public final OSRule osRule = new OSRule(OS.Linux);
+  public final OSRule osRule = new OSRule(OS.Linux, OS.macOS);
 
   // query sync requires bazel 6+
   @Rule
@@ -39,8 +39,8 @@ public class QuerySyncTest extends ClwbHeadlessTestCase {
 
   @Test
   public void testClwb() throws Exception {
-    final var success = runQuerySync();
-    assertThat(success).isTrue();
+    final var result = runQuerySync();
+    result.assertNoErrors();
 
     checkAnalysis();
     checkCompiler();

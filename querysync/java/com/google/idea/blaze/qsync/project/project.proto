@@ -188,19 +188,6 @@ enum CcLanguage {
 }
 
 /**
- * A compiler kind.
- *
- * @see com.jetbrains.cidr.lang.workspace.compiler.OCCompilerKind
- */
-enum CcCompilerKind {
-  CC_COMPILER_KIND_UNKNOWN = 0;
-  CLANG = 1;
-  APPLE_CLANG = 2;
-  GCC = 3;
-  MSVC = 4;
-}
-
-/**
  * A single source file.
  *
  * @see
@@ -225,7 +212,7 @@ message CcCompilationContext {
 }
 
 /**
- * Compiler settings.
+ * Compiler settings. Can be different per compilation context.
  *
  * @see com.jetbrains.cidr.lang.workspace.OCCompilerSettings
  */
@@ -238,38 +225,52 @@ message CcCompilerSettings {
 }
 
 /**
+ * Compiler info are the same for every compilation context that used this
+ * compiler. This message is persisted as part of the ArtifactTrackerState.
+ *
+ * @see com.google.idea.blaze.qsync.deps.CcCompilerInfo
+ */
+message CcCompilerInfo {
+  enum Kind {
+    CC_COMPILER_KIND_UNKNOWN = 0;
+    CLANG = 1;
+    APPLE_CLANG = 2;
+    GCC = 3;
+    MSVC = 4;
+  }
+
+  Kind kind = 1;
+
+  /** Additional data required for apple clang compiler. */
+  message Xcode {
+    string developer_dir = 1;
+    string sdk_root = 2;
+  }
+
+  /** Additional data required for msvc compiler. */
+  message Msvc {
+    string arch = 1;
+    string version = 2;
+    string vc_directory = 3;
+  }
+
+  // optional additional data
+  oneof data {
+    Xcode xcode = 6;
+    Msvc msvc = 7;
+  }
+}
+
+/**
  * A bazel toolchain. There can be multiple CcCompilerSettings for a single
- * toolchain.
+ * toolchain but only one CcCompilerInfo.
  */
 message CcToolchain {
   string id = 1;
   string name = 2;
   string cpu = 3;
   ProjectPath executable = 4;
-  CcCompilerKind kind = 5;
-
-  // optional additional data
-  oneof data {
-    XcodeData xcode_data = 6;
-    MsvcData msvc_data = 7;
-  }
-}
-
-/**
- * Additional data required for apple clang compiler.
- */
-message XcodeData {
-  string developer_dir = 1;
-  string sdk_root = 2;
-}
-
-/**
- * Additional data required for msvc compiler.
- */
-message MsvcData {
-  string arch = 1;
-  string version = 2;
-  string vc_directory = 3;
+  CcCompilerInfo info = 5;
 }
 
 /**

@@ -203,7 +203,7 @@ public class CcProjectModelUpdateOperation implements Disposable {
   }
 
   private OCCompilerKind getCompilerKind(CcToolchain toolchain) {
-    return switch (toolchain.getKind()) {
+    return switch (toolchain.getInfo().getKind()) {
       case APPLE_CLANG -> AppleClangCompilerKind.INSTANCE;
       case GCC -> GCCCompilerKind.INSTANCE;
       case MSVC -> MSVCCompilerKind.INSTANCE;

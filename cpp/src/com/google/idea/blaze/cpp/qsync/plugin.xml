@@ -16,6 +16,6 @@
 <idea-plugin>
   <extensions defaultExtensionNs="com.google.idea.blaze.qsync">
     <QuerySyncListenerProvider implementation="com.google.idea.blaze.cpp.qsync.CcProjectModelUpdater$Provider" />
-    <CcCompilerInfoCollectorProvider implementation="com.google.idea.blaze.cpp.qsync.CcCompilerInfoCollectorImpl$Provider"/>
+    <CompilerInfoCollectorProvider implementation="com.google.idea.blaze.cpp.qsync.CompilerInfoCollectorImpl$Provider"/>
   </extensions>
 </idea-plugin>

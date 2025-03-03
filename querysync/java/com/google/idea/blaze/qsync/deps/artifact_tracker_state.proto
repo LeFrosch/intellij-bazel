@@ -112,4 +112,5 @@ message CcToolchain {
   repeated ProjectPath built_in_include_directories = 5;
   repeated string c_options = 6;
   repeated string cpp_options = 7;
+  CcCompilerInfo info = 8;
 }

@@ -22,7 +22,6 @@ import com.google.idea.blaze.common.Context;
 import com.google.idea.blaze.exception.BuildException;
 import com.google.idea.blaze.qsync.artifacts.ArtifactMetadata;
 import com.google.idea.blaze.qsync.artifacts.BuildArtifact;
-import com.google.idea.blaze.qsync.cc.CcCompilerInfoCollector;
 import com.google.idea.blaze.qsync.cc.ConfigureCcCompilation;
 import com.google.idea.blaze.qsync.deps.ArtifactTracker;
 import com.google.idea.blaze.qsync.deps.ProjectProtoUpdate;
@@ -54,8 +53,7 @@ public class DependenciesProjectProtoUpdater implements ProjectProtoTransform {
   public DependenciesProjectProtoUpdater(
       ProjectDefinition projectDefinition,
       ProjectPath.Resolver pathResolver,
-      Supplier<Boolean> attachDepsSrcjarsExperiment,
-      CcCompilerInfoCollector compilerInfoCollector) {
+      Supplier<Boolean> attachDepsSrcjarsExperiment) {
     // Require empty package prefixes for srcjar inner paths, since the ultimate consumer of these
     // paths does not support setting a package prefix (see `Library.ModifiableModel.addRoot`).
     PackageStatementParser packageReader = new PackageStatementParser();
@@ -71,7 +69,7 @@ public class DependenciesProjectProtoUpdater implements ProjectProtoTransform {
             .add(
                 new AddProjectGenSrcs(
                     projectDefinition, new JavaSourcePackageExtractor(packageReader)))
-            .add(new ConfigureCcCompilation.UpdateOperation(compilerInfoCollector));
+            .add(new ConfigureCcCompilation.UpdateOperation());
     if (attachDepsSrcjarsExperiment.get()) {
       updateOperations.add(
           new AddDependencySrcJars(

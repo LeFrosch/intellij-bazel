@@ -27,7 +27,6 @@ import com.google.idea.blaze.exception.BuildException;
 import com.google.idea.blaze.qsync.artifacts.BuildArtifact;
 import com.google.idea.blaze.qsync.deps.ArtifactDirectories;
 import com.google.idea.blaze.qsync.deps.ArtifactDirectoryBuilder;
-import com.google.idea.blaze.qsync.deps.ArtifactTracker;
 import com.google.idea.blaze.qsync.deps.ArtifactTracker.State;
 import com.google.idea.blaze.qsync.deps.CcCompilationInfo;
 import com.google.idea.blaze.qsync.deps.CcToolchain;
@@ -56,23 +55,16 @@ public class ConfigureCcCompilation {
   /** An update operation to configure CC compilation. */
   public static class UpdateOperation implements ProjectProtoUpdateOperation {
 
-    private final CcCompilerInfoCollector collector;
-
-    public UpdateOperation(CcCompilerInfoCollector collector) {
-      this.collector = collector;
-    }
-
     @Override
-    public void update(ProjectProtoUpdate update, ArtifactTracker.State artifactState)
-        throws BuildException {
-      new ConfigureCcCompilation(artifactState, update, collector).update();
+    public void update(ProjectProtoUpdate update, State artifactState)
+      throws BuildException {
+      new ConfigureCcCompilation(artifactState, update).update();
     }
   }
 
   private static final AtomicInteger nextFlagSetId = new AtomicInteger(0);
   private final State artifactState;
   private final ProjectProtoUpdate update;
-  private final CcCompilerInfoCollector collector;
 
   /* Map from toolchain ID -> language -> flags for that toolchain & language. */
   private final Map<String, Map<ProjectProto.CcLanguage, List<ProjectProto.CcCompilerFlag>>> toolchainLanguageFlags = Maps.newHashMap();
@@ -82,10 +74,9 @@ public class ConfigureCcCompilation {
    * which can have a large memory footprint. */
   private final Map<Set<ProjectProto.CcCompilerFlag>, String> uniqueFlagSetIds = Maps.newHashMap();
 
-  ConfigureCcCompilation(State artifactState, ProjectProtoUpdate projectUpdate, CcCompilerInfoCollector collector) {
+  ConfigureCcCompilation(State artifactState, ProjectProtoUpdate projectUpdate) {
     this.artifactState = artifactState;
     this.update = projectUpdate;
-    this.collector = collector;
   }
 
   public void update() throws BuildException {
@@ -130,24 +121,16 @@ public class ConfigureCcCompilation {
         ImmutableMap.of(ProjectProto.CcLanguage.C, cFlags, ProjectProto.CcLanguage.CPP, cppFlags)
     );
 
-    final var builder = ProjectProto.CcToolchain.newBuilder();
-    builder.setId(toolchain.id());
-    builder.setName(toolchain.compiler());
-    builder.setCpu(toolchain.cpu());
-    builder.setExecutable(toolchain.compilerExecutable().toProto());
-
-    final var kind = collector.getCompilerKind(update.context(), toolchain);
-    builder.setKind(kind);
-
-    if (kind.equals(ProjectProto.CcCompilerKind.MSVC)) {
-      builder.setMsvcData(collector.getMsvcData(update.context(), toolchain));
-    }
-    if (kind.equals(ProjectProto.CcCompilerKind.APPLE_CLANG)) {
-      builder.setXcodeData(collector.getXcodeData(update.context(), toolchain));
-    }
+    final var builder = ProjectProto.CcToolchain.newBuilder()
+      .setId(toolchain.id())
+      .setName(toolchain.compiler())
+      .setCpu(toolchain.cpu())
+      .setExecutable(toolchain.compilerExecutable().toProto())
+      .setInfo(toolchain.compilerInfo().toProto());
 
     update.project().getCcWorkspaceBuilder().addToolchains(builder.build());
   }
+
 
   private void visitTarget(CcCompilationInfo ccInfo, DependencyBuildContext buildContext) {
     ProjectTarget projectTarget = update.buildGraph().targetMap().get(ccInfo.target());

@@ -13,12 +13,18 @@ import com.google.idea.blaze.common.PrintOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 public class SyncOutput {
   private final List<IssueOutput> issues = new ArrayList<>();
   private final List<String> messages = new ArrayList<>();
 
+  @Nullable
+  private BlazeContext context;
+
   void install(BlazeContext context) {
+    this.context = context;
+
     addOutputSink(context, IssueOutput.class, issues::add);
     addOutputSink(context, PrintOutput.class, (it) -> messages.add(it.getText()));
     addOutputSink(context, StatusOutput.class, (it) -> messages.add(it.getStatus()));
@@ -47,8 +53,7 @@ public class SyncOutput {
     }
 
     builder.append(separator);
-    for (int i = 0; i < issues.size(); i++) {
-      final var issue = issues.get(i) ;
+    for (final var issue : issues) {
       builder.append(String.format("%s: %s%n%s%n", issue.getKind(), issue.getTitle(), issue.getDescription()));
     }
     if (issues.isEmpty()) {
@@ -60,11 +65,13 @@ public class SyncOutput {
   }
 
   public void assertNoErrors() {
-    final var message = String.format(
-        "there where errors during the sync, check this log:%n%s",
-        collectLog()
-    );
+    final var log = String.format("check this log: %s", collectLog());
 
-    assertThat(issues).isEmpty();
+    assertWithMessage(log).that(context).isNotNull();
+    assertWithMessage(log).that(context.hasErrors()).isFalse();
+    assertWithMessage(log).that(context.hasWarnings()).isFalse();
+    assertWithMessage(log).that(context.isCancelled()).isFalse();
+
+    assertWithMessage(log).that(issues).isEmpty();
   }
 }
