@@ -35,7 +35,7 @@ public interface CcCompilerInfoCollectorProvider {
 
     @Override
     public ProjectProto.CcCompilerKind getCompilerKind(Context<?> ctx, CcToolchain toolchain) throws BuildException {
-      throw new UnsupportedOperationException("CPP support is not available");
+      return ProjectProto.CcCompilerKind.CC_COMPILER_KIND_UNKNOWN;
     }
 
     @Override

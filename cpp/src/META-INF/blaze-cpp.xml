@@ -40,6 +40,7 @@
     <cpp.BlazeCompilerFlagsProcessorProvider implementation="com.google.idea.blaze.cpp.SysrootFlagsProcessor$Provider"/>
     <TargetKindProvider implementation="com.google.idea.blaze.cpp.CppBlazeRules"/>
     <BuildFlagsProvider implementation="com.google.idea.blaze.cpp.CppAspectArgsProvider"/>
+    <base.qsync.CcCompilerInfoCollectorProvider implementation="com.google.idea.blaze.cpp.qsync.CcCompilerInfoCollectorImpl$Provider"/>
   </extensions>
 
   <extensions defaultExtensionNs="cidr.lang">

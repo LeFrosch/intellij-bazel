@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 /** Adds C/C++ compilation information and headers to the project proto. */
+@SuppressWarnings("ResultOfMethodCallIgnored") // ignore unused builder returns
 public class ConfigureCcCompilation {
 
   /** An update operation to configure CC compilation. */
@@ -103,11 +104,13 @@ public class ConfigureCcCompilation {
     }
   }
 
-  private void visitToolchainMap(Map<String, CcToolchain> toolchainInfoMap) {
-    toolchainInfoMap.values().forEach(this::visitToolchain);
+  private void visitToolchainMap(Map<String, CcToolchain> toolchainInfoMap) throws BuildException {
+    for (final var toolchain : toolchainInfoMap.values()) {
+      visitToolchain(toolchain);
+    }
   }
 
-  private void visitToolchain(CcToolchain toolchain) {
+  private void visitToolchain(CcToolchain toolchain) throws BuildException {
     final var commonFlags = toolchain.builtInIncludeDirectories().stream()
         .map(p -> makePathFlag("-I", p))
         .collect(toImmutableList());
@@ -127,15 +130,23 @@ public class ConfigureCcCompilation {
         ImmutableMap.of(ProjectProto.CcLanguage.C, cFlags, ProjectProto.CcLanguage.CPP, cppFlags)
     );
 
-    // TODO: get compiler kind (see com.google.idea.blaze.cpp.CompilerVersionChecker)
-    // TODO: get MSVC data (see com.google.idea.blaze.clwb.MSVCEnvironmentProvider)
-    // TODO: get Xcode data (see com.google.idea.blaze.cpp.XcodeCompilerSettingsProvider)
+    final var builder = ProjectProto.CcToolchain.newBuilder();
+    builder.setId(toolchain.id());
+    builder.setName(toolchain.compiler());
+    builder.setCpu(toolchain.cpu());
+    builder.setExecutable(toolchain.compilerExecutable().toProto());
 
-    update.project().getCcWorkspaceBuilder().addToolchains(ProjectProto.CcToolchain.newBuilder()
-        .setName(toolchain.compiler())
-        .setCpu(toolchain.cpu())
-        .setExecutable(toolchain.compilerExecutable().toProto())
-        .setId(toolchain.id()));
+    final var kind = collector.getCompilerKind(update.context(), toolchain);
+    builder.setKind(kind);
+
+    if (kind.equals(ProjectProto.CcCompilerKind.MSVC)) {
+      builder.setMsvcData(collector.getMsvcData(update.context(), toolchain));
+    }
+    if (kind.equals(ProjectProto.CcCompilerKind.APPLE_CLANG)) {
+      builder.setXcodeData(collector.getXcodeData(update.context(), toolchain));
+    }
+
+    update.project().getCcWorkspaceBuilder().addToolchains(builder.build());
   }
 
   private void visitTarget(CcCompilationInfo ccInfo, DependencyBuildContext buildContext) {
