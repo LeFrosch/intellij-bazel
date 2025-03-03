@@ -164,12 +164,12 @@ public class NewArtifactTracker<C extends Context<C>> implements ArtifactTracker
     return targetBuildInfoSet.build();
   }
 
-  private static ImmutableList<CcToolchain> getCcToolchains(OutputInfo outputInfo) {
+  private static ImmutableList<CcToolchain> getCcToolchains(OutputInfo outputInfo, CompilerInfoMap compilerInfo) {
     ImmutableList.Builder<CcToolchain> toolchainList = ImmutableList.builder();
 
     for (CcCompilationInfoOuterClass.CcCompilationInfo ccInfo : outputInfo.getCcCompilationInfo()) {
       for (CcToolchainInfo proto : ccInfo.getToolchainsList()) {
-        CcToolchain toolchain = CcToolchain.create(proto);
+        CcToolchain toolchain = CcToolchain.create(proto, compilerInfo.get(proto.getId()));
         toolchainList.add(toolchain);
       }
     }
@@ -332,7 +332,7 @@ public class NewArtifactTracker<C extends Context<C>> implements ArtifactTracker
   }
 
   @Override
-  public void update(Set<Label> targets, OutputInfo outputInfo, C context) throws BuildException {
+  public void update(Set<Label> targets, OutputInfo outputInfo, CompilerInfoMap compilerInfo, C context) throws BuildException {
     ListenableFuture<?> artifactsCached =
         artifactCache.addAll(outputInfo.getOutputGroups().values(), context);
     try {
@@ -352,7 +352,7 @@ public class NewArtifactTracker<C extends Context<C>> implements ArtifactTracker
     Map<Label, TargetBuildInfo> newTargetInfo =
         getUniqueTargetBuildInfos(getTargetBuildInfo(outputInfo, digestMap));
 
-    ImmutableList<CcToolchain> newToolchains = getCcToolchains(outputInfo);
+    ImmutableList<CcToolchain> newToolchains = getCcToolchains(outputInfo, compilerInfo);
 
     // extract required metadata from the build artifacts
     ImmutableMap<Label, ImmutableSetMultimap<BuildArtifact, ArtifactMetadata>> metadata =

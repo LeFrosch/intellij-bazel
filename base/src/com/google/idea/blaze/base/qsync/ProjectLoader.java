@@ -183,8 +183,7 @@ public class ProjectLoader {
         new DependenciesProjectProtoUpdater(
             latestProjectDef,
             projectPathResolver,
-            QuerySync.ATTACH_DEP_SRCJARS::getValue,
-            CcCompilerInfoCollectorProvider.get(project, projectPathResolver)));
+            QuerySync.ATTACH_DEP_SRCJARS::getValue));
 
     artifactTracker = tracker;
     renderJarArtifactTracker = new RenderJarArtifactTrackerImpl();
@@ -203,7 +202,11 @@ public class ProjectLoader {
             new FileRefresher(project),
             GeneratedSourcesStripperProvider.get(project));
     DependencyTracker dependencyTracker =
-        new DependencyTrackerImpl(graph, dependencyBuilder, artifactTracker);
+        new DependencyTrackerImpl(
+          graph,
+          dependencyBuilder,
+          createCompilerInfoCollector(projectPathResolver),
+          artifactTracker);
     ProjectRefresher projectRefresher =
         new ProjectRefresher(
             vcsHandler.map(it -> (VcsStateDiffer)it::diffVcsState).orElse(VcsStateDiffer.NONE),
@@ -296,6 +299,10 @@ public class ProjectLoader {
       ImmutableSet<String> handledRuleKinds) {
     return new BazelDependencyBuilder(
       project, buildSystem, projectDefinition, workspaceRoot, vcsHandler, buildArtifactCache, handledRuleKinds);
+  }
+
+  protected CompilerInfoCollector createCompilerInfoCollector(ProjectPath.Resolver resolver) {
+    return CompilerInfoCollectorProvider.get(project, resolver);
   }
 
   protected RenderJarBuilder createRenderJarBuilder(

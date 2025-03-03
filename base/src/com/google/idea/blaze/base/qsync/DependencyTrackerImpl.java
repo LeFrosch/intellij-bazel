@@ -30,6 +30,7 @@ import com.google.idea.blaze.exception.BuildException;
 import com.google.idea.blaze.qsync.QuerySyncProjectSnapshot;
 import com.google.idea.blaze.qsync.SnapshotHolder;
 import com.google.idea.blaze.qsync.deps.ArtifactTracker;
+import com.google.idea.blaze.qsync.deps.CompilerInfoMap;
 import com.google.idea.blaze.qsync.deps.OutputInfo;
 import com.google.idea.blaze.qsync.project.DependencyTrackingBehavior;
 import com.google.idea.blaze.qsync.project.ProjectDefinition;
@@ -49,14 +50,17 @@ public class DependencyTrackerImpl implements DependencyTracker {
 
   private final SnapshotHolder snapshotHolder;
   private final DependencyBuilder builder;
+  private final CompilerInfoCollector collector;
   private final ArtifactTracker<BlazeContext> artifactTracker;
 
   public DependencyTrackerImpl(
       SnapshotHolder snapshotHolder,
       DependencyBuilder builder,
+      CompilerInfoCollector collector,
       ArtifactTracker<BlazeContext> artifactTracker) {
     this.snapshotHolder = snapshotHolder;
     this.builder = builder;
+    this.collector = collector;
     this.artifactTracker = artifactTracker;
   }
 
@@ -114,7 +118,10 @@ public class DependencyTrackerImpl implements DependencyTracker {
             snapshot.graph().getTargetLanguages(requestedTargets.buildTargets));
     reportErrorsAndWarnings(context, snapshot, outputInfo);
 
-    artifactTracker.update(requestedTargets.expectedDependencyTargets, outputInfo, context);
+    CompilerInfoMap compilerInfo = collector.run(context, outputInfo);
+    // TODO: report compiler info collection errors and warnings
+
+    artifactTracker.update(requestedTargets.expectedDependencyTargets, outputInfo, compilerInfo, context);
   }
 
   private void reportErrorsAndWarnings(

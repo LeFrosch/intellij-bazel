@@ -17,7 +17,9 @@ package com.google.idea.blaze.cpp.qsync
 
 import com.google.idea.blaze.base.projectview.ProjectViewManager
 import com.google.idea.blaze.base.projectview.section.sections.BazelBinarySection
-import com.google.idea.blaze.base.qsync.CcCompilerInfoCollectorProvider
+import com.google.idea.blaze.base.qsync.CompilerInfoCollector
+import com.google.idea.blaze.base.qsync.CompilerInfoCollectorProvider
+import com.google.idea.blaze.base.scope.BlazeContext
 import com.google.idea.blaze.base.settings.BlazeUserSettings
 import com.google.idea.blaze.base.sync.aspects.storage.AspectRepositoryProvider
 import com.google.idea.blaze.base.util.pluginProjectScope
@@ -26,6 +28,8 @@ import com.google.idea.blaze.common.PrintOutput
 import com.google.idea.blaze.exception.BuildException
 import com.google.idea.blaze.qsync.cc.CcCompilerInfoCollector
 import com.google.idea.blaze.qsync.deps.CcToolchain
+import com.google.idea.blaze.qsync.deps.CompilerInfoMap
+import com.google.idea.blaze.qsync.deps.OutputInfo
 import com.google.idea.blaze.qsync.project.ProjectPath
 import com.google.idea.blaze.qsync.project.ProjectProto
 import com.intellij.openapi.diagnostic.logger
@@ -46,59 +50,43 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.*
 
-private val LOG = logger<CcCompilerInfoCollectorImpl>()
+private val LOG = logger<CompilerInfoCollectorImpl>()
 
-class CcCompilerInfoCollectorImpl private constructor(
+class CompilerInfoCollectorImpl private constructor(
   private val project: Project,
   private val resolver: ProjectPath.Resolver,
-) : CcCompilerInfoCollector {
+) : CompilerInfoCollector {
 
-  class Provider : CcCompilerInfoCollectorProvider {
-    override fun create(project: Project, resolver: ProjectPath.Resolver): CcCompilerInfoCollector {
-      return CcCompilerInfoCollectorImpl(project, resolver)
+  class Provider : CompilerInfoCollectorProvider {
+    override fun create(project: Project, resolver: ProjectPath.Resolver): CompilerInfoCollector {
+      return CompilerInfoCollectorImpl(project, resolver)
     }
   }
 
-  @Throws(BuildException::class)
-  override fun getCompilerKind(ctx: Context<*>, toolchain: CcToolchain): ProjectProto.CcCompilerKind {
-    return runJob(ctx, toolchain, ExecutionContext::getCompilerKindImpl)
-  }
-
-  @Throws(BuildException::class)
-  override fun getMsvcData(ctx: Context<*>, toolchain: CcToolchain): ProjectProto.MsvcData {
-    // TODO: implement msvc data collection (see com.google.idea.blaze.clwb.MSVCEnvironmentProvider)
-    return ProjectProto.MsvcData.newBuilder().build()
-  }
-
-  @Throws(BuildException::class)
-  override fun getXcodeData(ctx: Context<*>, toolchain: CcToolchain): ProjectProto.XcodeData {
-    return runJob(ctx, toolchain, ExecutionContext::getXcodeData)
-  }
-
-  @Throws(BuildException::class)
-  private fun <T> runJob(
-    ctx: Context<*>,
-    toolchain: CcToolchain,
-    action: suspend ExecutionContext.() -> T,
-  ): T {
-    val result = pluginProjectScope(project).async { ExecutionContext(project, toolchain, ctx, resolver).action() }
+  @Throws(BuildException::class, IOException::class)
+  override fun run(ctx: BlazeContext, outputInfo: OutputInfo): CompilerInfoMap {
+    val result = pluginProjectScope(project).async { run(ExecutionContext(project, outputInfo, ctx, resolver)) }
     ctx.addCancellationHandler { result.cancel() }
 
     return try {
       runBlockingMaybeCancellable { result.await() }
-    } catch (e: BuildException) {
-      throw e
     } catch (e: Exception) {
-      LOG.error("Unhandled exception", e)
-      throw BuildException("Unhandled exception", e)
+      if (e is BuildException || e is IOException) {
+        throw e
+      } else {
+        throw BuildException("Unhandled exception", e)
+      }
     }
+  }
+
+  private suspend fun run(ctx: ExecutionContext): CompilerInfoMap {
   }
 }
 
 private class ExecutionContext(
   val project: Project,
-  val toolchain: CcToolchain,
-  private val ctx: Context<*>,
+  val info: OutputInfo,
+  private val ctx: BlazeContext,
   private val resolver: ProjectPath.Resolver,
 ) {
 
@@ -136,7 +124,7 @@ private class ExecutionContext(
 }
 
 @Suppress("UnstableApiUsage") // EEL API is still unstable
-private suspend fun ExecutionContext.getCompilerKindImpl(): ProjectProto.CcCompilerKind {
+private suspend fun ExecutionContext.getCompilerKindImpl(toolchain: CcToolchain): ProjectProto.CcCompilerKind {
   val executable = resolve(toolchain.compilerExecutable())
 
   val result = project.getEelDescriptor().upgrade().exec
