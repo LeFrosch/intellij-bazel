@@ -1,11 +1,9 @@
 package com.google.idea.testing.headless;
 
 import static com.google.common.truth.Truth.assertThat;
-import static junit.framework.Assert.fail;
 
 import com.google.idea.blaze.base.async.process.ExternalTask;
 import com.google.idea.blaze.base.bazel.BazelVersion;
-import com.google.idea.blaze.base.logging.utils.querysync.QuerySyncActionStatsScope;
 import com.google.idea.blaze.base.model.primitives.WorkspaceRoot;
 import com.google.idea.blaze.base.project.AutoImportProjectOpenProcessor;
 import com.google.idea.blaze.base.project.ExtendableBazelProjectCreator;
@@ -14,7 +12,6 @@ import com.google.idea.blaze.base.projectview.ProjectViewSet;
 import com.google.idea.blaze.base.projectview.section.sections.TextBlock;
 import com.google.idea.blaze.base.projectview.section.sections.TextBlockSection;
 import com.google.idea.blaze.base.qsync.QuerySyncManager;
-import com.google.idea.blaze.base.qsync.QuerySyncManager.TaskOrigin;
 import com.google.idea.blaze.base.scope.BlazeContext;
 import com.google.idea.blaze.base.settings.BlazeUserSettings;
 import com.google.idea.blaze.base.settings.BuildSystemName;
@@ -47,7 +44,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
+
   protected VirtualFile myProjectRoot;
+
+  public static void fail(String message) {
+    throw new AssertionError(message);
+  }
+
+  public static void fail(String message, Throwable cause) {
+    throw new AssertionError(message, cause);
+  }
 
   /**
    * Normalizes an absolut posix path for windows. Since tests have to be run with `MSYS_NO_PATHCONV`
@@ -140,7 +146,7 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
     try {
       FileUtil.ensureExists(new File(projectFile, Project.DIRECTORY_STORE_FOLDER));
     } catch (IOException e) {
-      fail("could not create project directory: " + e.getMessage());
+      fail("could not create project directory", e);
     }
 
     final var name = rootFile.getName();
@@ -234,9 +240,9 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
     try {
       future.get();
     } catch (ExecutionException e) {
-      LOG.error("sync failed", e);
+      fail("sync failed", e);
     } catch (InterruptedException e) {
-      LOG.error("sync was interrupted", e);
+      fail("sync was interrupted", e);
     }
 
     return output;
@@ -250,22 +256,33 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
         .setAddProjectViewTargets(true);
   }
 
-  protected boolean runQuerySync() {
-    final var future = QuerySyncManager.getInstance(myProject).onStartup(QuerySyncActionStatsScope.create(getClass(), null));
+  protected SyncOutput runQuerySync() throws Exception {
+    final var context = BlazeContext.create();
+
+    final var output = new SyncOutput();
+    output.install(context);
+
+    final var future = CompletableFuture.runAsync(() -> {
+      try {
+        QuerySyncManager.getInstance(myProject).loadProject(context);
+      } catch (Exception e) {
+        fail("enable analysis failed", e);
+      }
+    }, ApplicationManager.getApplication()::executeOnPooledThread);
 
     while (!future.isDone()) {
       PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue();
     }
 
     try {
-      return future.get();
+      future.get();
     } catch (ExecutionException e) {
-      LOG.error("query sync failed", e);
+      fail("query sync failed", e);
     } catch (InterruptedException e) {
-      LOG.error("query sync was interrupted", e);
+      fail("query sync was interrupted", e);
     }
 
-    return false;
+    return output;
   }
 
   protected SyncOutput enableAnalysisFor(VirtualFile file) throws ExecutionException {
@@ -284,7 +301,7 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
       try {
         projects.get().enableAnalysis(context, targets);
       } catch (Exception e) {
-        LOG.error("enable analysis failed", e);
+        fail("enable analysis failed", e);
       }
     }, ApplicationManager.getApplication()::executeOnPooledThread);
 
@@ -298,9 +315,9 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
     try {
       future.get();
     } catch (ExecutionException e) {
-      LOG.error("enable analysis failed", e);
+      fail("enable analysis failed", e);
     } catch (InterruptedException e) {
-      LOG.error("enable analysis was interrupted", e);
+      fail("enable analysis was interrupted", e);
     }
 
     return output;
