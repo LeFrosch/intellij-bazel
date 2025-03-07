@@ -1,9 +1,7 @@
 package com.google.idea.blaze.qsync.deps;
 
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
-
 import com.google.common.collect.ImmutableMap;
-import java.util.Optional;
+import javax.annotation.Nullable;
 
 public class CcCompilerInfoMap {
 
@@ -15,7 +13,8 @@ public class CcCompilerInfoMap {
     this.infoMap = infoMap;
   }
 
+  @Nullable
   public CcCompilerInfo get(String toolchainId) {
-    return Optional.ofNullable(infoMap.get(toolchainId)).orElse(CcCompilerInfo.UNKNOWN);
+    return infoMap.get(toolchainId);
   }
 }

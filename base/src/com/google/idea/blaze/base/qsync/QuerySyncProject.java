@@ -506,15 +506,16 @@ public class QuerySyncProject {
   }
 
   public Optional<PostQuerySyncData> readSnapshotFromDisk(BlazeContext context) throws IOException {
-    File f = snapshotFilePath.toFile();
-    if (!f.exists()) {
-      return Optional.empty();
-    }
-    try (InputStream in = new GZIPInputStream(new FileInputStream(f))) {
-      return new SnapshotDeserializer()
-          .readFrom(in, context)
-          .map(SnapshotDeserializer::getSyncData);
-    }
+    return Optional.empty();
+    // File f = snapshotFilePath.toFile();
+    // if (!f.exists()) {
+    //   return Optional.empty();
+    // }
+    // try (InputStream in = new GZIPInputStream(new FileInputStream(f))) {
+    //   return new SnapshotDeserializer()
+    //       .readFrom(in, context)
+    //       .map(SnapshotDeserializer::getSyncData);
+    // }
   }
 
   /** Returns true if {@code absolutePath} is in a project include */

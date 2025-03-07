@@ -197,9 +197,7 @@ public class CcProjectModelUpdateOperation implements Disposable {
   }
 
   private File getCompilerExecutable(CcToolchain toolchain) {
-    return pathResolver
-        .resolve(ProjectPath.create(toolchain.getExecutable()))
-        .toFile();
+    return new File(toolchain.getInfo().getExecutable());
   }
 
   private OCCompilerKind getCompilerKind(CcToolchain toolchain) {

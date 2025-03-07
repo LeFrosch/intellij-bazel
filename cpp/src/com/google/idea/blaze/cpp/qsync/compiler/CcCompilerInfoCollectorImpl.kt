@@ -30,11 +30,14 @@ class CcCompilerInfoCollectorImpl private constructor(
       ctx.pushJob(pluginProjectScope(project), "CcCompilerInfoCollector") {
         doRun(CcCompilerInfoContext(project, ctx, resolver), outputInfo)
       }
+    } catch (e: BuildException) {
+      throw e
     } catch (e: Exception) {
-      throw BuildException("Unhandled exception", e)
+      throw BuildException("unhandled exception", e)
     }
   }
 
+  @Throws(BuildException::class)
   private suspend fun doRun(ctx: CcCompilerInfoContext, info: OutputInfo): CcCompilerInfoMap {
     val compilerInfos = info.ccCompilationInfo.flatMap { it.toolchainsList }.distinctBy { it.id }
 

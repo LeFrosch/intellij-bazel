@@ -14,8 +14,6 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class CcCompilerInfo {
 
-  public static final CcCompilerInfo UNKNOWN = builder().kind(Kind.UNKNOWN).build();
-
   public enum Kind {
     UNKNOWN, CLANG, APPLE_CLANG, GCC, MSVC;
 
@@ -71,7 +69,7 @@ public abstract class CcCompilerInfo {
 
   public static CcCompilerInfo fromProto(ProjectProto.CcCompilerInfo proto) {
     final var builder = builder();
-    builder.kind(CcCompilerInfo.Kind.fromProto(proto.getKind()));
+    builder.kind(CcCompilerInfo.Kind.fromProto(proto.getKind())).executable(proto.getExecutable());
 
     if (proto.hasXcode()) {
       builder.xcode(CcCompilerInfo.Xcode.fromProto(proto.getXcode()));
@@ -86,7 +84,7 @@ public abstract class CcCompilerInfo {
 
   public ProjectProto.CcCompilerInfo toProto() {
     final var builder = ProjectProto.CcCompilerInfo.newBuilder();
-    builder.setKind(kind().toProto());
+    builder.setKind(kind().toProto()).setExecutable(executable());
 
     if (xcode() != null) {
       builder.setXcode(xcode().toProto());
@@ -101,6 +99,8 @@ public abstract class CcCompilerInfo {
 
   public abstract Kind kind();
 
+  public abstract String executable();
+
   @Nullable
   public abstract Xcode xcode();
 
@@ -111,11 +111,17 @@ public abstract class CcCompilerInfo {
     return new AutoValue_CcCompilerInfo.Builder();
   }
 
+  public static CcCompilerInfo unknown(String executable) {
+    return CcCompilerInfo.builder().executable(executable).kind(Kind.UNKNOWN).build();
+  }
+
   /** Builder for {@link CcCompilationInfo}. */
   @AutoValue.Builder
   public abstract static class Builder {
 
     public abstract Builder kind(Kind value);
+
+    public abstract Builder executable(String value);
 
     public abstract Builder xcode(Xcode value);
 

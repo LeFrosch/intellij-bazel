@@ -47,7 +47,7 @@ private suspend fun CcCompilerInfoContext.getConfig(): XcodeConfig {
   val result = execBazel(BlazeCommandName.CQUERY) {
     addBlazeFlags("deps(@bazel_tools//tools/osx:current_xcode_config)")
     addBlazeFlags("--output=starlark")
-    addBlazeFlags("--starlark:file='$queryFile'")
+    addBlazeFlags("--starlark:file=$queryFile")
   }
 
   if (result.exitCode == 37) {

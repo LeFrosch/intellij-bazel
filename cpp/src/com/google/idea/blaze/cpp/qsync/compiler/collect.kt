@@ -3,22 +3,28 @@ package com.google.idea.blaze.cpp.qsync.compiler
 import com.google.idea.blaze.exception.BuildException
 import com.google.idea.blaze.qsync.deps.CcCompilerInfo
 import com.google.idea.blaze.qsync.java.cc.CcCompilationInfoOuterClass.CcToolchainInfo
+import java.io.IOException
+import java.nio.file.Path
 
+@Throws(BuildException::class)
 suspend fun CcCompilerInfoContext.collectCompilerInfo(toolchain: CcToolchainInfo): CcCompilerInfo {
+  val executable = resolve(toolchain.compilerExecutable)
   val kind = try {
-    getCompilerKind(toolchain)
+    getCompilerKind(executable)
   } catch (e: BuildException) {
-    warn("could not detect compiler kind", "Exception: %s", e.toString())
+    warn("could not detect compiler kind", e)
     CcCompilerInfo.Kind.UNKNOWN
   }
 
-  val builder = CcCompilerInfo.builder().kind(kind)
+  val builder = CcCompilerInfo.builder()
+    .executable(executable.toString())
+    .kind(kind)
 
   if (kind == CcCompilerInfo.Kind.APPLE_CLANG) {
     try {
       builder.xcode(getXcodeData())
     } catch (e: BuildException) {
-      warn("could not get xcode info", "Exception: %s", e.toString())
+      warn("could not get xcode info", e)
     }
   }
 
@@ -26,7 +32,7 @@ suspend fun CcCompilerInfoContext.collectCompilerInfo(toolchain: CcToolchainInfo
     try {
       // builder.msvc(getMsvcData())
     } catch (e: BuildException) {
-      warn("could not get msvc info", "Exception: %s", e.toString())
+      warn("could not get msvc info", e)
     }
   }
 
@@ -34,9 +40,7 @@ suspend fun CcCompilerInfoContext.collectCompilerInfo(toolchain: CcToolchainInfo
 }
 
 @Throws(BuildException::class)
-private suspend fun CcCompilerInfoContext.getCompilerKind(toolchain: CcToolchainInfo): CcCompilerInfo.Kind {
-  val executable = resolve(toolchain.compilerExecutable)
-
+private suspend fun CcCompilerInfoContext.getCompilerKind(executable: Path): CcCompilerInfo.Kind {
   val result = exec(executable, "--version")
 
   if (result.exitCode == 0) {

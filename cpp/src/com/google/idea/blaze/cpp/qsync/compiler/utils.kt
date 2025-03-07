@@ -12,19 +12,28 @@ import com.intellij.platform.eel.executeProcess
 import com.intellij.platform.eel.getOrThrow
 import com.intellij.platform.eel.impl.utils.awaitProcessResult
 import com.intellij.platform.eel.provider.getEelDescriptor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.nio.file.Path
+import java.util.*
 
 private val LOG = logger<CcCompilerInfoContext>()
 
-fun CcCompilerInfoContext.resolve(path: String): Path {
-  return resolver.resolve(ProjectPath.execrootRelative(path))
+@Throws(BuildException::class)
+suspend fun CcCompilerInfoContext.resolve(path: String): Path {
+  val resolvedPath = resolver.resolve(ProjectPath.execrootRelative(path))
+
+  return try {
+    withContext(Dispatchers.IO) { resolvedPath.toRealPath() }
+  } catch (e: IOException) {
+    throw BuildException("could not resolve path: $path", e)
+  }
 }
 
-fun CcCompilerInfoContext.warn(title: String, format: String = "", vararg args: Any?) {
-  val msg = String.format(format, *args)
-
-  LOG.warn(String.format("%s: %s", title, msg))
-  IssueOutput.warn(title).withDescription(msg).submit(context)
+fun CcCompilerInfoContext.warn(title: String, e: BuildException) {
+  LOG.warn(title, e)
+  IssueOutput.warn(title).withDescription(e.toString()).submit(context)
 }
 
 @Throws(BuildException::class)

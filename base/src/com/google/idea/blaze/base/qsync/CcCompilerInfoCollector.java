@@ -9,5 +9,6 @@ import java.io.IOException;
 /** A query sync service that knows how to retrieve additional information from the compilers */
 public interface CcCompilerInfoCollector {
 
+  /** Should return a map containing an entry for every toolchain or throw a {@link BuildException} */
   CcCompilerInfoMap run(BlazeContext ctx, OutputInfo outputInfo) throws IOException, BuildException;
 }

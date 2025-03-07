@@ -125,7 +125,6 @@ public class ConfigureCcCompilation {
       .setId(toolchain.id())
       .setName(toolchain.compiler())
       .setCpu(toolchain.cpu())
-      .setExecutable(toolchain.compilerExecutable().toProto())
       .setInfo(toolchain.compilerInfo().toProto());
 
     update.project().getCcWorkspaceBuilder().addToolchains(builder.build());

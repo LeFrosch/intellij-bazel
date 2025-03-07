@@ -241,6 +241,10 @@ message CcCompilerInfo {
 
   Kind kind = 1;
 
+  // the compiler executable with any all symlinks resolved to avoid issues when
+  // bazel updates the exec root
+  string executable = 2;
+
   /** Additional data required for apple clang compiler. */
   message Xcode {
     string developer_dir = 1;
@@ -256,8 +260,8 @@ message CcCompilerInfo {
 
   // optional additional data
   oneof data {
-    Xcode xcode = 6;
-    Msvc msvc = 7;
+    Xcode xcode = 3;
+    Msvc msvc = 4;
   }
 }
 
@@ -269,8 +273,7 @@ message CcToolchain {
   string id = 1;
   string name = 2;
   string cpu = 3;
-  ProjectPath executable = 4;
-  CcCompilerInfo info = 5;
+  CcCompilerInfo info = 4;
 }
 
 /**
