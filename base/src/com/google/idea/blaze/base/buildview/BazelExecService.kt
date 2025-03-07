@@ -1,14 +1,20 @@
 package com.google.idea.blaze.base.buildview
 
 import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEvent
+import com.google.idea.blaze.base.bazel.BuildSystem
+import com.google.idea.blaze.base.bazel.BuildSystemProvider
 import com.google.idea.blaze.base.buildview.events.BuildEventParser
 import com.google.idea.blaze.base.command.BlazeCommand
 import com.google.idea.blaze.base.command.BlazeCommandName
+import com.google.idea.blaze.base.command.BlazeFlags
+import com.google.idea.blaze.base.command.BlazeInvocationContext
 import com.google.idea.blaze.base.command.buildresult.BuildResult
 import com.google.idea.blaze.base.command.buildresult.BuildResultHelperBep
 import com.google.idea.blaze.base.command.buildresult.BuildResultParser
 import com.google.idea.blaze.base.model.primitives.WorkspaceRoot
+import com.google.idea.blaze.base.projectview.ProjectViewManager
 import com.google.idea.blaze.base.scope.BlazeContext
+import com.google.idea.blaze.base.settings.BuildSystemName
 import com.google.idea.blaze.base.sync.aspects.BlazeBuildOutputs
 import com.google.idea.blaze.common.Interners
 import com.google.idea.blaze.common.PrintOutput
@@ -17,19 +23,25 @@ import com.intellij.execution.configurations.PtyCommandLine
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessListener
+import com.intellij.execution.process.ProcessOutput
 import com.intellij.execution.process.ProcessOutputTypes
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.intellij.platform.eel.execute
+import com.intellij.platform.eel.getOrThrow
+import com.intellij.platform.eel.impl.utils.awaitProcessResult
+import com.intellij.platform.eel.path.EelPath
+import com.intellij.platform.eel.provider.getEelDescriptor
 import com.intellij.util.io.LimitedInputStream
 import com.intellij.util.ui.EDT
 import kotlinx.coroutines.*
 import java.io.BufferedInputStream
 import java.io.FileInputStream
+import java.io.IOException
 import java.util.Optional
 import kotlin.io.path.pathString
 
@@ -37,9 +49,17 @@ private val LOG: Logger = Logger.getInstance(BazelExecService::class.java)
 
 @Service(Service.Level.PROJECT)
 class BazelExecService(private val project: Project, private val scope: CoroutineScope) {
+
   companion object {
     @JvmStatic
     fun instance(project: Project): BazelExecService = project.service()
+  }
+
+  private val buildSystem: BuildSystem by lazy {
+    val provider = BuildSystemProvider.getBuildSystemProvider(BuildSystemName.Bazel)
+      ?: BuildSystemProvider.defaultBuildSystem()
+
+    provider.buildSystem
   }
 
   private fun assertNonBlocking() {
@@ -62,7 +82,7 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
     }
   }
 
-  private suspend fun execute(ctx: BlazeContext, cmdBuilder: BlazeCommand.Builder): Int {
+  private suspend fun executeBuild(ctx: BlazeContext, cmdBuilder: BlazeCommand.Builder): Int {
     // the old sync view does not use a PTY based terminal
     if (BuildViewMigration.present(ctx)) {
       cmdBuilder.addBlazeFlags("--curses=yes")
@@ -179,7 +199,7 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
 
       val parseJob = parseEvents(ctx, provider)
 
-      val exitCode = execute(ctx, cmdBuilder)
+      val exitCode = executeBuild(ctx, cmdBuilder)
       val result = BuildResult.fromExitCode(exitCode)
 
       parseJob.cancelAndJoin()
@@ -194,5 +214,37 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
         )
       }
     }
+  }
+
+  @Suppress("UnstableApiUsage") // EEL API is still unstable
+  @Throws(IOException::class)
+  suspend fun execute(
+    ctx: BlazeContext,
+    cmdName: BlazeCommandName,
+    invocationCtx: BlazeInvocationContext = BlazeInvocationContext.OTHER_CONTEXT,
+    configure: BlazeCommand.Builder.() -> Unit
+  ): ProcessOutput {
+    assertNonBlocking()
+    LOG.assertTrue(cmdName != BlazeCommandName.BUILD)
+
+    val builder = BlazeCommand.builder(buildSystem.getBuildInvoker(project, ctx, cmdName), cmdName, project)
+    configure(builder)
+
+    // add flags from project view file if present
+    ProjectViewManager.getInstance(project).projectViewSet?.let { viewSet ->
+      builder.addBlazeFlags(BlazeFlags.blazeFlags(project, viewSet, cmdName, ctx, invocationCtx))
+    }
+
+    val cmd = builder.build()
+    val eel = project.getEelDescriptor()
+    val root = cmd.effectiveWorkspaceRoot.orElseGet { WorkspaceRoot.fromProject(project).path() }
+
+    return eel.upgrade().exec
+      .execute(cmd.binaryPath) {
+        workingDirectory(EelPath.parse(root.toString(), eel))
+        args(cmd.toArgumentList())
+      }
+      .getOrThrow { IOException("could not execute bazel command ${cmd.name}: ${it.message}") }
+      .awaitProcessResult()
   }
 }
