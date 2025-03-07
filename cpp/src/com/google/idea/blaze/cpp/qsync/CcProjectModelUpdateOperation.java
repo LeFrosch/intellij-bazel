@@ -25,7 +25,6 @@ import com.google.idea.blaze.base.scope.output.IssueOutput;
 import com.google.idea.blaze.base.util.UrlUtil;
 import com.google.idea.blaze.common.Context;
 import com.google.idea.blaze.common.PrintOutput;
-import com.google.idea.blaze.cpp.CppSupportChecker;
 import com.google.idea.blaze.qsync.cc.FlagResolver;
 import com.google.idea.blaze.qsync.project.ProjectPath;
 import com.google.idea.blaze.qsync.project.ProjectProto;
@@ -115,8 +114,6 @@ public class CcProjectModelUpdateOperation implements Disposable {
     for (Map.Entry<String, CcCompilerSettings> e : map.entrySet()) {
       CidrCompilerSwitches switches =
           checkNotNull(compilerSwitches.get(e.getValue().getFlagSetId()));
-      if (!CppSupportChecker.isSupportedCppConfiguration(switches, compilerWorkingDir.toPath())) {
-        return;
       }
       CLanguageKind lang =
           getLanguageKind(
@@ -134,9 +131,6 @@ public class CcProjectModelUpdateOperation implements Disposable {
   private void visitSourceFile(CcSourceFile source, OCResolveConfiguration.ModifiableModel config) {
     CidrCompilerSwitches switches =
         checkNotNull(compilerSwitches.get(source.getCompilerSettings().getFlagSetId()));
-    if (!CppSupportChecker.isSupportedCppConfiguration(
-        switches, pathResolver.resolve(ProjectPath.WORKSPACE_ROOT))) {
-      // Ignore the file if it's not supported by the current IDE.
       return;
     }
     Path srcPath = Path.of(source.getWorkspacePath());

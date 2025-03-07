@@ -68,6 +68,13 @@ optional_plugin_xml = rule(
 
 _IntellijPluginLibraryInfo = provider(fields = ["plugin_xmls", "optional_plugin_xmls", "java_info"])
 
+def _merge_intellij_plugin_library_info(infos):
+    return _IntellijPluginLibraryInfo(
+        plugin_xmls = depset(transitive = [info.plugin_xmls for info in infos], order = "preorder"),
+        optional_plugin_xmls = depset(transitive = [info.optional_plugin_xmls for info in infos], order = "preorder"),
+        java_info = java_common.merge([info.java_info for info in infos]),
+    )
+
 def _intellij_plugin_library_impl(ctx):
     java_info = java_common.merge([dep[JavaInfo] for dep in ctx.attr.deps])
 
@@ -76,14 +83,17 @@ def _intellij_plugin_library_impl(ctx):
         for file in target.files.to_list():
             plugin_xmls.append(file)
 
+    optional_plugin_xmls = [dep[_OptionalPluginXmlInfo] for dep in ctx.attr.optional_plugin_xmls]
+
+    intellij_info = _IntellijPluginLibraryInfo(
+        plugin_xmls = depset(plugin_xmls, order = "preorder"),
+        optional_plugin_xmls = depset(optional_plugin_xmls, order = "preorder"),
+        java_info = java_info,
+    )
+
     return [
-        _IntellijPluginLibraryInfo(
-            plugin_xmls = depset(plugin_xmls, order = "preorder"),
-            optional_plugin_xmls = [
-                dep[_OptionalPluginXmlInfo]
-                for dep in ctx.attr.optional_plugin_xmls
-            ],
-            java_info = java_info,
+        _merge_intellij_plugin_library_info(
+            [intellij_info] + [dep[_IntellijPluginLibraryInfo] for dep in ctx.attr.plugin_deps],
         ),
     ]
 
@@ -92,6 +102,7 @@ intellij_plugin_library = rule(
     attrs = {
         "deps": attr.label_list(providers = [JavaInfo]),
         "plugin_xmls": attr.label_list(allow_files = [".xml"]),
+        "plugin_deps": attr.label_list(providers = [_IntellijPluginLibraryInfo]),
         "optional_plugin_xmls": attr.label_list(providers = [_OptionalPluginXmlInfo]),
     },
 )
@@ -175,7 +186,7 @@ def _merge_optional_plugin_xmls(ctx):
     for dep in ctx.attr.deps:
         if _IntellijPluginLibraryInfo in dep:
             optional_plugin_xml_providers.extend(
-                dep[_IntellijPluginLibraryInfo].optional_plugin_xmls,
+                dep[_IntellijPluginLibraryInfo].optional_plugin_xmls.to_list(),
             )
     optional_plugin_xml_providers.extend(
         [target[_OptionalPluginXmlInfo] for target in ctx.attr.optional_plugin_xmls],

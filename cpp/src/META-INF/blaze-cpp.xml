@@ -69,7 +69,4 @@
     <applicationService serviceInterface="com.google.idea.blaze.cpp.CompilerWrapperProvider"
                         serviceImplementation="com.google.idea.blaze.cpp.CompilerWrapperProviderImpl"/>
   </extensions>
-  <extensions defaultExtensionNs="com.google.idea.blaze.qsync">
-    <QuerySyncListenerProvider implementation="com.google.idea.blaze.cpp.qsync.CcProjectModelUpdater$Provider" />
-  </extensions>
 </idea-plugin>
