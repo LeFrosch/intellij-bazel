@@ -16,21 +16,17 @@
 package com.google.idea.blaze.qsync.cc;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import com.google.idea.blaze.common.PrintOutput;
 import com.google.idea.blaze.exception.BuildException;
 import com.google.idea.blaze.qsync.artifacts.BuildArtifact;
 import com.google.idea.blaze.qsync.deps.ArtifactDirectories;
 import com.google.idea.blaze.qsync.deps.ArtifactDirectoryBuilder;
-import com.google.idea.blaze.qsync.deps.ArtifactTracker;
 import com.google.idea.blaze.qsync.deps.ArtifactTracker.State;
 import com.google.idea.blaze.qsync.deps.CcCompilationInfo;
 import com.google.idea.blaze.qsync.deps.CcToolchain;
@@ -40,32 +36,28 @@ import com.google.idea.blaze.qsync.deps.ProjectProtoUpdateOperation;
 import com.google.idea.blaze.qsync.deps.TargetBuildInfo;
 import com.google.idea.blaze.qsync.project.LanguageClassProto.LanguageClass;
 import com.google.idea.blaze.qsync.project.ProjectPath;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilationContext;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerFlag;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerFlagSet;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerSettings;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcLanguage;
-import com.google.idea.blaze.qsync.project.ProjectProto.CcSourceFile;
+import com.google.idea.blaze.qsync.project.ProjectProto;
 import com.google.idea.blaze.qsync.project.ProjectTarget;
 import com.google.idea.blaze.qsync.project.ProjectTarget.SourceType;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /** Adds C/C++ compilation information and headers to the project proto. */
+@SuppressWarnings("ResultOfMethodCallIgnored") // ignore unused builder returns
 public class ConfigureCcCompilation {
 
   /** An update operation to configure CC compilation. */
   public static class UpdateOperation implements ProjectProtoUpdateOperation {
 
-    public UpdateOperation() {}
-
     @Override
-    public void update(ProjectProtoUpdate update, ArtifactTracker.State artifactState)
-        throws BuildException {
+    public void update(ProjectProtoUpdate update, State artifactState)
+      throws BuildException {
       new ConfigureCcCompilation(artifactState, update).update();
     }
   }
@@ -75,13 +67,12 @@ public class ConfigureCcCompilation {
   private final ProjectProtoUpdate update;
 
   /* Map from toolchain ID -> language -> flags for that toolchain & language. */
-  private final Map<String, Multimap<CcLanguage, CcCompilerFlag>> toolchainLanguageFlags =
-      Maps.newHashMap();
+  private final Map<String, Map<ProjectProto.CcLanguage, List<ProjectProto.CcCompilerFlag>>> toolchainLanguageFlags = Maps.newHashMap();
 
   /* Map of unique sets of compiler flags to an ID to identify them.
    * We do this as the downstream code turns each set of flags into a CidrCompilerSwitches instance
    * which can have a large memory footprint. */
-  private final Map<Set<CcCompilerFlag>, String> uniqueFlagSetIds = Maps.newHashMap();
+  private final Map<Set<ProjectProto.CcCompilerFlag>, String> uniqueFlagSetIds = Maps.newHashMap();
 
   ConfigureCcCompilation(State artifactState, ProjectProtoUpdate projectUpdate) {
     this.artifactState = artifactState;
@@ -104,36 +95,42 @@ public class ConfigureCcCompilation {
     }
   }
 
-  private void visitToolchainMap(Map<String, CcToolchain> toolchainInfoMap) {
-    toolchainInfoMap.values().forEach(this::visitToolchain);
+  private void visitToolchainMap(Map<String, CcToolchain> toolchainInfoMap) throws BuildException {
+    for (final var toolchain : toolchainInfoMap.values()) {
+      visitToolchain(toolchain);
+    }
   }
 
-  private void visitToolchain(CcToolchain toolchain) {
+  private void visitToolchain(CcToolchain toolchain) throws BuildException {
+    final var commonFlags = toolchain.builtInIncludeDirectories().stream()
+        .map(p -> makePathFlag("-I", p))
+        .collect(toImmutableList());
 
-    ImmutableList<CcCompilerFlag> commonFlags =
-        toolchain.builtInIncludeDirectories().stream()
-            .map(p -> makePathFlag("-I", p))
-            .collect(toImmutableList());
+    final var cFlags = Stream.concat(
+        commonFlags.stream(),
+        toolchain.cOptions().stream().map(f -> makeStringFlag(f, ""))
+    ).collect(toImmutableList());
+
+    final var cppFlags = Stream.concat(
+        commonFlags.stream(),
+        toolchain.cppOptions().stream().map(f -> makeStringFlag(f, ""))
+    ).collect(toImmutableList());
 
     toolchainLanguageFlags.put(
         toolchain.id(),
-        ImmutableListMultimap.<CcLanguage, CcCompilerFlag>builder()
-            .putAll(
-                CcLanguage.C,
-                ImmutableList.<CcCompilerFlag>builder()
-                    .addAll(commonFlags)
-                    .addAll(
-                        toolchain.cOptions().stream().map(f -> makeStringFlag(f, "")).iterator())
-                    .build())
-            .putAll(
-                CcLanguage.CPP,
-                ImmutableList.<CcCompilerFlag>builder()
-                    .addAll(commonFlags)
-                    .addAll(
-                        toolchain.cppOptions().stream().map(f -> makeStringFlag(f, "")).iterator())
-                    .build())
-            .build());
+        ImmutableMap.of(ProjectProto.CcLanguage.C, cFlags, ProjectProto.CcLanguage.CPP, cppFlags)
+    );
+
+    final var builder = ProjectProto.CcToolchain.newBuilder()
+      .setId(toolchain.id())
+      .setName(toolchain.compiler())
+      .setCpu(toolchain.cpu())
+      .setExecutable(toolchain.compilerExecutable().toProto())
+      .setInfo(toolchain.compilerInfo().toProto());
+
+    update.project().getCcWorkspaceBuilder().addToolchains(builder.build());
   }
+
 
   private void visitTarget(CcCompilationInfo ccInfo, DependencyBuildContext buildContext) {
     ProjectTarget projectTarget = update.buildGraph().targetMap().get(ccInfo.target());
@@ -148,8 +145,8 @@ public class ConfigureCcCompilation {
         Preconditions.checkNotNull(
             artifactState.ccToolchainMap().get(ccInfo.toolchainId()), ccInfo.toolchainId());
 
-    ImmutableList<CcCompilerFlag> targetFlags =
-        ImmutableList.<CcCompilerFlag>builder()
+    ImmutableList<ProjectProto.CcCompilerFlag> targetFlags =
+        ImmutableList.<ProjectProto.CcCompilerFlag>builder()
             .addAll(projectTarget.copts().stream().map(d -> makeStringFlag(d, "")).iterator())
             .addAll(ccInfo.defines().stream().map(d -> makeStringFlag("-D", d)).iterator())
             .addAll(ccInfo.includeDirectories().stream().map(p -> makePathFlag("-I", p)).iterator())
@@ -167,49 +164,43 @@ public class ConfigureCcCompilation {
                     .iterator())
             .build();
 
-    ImmutableList.Builder<CcSourceFile> srcsBuilder = ImmutableList.builder();
+    final var srcsBuilder = ImmutableList.<ProjectProto.CcSourceFile>builder();
+    for (Path srcPath : update.buildGraph().getTargetSources(ccInfo.target(), SourceType.all())) {
+      final var lang = getLanguage(srcPath);
+      if (lang.isEmpty()) {
+        continue;
+      }
+
+      srcsBuilder.add(
+          ProjectProto.CcSourceFile.newBuilder()
+              .setLanguage(lang.get())
+              .setWorkspacePath(srcPath.toString())
+              .build());
+    }
+
     // TODO(mathewi): The handling of flag sets here is not optimal, since we recalculate an
     //  identical flag set for each source of the same language, then immediately de-dupe them in
     //  the addFlagSet call. For large flag sets this may be slow.
-    for (Path srcPath : update.buildGraph().getTargetSources(ccInfo.target(), SourceType.all())) {
-      Optional<CcLanguage> lang = getLanguage(srcPath);
-      if (lang.isPresent()) {
-        srcsBuilder.add(
-            CcSourceFile.newBuilder()
-                .setLanguage(lang.get())
-                .setWorkspacePath(srcPath.toString())
-                .setCompilerSettings(
-                    CcCompilerSettings.newBuilder()
-                        .setCompilerExecutablePath(toolchain.compilerExecutable().toProto())
-                        .setFlagSetId(
-                            addFlagSet(
-                                ImmutableList.<CcCompilerFlag>builder()
-                                    .addAll(targetFlags)
-                                    .addAll(
-                                        toolchainLanguageFlags.get(toolchain.id()).get(lang.get()))
-                                    .build())))
-                .build());
-      }
-    }
-    ImmutableList<CcSourceFile> srcs = srcsBuilder.build();
+    final var compilerSettingsBuilder = ImmutableList.<ProjectProto.CcCompilerSettings>builder();
+    for (final var entry : toolchainLanguageFlags.get(toolchain.id()).entrySet()) {
+      final var flags = Stream.concat(entry.getValue().stream(), targetFlags.stream()).collect(toImmutableList());
 
-    CcCompilationContext targetContext =
-        CcCompilationContext.newBuilder()
-            .setId(ccInfo.target() + "%" + toolchain.targetGnuSystemName())
-            .setHumanReadableName(ccInfo.target() + " - " + toolchain.targetGnuSystemName())
-            .addAllSources(srcs)
-            .putAllLanguageToCompilerSettings(
-                toolchainLanguageFlags.get(toolchain.id()).asMap().entrySet().stream()
-                    .collect(
-                        toImmutableMap(
-                            e -> e.getKey().getValueDescriptor().getName(),
-                            e ->
-                                CcCompilerSettings.newBuilder()
-                                    .setCompilerExecutablePath(
-                                        toolchain.compilerExecutable().toProto())
-                                    .setFlagSetId(addFlagSet(e.getValue()))
-                                    .build())))
-            .build();
+      final var settings = ProjectProto.CcCompilerSettings.newBuilder()
+          .setToolchainId(toolchain.id())
+          .setLanguage(entry.getKey())
+          .setFlagSetId(addFlagSet(flags))
+          .build();
+
+      compilerSettingsBuilder.add(settings);
+    }
+
+    final var targetContext = ProjectProto.CcCompilationContext.newBuilder()
+        .setId(ccInfo.target() + "%" + toolchain.targetGnuSystemName())
+        .setHumanReadableName(ccInfo.target() + " - " + toolchain.targetGnuSystemName())
+        .addAllSources(srcsBuilder.build())
+        .addAllCompilerSettings(compilerSettingsBuilder.build())
+        .build();
+
     update.project().getCcWorkspaceBuilder().addContexts(targetContext);
 
     ArtifactDirectoryBuilder headersDir =
@@ -220,9 +211,9 @@ public class ConfigureCcCompilation {
   }
 
   /** Ensure that the given flagset exists, adding it if necessary, and return its unique ID. */
-  private String addFlagSet(Collection<CcCompilerFlag> flags) {
+  private String addFlagSet(Collection<ProjectProto.CcCompilerFlag> flags) {
     // Create a set so that two flags sets are considered equivalent if their flag order differs.
-    ImmutableSet<CcCompilerFlag> canonicalFlagSet = ImmutableSet.copyOf(flags);
+    final var canonicalFlagSet = ImmutableSet.copyOf(flags);
     String flagSetId = uniqueFlagSetIds.get(canonicalFlagSet);
 
     if (flagSetId == null) {
@@ -231,33 +222,33 @@ public class ConfigureCcCompilation {
       update
           .project()
           .getCcWorkspaceBuilder()
-          .putFlagSets(flagSetId, CcCompilerFlagSet.newBuilder().addAllFlags(flags).build());
+          .putFlagSets(flagSetId, ProjectProto.CcCompilerFlagSet.newBuilder().addAllFlags(flags).build());
     }
     return flagSetId;
   }
 
-  private CcCompilerFlag makeStringFlag(String flag, String value) {
-    return CcCompilerFlag.newBuilder().setFlag(flag).setPlainValue(value).build();
+  private ProjectProto.CcCompilerFlag makeStringFlag(String flag, String value) {
+    return ProjectProto.CcCompilerFlag.newBuilder().setFlag(flag).setPlainValue(value).build();
   }
 
-  private CcCompilerFlag makePathFlag(String flag, ProjectPath path) {
-    return CcCompilerFlag.newBuilder().setFlag(flag).setPath(path.toProto()).build();
+  private ProjectProto.CcCompilerFlag makePathFlag(String flag, ProjectPath path) {
+    return ProjectProto.CcCompilerFlag.newBuilder().setFlag(flag).setPath(path.toProto()).build();
   }
 
-  private static final ImmutableMap<String, CcLanguage> EXTENSION_TO_LANGUAGE_MAP =
+  private static final ImmutableMap<String, ProjectProto.CcLanguage> EXTENSION_TO_LANGUAGE_MAP =
       ImmutableMap.of(
-          "c", CcLanguage.C,
-          "cc", CcLanguage.CPP,
-          "cpp", CcLanguage.CPP,
-          "cxx", CcLanguage.CPP,
-          "c++", CcLanguage.CPP,
-          "C", CcLanguage.C);
+          "c", ProjectProto.CcLanguage.C,
+          "cc", ProjectProto.CcLanguage.CPP,
+          "cpp", ProjectProto.CcLanguage.CPP,
+          "cxx", ProjectProto.CcLanguage.CPP,
+          "c++", ProjectProto.CcLanguage.CPP,
+          "C", ProjectProto.CcLanguage.C);
   /* Files we ignore because they are not top level source files: */
 
   private static final ImmutableSet<String> IGNORE_SRC_FILE_EXTENSIONS =
       ImmutableSet.of("h", "hh", "hpp", "hxx", "inc", "inl", "H", "S", "a", "lo", "so", "o");
 
-  private Optional<CcLanguage> getLanguage(Path srcPath) {
+  private Optional<ProjectProto.CcLanguage> getLanguage(Path srcPath) {
     // logic in here based on https://bazel.build/reference/be/c-cpp#cc_library.srcs
     int lastDot = srcPath.getFileName().toString().lastIndexOf('.');
     if (lastDot < 0) {
@@ -265,7 +256,7 @@ public class ConfigureCcCompilation {
       update
           .context()
           .output(PrintOutput.log("No extension for c/c++ source file %s; assuming cpp", srcPath));
-      return Optional.of(CcLanguage.CPP);
+      return Optional.of(ProjectProto.CcLanguage.CPP);
     }
     String ext = srcPath.getFileName().toString().substring(lastDot + 1);
     if (IGNORE_SRC_FILE_EXTENSIONS.contains(ext)) {
@@ -279,6 +270,6 @@ public class ConfigureCcCompilation {
         .output(
             PrintOutput.log(
                 "Unrecognized extension %s for c/c++ source file %s; assuming cpp", ext, srcPath));
-    return Optional.of(CcLanguage.CPP);
+    return Optional.of(ProjectProto.CcLanguage.CPP);
   }
 }

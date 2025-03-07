@@ -196,7 +196,6 @@ enum CcLanguage {
 message CcSourceFile {
   string workspace_path = 1;
   CcLanguage language = 2;
-  CcCompilerSettings compiler_settings = 4;
 }
 
 /**
@@ -207,20 +206,71 @@ message CcSourceFile {
 message CcCompilationContext {
   string id = 1;
   string human_readable_name = 2;
-  // Map keys are CcLanguage.name:
-  map<string, CcCompilerSettings> language_to_compiler_settings = 3;
+  // list of all compiler settings, should contain at most one instance per language
+  repeated CcCompilerSettings compiler_settings = 3;
   repeated CcSourceFile sources = 4;
 }
 
 /**
- * Compiler settings.
+ * Compiler settings. Can be different per compilation context.
  *
  * @see com.jetbrains.cidr.lang.workspace.OCCompilerSettings
  */
 message CcCompilerSettings {
-  ProjectPath compiler_executable_path = 1;
+  string toolchain_id = 1;
   // ID of the flag set within CcWorkspace.flag_sets
   string flag_set_id = 2;
+  // the language for which the compiler settings apply
+  CcLanguage language = 3;
+}
+
+/**
+ * Compiler info are the same for every compilation context that used this
+ * compiler. This message is persisted as part of the ArtifactTrackerState.
+ *
+ * @see com.google.idea.blaze.qsync.deps.CcCompilerInfo
+ */
+message CcCompilerInfo {
+  enum Kind {
+    CC_COMPILER_KIND_UNKNOWN = 0;
+    CLANG = 1;
+    APPLE_CLANG = 2;
+    GCC = 3;
+    MSVC = 4;
+  }
+
+  Kind kind = 1;
+
+  /** Additional data required for apple clang compiler. */
+  message Xcode {
+    string developer_dir = 1;
+    string sdk_root = 2;
+  }
+
+  /** Additional data required for msvc compiler. */
+  message Msvc {
+    string arch = 1;
+    string version = 2;
+    string vc_directory = 3;
+  }
+
+  // optional additional data
+  oneof data {
+    Xcode xcode = 6;
+    Msvc msvc = 7;
+  }
+}
+
+/**
+ * A bazel toolchain. There can be multiple CcCompilerSettings for a single
+ * toolchain but only one CcCompilerInfo.
+ */
+message CcToolchain {
+  string id = 1;
+  string name = 2;
+  string cpu = 3;
+  ProjectPath executable = 4;
+  CcCompilerInfo info = 5;
 }
 
 /**
@@ -233,6 +283,7 @@ message CcWorkspace {
   // The IDs are referred to from CcCompilerSettings.flag_set_id
   map<string, CcCompilerFlagSet> flag_sets = 1;
   repeated CcCompilationContext contexts = 3;
+  repeated CcToolchain toolchains = 4;
 }
 
 // Defines the layout of artifact directories within the project directory.

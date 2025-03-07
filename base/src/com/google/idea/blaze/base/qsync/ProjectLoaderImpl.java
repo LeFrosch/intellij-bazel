@@ -27,8 +27,6 @@ import com.google.idea.blaze.base.bazel.BuildSystemProvider;
 import com.google.idea.blaze.base.command.info.BlazeInfo;
 import com.google.idea.blaze.base.model.ExternalWorkspaceData;
 import com.google.idea.blaze.base.model.ExternalWorkspaceDataProvider;
-import com.google.idea.blaze.base.model.ExternalWorkspaceData;
-import com.google.idea.blaze.base.model.ExternalWorkspaceDataProvider;
 import com.google.idea.blaze.base.model.primitives.WorkspaceRoot;
 import com.google.idea.blaze.base.projectview.ProjectViewManager;
 import com.google.idea.blaze.base.projectview.ProjectViewSet;
@@ -294,7 +292,11 @@ public class ProjectLoaderImpl implements ProjectLoader {
             new FileRefresher(project),
             GeneratedSourcesStripperProvider.get(project));
     DependencyTracker dependencyTracker =
-        new DependencyTrackerImpl(graph, dependencyBuilder, artifactTracker);
+        new DependencyTrackerImpl(
+          graph,
+          dependencyBuilder,
+          createCompilerInfoCollector(projectPathResolver),
+          artifactTracker);
     ProjectRefresher projectRefresher =
         new ProjectRefresher(
             vcsHandler.map(it -> (VcsStateDiffer)it::diffVcsState).orElse(VcsStateDiffer.NONE),
@@ -373,6 +375,10 @@ public class ProjectLoaderImpl implements ProjectLoader {
 
   protected AppInspectorBuilder createAppInspectorBuilder(BuildSystem buildSystem) {
     return new BazelAppInspectorBuilder(project, buildSystem);
+  }
+
+  protected CcCompilerInfoCollector createCompilerInfoCollector(ProjectPath.Resolver resolver) {
+    return CcCompilerInfoCollectorProvider.get(project, resolver);
   }
 
   private Path getSnapshotFilePath(BlazeImportSettings importSettings) {

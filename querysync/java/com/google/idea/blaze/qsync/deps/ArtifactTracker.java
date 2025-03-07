@@ -97,7 +97,7 @@ public interface ArtifactTracker<ContextT extends Context<?>> {
   void clear() throws IOException;
 
   /** Fetches, caches and sets up new artifacts. */
-  void update(Set<Label> targets, OutputInfo outputInfo, ContextT context) throws BuildException;
+  void update(Set<Label> targets, OutputInfo outputInfo, CcCompilerInfoMap compilerInfo, ContextT context) throws BuildException;
 
   State getStateSnapshot();
 

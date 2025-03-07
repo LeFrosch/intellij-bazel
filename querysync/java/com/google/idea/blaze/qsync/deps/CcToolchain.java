@@ -62,11 +62,13 @@ public abstract class CcToolchain {
    */
   public abstract ImmutableList<String> cppOptions();
 
+  public abstract CcCompilerInfo compilerInfo();
+
   public static Builder builder() {
     return new AutoValue_CcToolchain.Builder();
   }
 
-  public static CcToolchain create(CcToolchainInfo proto) {
+  public static CcToolchain create(CcToolchainInfo proto, CcCompilerInfo info) {
     return builder()
         .id(proto.getId())
         .compiler(proto.getCompiler())
@@ -79,6 +81,7 @@ public abstract class CcToolchain {
                 .collect(toImmutableList()))
         .cOptions(ImmutableList.copyOf(proto.getCOptionsList()))
         .cppOptions(ImmutableList.copyOf(proto.getCppOptionsList()))
+        .compilerInfo(info)
         .build();
   }
 
@@ -107,6 +110,8 @@ public abstract class CcToolchain {
     public abstract Builder cppOptions(ImmutableList<String> value);
 
     public abstract Builder cppOptions(String... value);
+
+    public abstract Builder compilerInfo(CcCompilerInfo value);
 
     public abstract CcToolchain build();
   }

@@ -24,15 +24,15 @@ import com.google.common.collect.Maps;
 import com.google.idea.blaze.base.scope.output.IssueOutput;
 import com.google.idea.blaze.base.util.UrlUtil;
 import com.google.idea.blaze.common.Context;
-import com.google.idea.blaze.common.PrintOutput;
 import com.google.idea.blaze.qsync.cc.FlagResolver;
 import com.google.idea.blaze.qsync.project.ProjectPath;
-import com.google.idea.blaze.qsync.project.ProjectProto;
+import com.google.idea.blaze.qsync.project.ProjectPath.Resolver;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilationContext;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerFlagSet;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcCompilerSettings;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcLanguage;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcSourceFile;
+import com.google.idea.blaze.qsync.project.ProjectProto.CcToolchain;
 import com.google.idea.blaze.qsync.project.ProjectProto.CcWorkspace;
 import com.intellij.build.events.MessageEvent;
 import com.intellij.openapi.Disposable;
@@ -47,13 +47,19 @@ import com.jetbrains.cidr.lang.toolchains.CidrToolEnvironment;
 import com.jetbrains.cidr.lang.workspace.OCCompilerSettings;
 import com.jetbrains.cidr.lang.workspace.OCResolveConfiguration;
 import com.jetbrains.cidr.lang.workspace.OCWorkspace;
+import com.jetbrains.cidr.lang.workspace.OCWorkspace.ModifiableModel;
+import com.jetbrains.cidr.lang.workspace.compiler.AppleClangCompilerKind;
 import com.jetbrains.cidr.lang.workspace.compiler.ClangCompilerKind;
 import com.jetbrains.cidr.lang.workspace.compiler.CompilerInfoCache;
 import com.jetbrains.cidr.lang.workspace.compiler.CompilerInfoCache.Message;
+import com.jetbrains.cidr.lang.workspace.compiler.GCCCompilerKind;
+import com.jetbrains.cidr.lang.workspace.compiler.MSVCCompilerKind;
+import com.jetbrains.cidr.lang.workspace.compiler.OCCompilerKind;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /** Updates the IJ project model based a {@link CcWorkspace} proto message. */
@@ -64,16 +70,16 @@ public class CcProjectModelUpdateOperation implements Disposable {
 
   private static final Logger logger = Logger.getInstance(CcProjectModelUpdateOperation.class);
   private final Context<?> context;
-  private final ProjectPath.Resolver pathResolver;
+  private final Resolver pathResolver;
   private final FlagResolver flagResolver;
-  private final OCWorkspace.ModifiableModel modifiableOcWorkspace;
+  private final ModifiableModel modifiableOcWorkspace;
   private final Map<String, CidrCompilerSwitches> compilerSwitches = Maps.newHashMap();
   private final Map<String, OCResolveConfiguration.ModifiableModel> resolveConfigs =
       Maps.newLinkedHashMap();
   private final File compilerWorkingDir;
 
   CcProjectModelUpdateOperation(
-      Context<?> context, OCWorkspace readonlyOcWorkspace, ProjectPath.Resolver pathResolver) {
+      Context<?> context, OCWorkspace readonlyOcWorkspace, Resolver pathResolver) {
     this.context = context;
     this.pathResolver = pathResolver;
     this.flagResolver = new FlagResolver(pathResolver);
@@ -87,7 +93,7 @@ public class CcProjectModelUpdateOperation implements Disposable {
   public void visitWorkspace(CcWorkspace proto) {
     visitSwitchesMap(proto.getFlagSetsMap());
     for (CcCompilationContext compilationContext : proto.getContextsList()) {
-      visitCompilationContext(compilationContext);
+      visitCompilationContext(proto.getToolchainsList(), compilationContext);
     }
   }
 
@@ -98,54 +104,83 @@ public class CcProjectModelUpdateOperation implements Disposable {
     }
   }
 
-  private void visitCompilationContext(CcCompilationContext ccCc) {
-    OCResolveConfiguration.ModifiableModel config =
-        modifiableOcWorkspace.addConfiguration(ccCc.getId(), ccCc.getHumanReadableName());
+  private void visitCompilationContext(List<CcToolchain> toolchains, CcCompilationContext ccCc) {
+    final var config = modifiableOcWorkspace.addConfiguration(ccCc.getId(), ccCc.getHumanReadableName());
 
-    visitLanguageCompilerSettingsMap(ccCc.getLanguageToCompilerSettingsMap(), config);
+    final var compilerSettings = ccCc.getCompilerSettingsList();
+    visitLanguageCompilerSettingsMap(toolchains, compilerSettings, config);
+
     for (CcSourceFile source : ccCc.getSourcesList()) {
-      visitSourceFile(source, config);
+      visitSourceFile(toolchains, compilerSettings, source, config);
     }
+
     resolveConfigs.put(ccCc.getId(), config);
   }
 
   private void visitLanguageCompilerSettingsMap(
-      Map<String, CcCompilerSettings> map, OCResolveConfiguration.ModifiableModel config) {
-    for (Map.Entry<String, CcCompilerSettings> e : map.entrySet()) {
-      CidrCompilerSwitches switches =
-          checkNotNull(compilerSwitches.get(e.getValue().getFlagSetId()));
+      List<CcToolchain> toolchains,
+      List<CcCompilerSettings> list,
+      OCResolveConfiguration.ModifiableModel config
+  ) {
+    for (CcCompilerSettings e : list) {
+      final var toolchain = toolchains.stream()
+          .filter((it) -> it.getId().equals(e.getToolchainId()))
+          .findFirst()
+          .orElse(null);
+      if (toolchain == null) {
+        continue;
       }
-      CLanguageKind lang =
-          getLanguageKind(
-              ProjectProto.CcLanguage.valueOf(
-                  ProjectProto.CcLanguage.getDescriptor().findValueByName(e.getKey())),
-              "compiler settings");
-      OCCompilerSettings.ModifiableModel compilerSettings =
-          config.getLanguageCompilerSettings(lang);
+
+      final var switches = checkNotNull(compilerSwitches.get(e.getFlagSetId()));
+
+      CLanguageKind lang = getLanguageKind(e.getLanguage(), "compiler settings");
+      OCCompilerSettings.ModifiableModel compilerSettings = config.getLanguageCompilerSettings(lang);
       compilerSettings.setCompiler(
-          ClangCompilerKind.INSTANCE, getCompilerExecutable(e.getValue()), compilerWorkingDir);
+          getCompilerKind(toolchain),
+          getCompilerExecutable(toolchain),
+          compilerWorkingDir);
       compilerSettings.setCompilerSwitches(switches);
     }
   }
 
-  private void visitSourceFile(CcSourceFile source, OCResolveConfiguration.ModifiableModel config) {
-    CidrCompilerSwitches switches =
-        checkNotNull(compilerSwitches.get(source.getCompilerSettings().getFlagSetId()));
+  private void visitSourceFile(
+      List<CcToolchain> toolchains,
+      List<CcCompilerSettings> compilerSettings,
+      CcSourceFile source,
+      OCResolveConfiguration.ModifiableModel config
+  ) {
+    final var compilerSetting = compilerSettings.stream()
+        .filter((it) -> it.getLanguage().equals(source.getLanguage()))
+        .findFirst()
+        .orElse(null);
+    if (compilerSetting == null) {
       return;
     }
+
+    final var toolchain = toolchains.stream()
+        .filter((it) -> it.getId().equals(compilerSetting.getToolchainId()))
+        .findFirst()
+        .orElse(null);
+    if (toolchain == null) {
+      return;
+    }
+
+    CidrCompilerSwitches switches = checkNotNull(compilerSwitches.get(compilerSetting.getFlagSetId()));
+
     Path srcPath = Path.of(source.getWorkspacePath());
-    CLanguageKind language =
-        getLanguageKind(source.getLanguage(), "Source file " + source.getWorkspacePath());
+    CLanguageKind language = getLanguageKind(source.getLanguage(), "Source file " + source.getWorkspacePath());
     srcPath = pathResolver.resolve(ProjectPath.workspaceRelative(srcPath));
     if (!Files.exists(srcPath)) {
       logger.warn("Src file not found: " + srcPath);
     }
+
+    // TODO: can this logic be deduplicated with visitLanguageCompilerSettingsMap
     OCCompilerSettings.ModifiableModel perSourceCompilerSettings =
         config.addSource(UrlUtil.pathToIdeaDirectoryUrl(srcPath), language);
     perSourceCompilerSettings.setCompilerSwitches(switches);
     perSourceCompilerSettings.setCompiler(
-        ClangCompilerKind.INSTANCE,
-        getCompilerExecutable(source.getCompilerSettings()),
+        getCompilerKind(toolchain),
+        getCompilerExecutable(toolchain),
         compilerWorkingDir);
   }
 
@@ -161,10 +196,21 @@ public class CcProjectModelUpdateOperation implements Disposable {
         LANGUAGE_MAP.get(language), "Invalid language " + language + " for " + whatFor);
   }
 
-  private File getCompilerExecutable(CcCompilerSettings compilerSettings) {
+  private File getCompilerExecutable(CcToolchain toolchain) {
     return pathResolver
-        .resolve(ProjectPath.create(compilerSettings.getCompilerExecutablePath()))
+        .resolve(ProjectPath.create(toolchain.getExecutable()))
         .toFile();
+  }
+
+  private OCCompilerKind getCompilerKind(CcToolchain toolchain) {
+    return switch (toolchain.getInfo().getKind()) {
+      case APPLE_CLANG -> AppleClangCompilerKind.INSTANCE;
+      case GCC -> GCCCompilerKind.INSTANCE;
+      case MSVC -> MSVCCompilerKind.INSTANCE;
+
+      // fall back to clang if the compiler kind could not be detected
+      default -> ClangCompilerKind.INSTANCE;
+    };
   }
 
   /** Pre-commits the project update. Should be called from a background thread. */
@@ -187,10 +233,10 @@ public class CcProjectModelUpdateOperation implements Disposable {
     var session = cache.<String>createSession(indicator);
     boolean sessionClosed = false;
     try {
+      // TODO: create environment from toolchain
       var toolEnvironment = new CidrToolEnvironment();
       session.setExpectedJobsCount(resolveConfigs.size());
-      for (Map.Entry<String, OCResolveConfiguration.ModifiableModel> e :
-          resolveConfigs.entrySet()) {
+      for (Map.Entry<String, OCResolveConfiguration.ModifiableModel> e : resolveConfigs.entrySet()) {
         session.schedule(
             e.getKey(),
             e.getValue(),
