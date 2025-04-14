@@ -84,6 +84,8 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -162,8 +164,17 @@ public final class BlazeCommandGenericRunConfigurationRunner
           : getProcessHandlerForNonTests(project, invoker, blazeCommand, context);
     }
 
-    private ProcessHandler getGenericProcessHandler() {
+    private ProcessHandler getGenericProcessHandler(Future<Integer> exitCode) {
       return new ProcessHandler() {
+        @Override
+        public @Nullable Integer getExitCode() {
+          if (exitCode.isDone()) {
+            return exitCode.resultNow();
+          } else {
+            return null;
+          }
+        }
+
         @Override
         protected void destroyProcessImpl() {
           notifyProcessTerminated(BLAZE_BUILD_INTERRUPTED);
@@ -193,7 +204,8 @@ public final class BlazeCommandGenericRunConfigurationRunner
         BlazeCommand.Builder blazeCommandBuilder,
         BlazeContext context)
         throws ExecutionException {
-      ProcessHandler processHandler = getGenericProcessHandler();
+      final var exitCodeFuture = new CompletableFuture<Integer>();
+      ProcessHandler processHandler = getGenericProcessHandler(exitCodeFuture);
       ConsoleView consoleView = getConsoleBuilder().getConsole();
       context.addOutputSink(PrintOutput.class, new WritingOutputSink(consoleView));
       setConsoleBuilder(
@@ -221,11 +233,13 @@ public final class BlazeCommandGenericRunConfigurationRunner
           new FutureCallback<BlazeBuildOutputs>() {
             @Override
             public void onSuccess(BlazeBuildOutputs blazeBuildOutputs) {
+              exitCodeFuture.complete(0);
               processHandler.detachProcess();
             }
 
             @Override
             public void onFailure(Throwable throwable) {
+              exitCodeFuture.complete(1);
               context.handleException(throwable.getMessage(), throwable);
               processHandler.detachProcess();
             }
@@ -293,7 +307,8 @@ public final class BlazeCommandGenericRunConfigurationRunner
         BlazeCommand.Builder blazeCommandBuilder,
         BlazeTestResultFinderStrategy testResultFinderStrategy,
         BlazeContext context) {
-      ProcessHandler processHandler = getGenericProcessHandler();
+      final var exitCodeFuture = new CompletableFuture<Integer>();
+      ProcessHandler processHandler = getGenericProcessHandler(exitCodeFuture);
       @NotNull Map<String, String> envVars = handlerState.getUserEnvVarsState().getData().getEnvs();
       ListenableFuture<BlazeTestResults> blazeTestResultsFuture =
           BlazeExecutor.getInstance()
@@ -309,6 +324,7 @@ public final class BlazeCommandGenericRunConfigurationRunner
           new FutureCallback<BlazeTestResults>() {
             @Override
             public void onSuccess(BlazeTestResults blazeTestResults) {
+              exitCodeFuture.complete(0);
               // The command-runners allow using a remote BES for parsing the test results, so we
               // use a BlazeTestResultHolder to store the test results for the IDE to find/read
               // later. The LocalTestResultFinderStrategy won't work here since it writes/reads the
@@ -320,6 +336,7 @@ public final class BlazeCommandGenericRunConfigurationRunner
 
             @Override
             public void onFailure(Throwable throwable) {
+              exitCodeFuture.complete(1);
               context.handleException(throwable.getMessage(), throwable);
               verify(testResultFinderStrategy instanceof BlazeTestResultHolder);
               ((BlazeTestResultHolder) testResultFinderStrategy)
