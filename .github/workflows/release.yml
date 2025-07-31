@@ -10,6 +10,10 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        product: [clion-oss-latest-stable, clion-oss-oldest-stable]
+
     runs-on: ubuntu-latest
 
     steps:
@@ -24,14 +28,15 @@ jobs:
           repository-cache: true
 
       - name: Update version.bzl
-        run: echo "VERSION = '${{ inputs.version }}'" > version.bzl
+        run: |
+          bazel build //intellij_platform_sdk:build_name --define=ij_product=${{ matrix.product }}
+          echo "VERSION = '$(cat bazel-bin/intellij_platform_sdk/build_name.txt)-${{ inputs.version }}'" > version.bzl
 
       - name: Build Plugin Zip
-        run: bazel build //clwb:clwb_bazel_zip --define=ij_product=clion-oss-latest-stable
+        run: bazel build //clwb:clwb_bazel_zip --define=ij_product=${{ matrix.product }}
 
       - name: Rename Plugin Zip
-        run:
-          bazel build //intellij_platform_sdk:build_name --define=ij_product=clion-oss-latest-stable
+        run: |
           mkdir out
           mv bazel-bin/clwb/clwb_bazel.zip out/$(cat bazel-bin/intellij_platform_sdk/build_name.txt).zip
 
