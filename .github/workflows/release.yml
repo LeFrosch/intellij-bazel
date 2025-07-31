@@ -43,7 +43,7 @@ jobs:
       - name: Upload Plugin Zip
         uses: actions/upload-artifact@v4
         with:
-          name: plugin_zip
+          name: ${{ matrix.product }}
           path: "out/*.zip"
           retention-days: 1
 
@@ -53,10 +53,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download Plugin Zip
+      - name: Download Latest Plugin Zip
         uses: actions/download-artifact@v4
         with:
-          name: plugin_zip
+          name: clion-oss-latest-stable
+
+      - name: Download Oldest Plugin Zip
+        uses: actions/download-artifact@v4
+        with:
+          name: clion-oss-oldest-stable
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
