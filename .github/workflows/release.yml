@@ -23,14 +23,23 @@ jobs:
           disk-cache: ${{ github.workflow }}
           repository-cache: true
 
+      - name: Update version.bzl
+        run: echo "VERSION = '${{ inputs.version }}'" > version.bzl
+
       - name: Build Plugin Zip
         run: bazel build //clwb:clwb_bazel_zip --define=ij_product=clion-oss-latest-stable
+
+      - name: Rename Plugin Zip
+        run:
+          bazel build //intellij_platform_sdk:build_name --define=ij_product=clion-oss-latest-stable
+          mkdir out
+          mv bazel-bin/clwb/clwb_bazel.zip out/$(cat bazel-bin/intellij_platform_sdk/build_name.txt).zip
 
       - name: Upload Plugin Zip
         uses: actions/upload-artifact@v4
         with:
           name: plugin_zip
-          path: bazel-bin/clwb/clwb_bazel.zip
+          path: "out/*.zip"
           retention-days: 1
 
   release:
@@ -47,7 +56,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: clwb_bazel.zip
+          files: "*.zip"
           tag_name: ${{ inputs.version }}
           name: "CLwB Release ${{ inputs.version }}"
           draft: false
