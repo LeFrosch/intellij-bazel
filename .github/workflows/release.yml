@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+
+      - name: Build Plugin Zip
+        run: bazel build //clwb:clwb_bazel_zip --define=ij_product=clion-oss-latest-stable
+
+      - name: Upload Plugin Zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin_zip
+          path: bazel-bin/clwb/clwb_bazel.zip
+          retention-days: 1
+
+  release:
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Plugin Zip
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin_zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: clwb_bazel.zip
+          tag_name: ${{ inputs.version }}
+          name: "CLwB Release ${{ inputs.version }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
