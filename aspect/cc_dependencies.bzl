@@ -5,6 +5,7 @@ DEPS = [
     "malloc",  # from cc_binary rules
     "deps",
     "implementation_deps",
+    "_aspect_cc_proto_toolchain", # for protobuf rules
 ]
 
 CcDepInfo = provider(

@@ -11,10 +11,12 @@ EXTRA_DEPS = [
     "embed",  # From go rules (bazel only)
     "_cc_toolchain",  # From rules_cc (bazel only)
     "_kt_toolchain",  # From rules_kotlin (bazel only)
+    "_aspect_cc_proto_toolchain", # From protobuf rules
 ]
 
 TOOLCHAIN_TYPE_DEPS = [
     "@@bazel_tools//tools/cpp:toolchain_type",  # For rules_cc
+    "@@protobuf//bazel/private:cc_toolchain_type",  # For protbuf rules
 ]
 
 def tool_label(tool_name):
