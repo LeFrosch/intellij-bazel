@@ -19,7 +19,7 @@
 def expand_make_variables(ctx, tokenization, unexpanded_tokens, additional_make_variable_substitutions = {}):
     tokens = []
     targets = []
-    for additional_compiler_input in getattr(ctx.attr, "additional_compiler_inputs", []):
+    for additional_compiler_input in getattr(ctx.rule.attr, "additional_compiler_inputs", []):
         targets.append(additional_compiler_input)
     for token in unexpanded_tokens:
         if tokenization:
@@ -53,8 +53,10 @@ def _expand_nested_variable(ctx, additional_vars, exp, execpath = True, targets 
             if exp.startswith("location"):
                 exp = exp.replace("location", "rootpath", 1)
         data_targets = []
-        if ctx.attr.data != None:
-            data_targets = ctx.attr.data
+        if ctx.rule.attr.data:
+            print("WARNING: data dependencies cannot be resolved due to https://github.com/bazelbuild/bazel/issues/27047")
+            return ""
+            # data_targets = ctx.rule.attr.data
 
         # Make sure we do not duplicate targets.
         unified_targets_set = {}
