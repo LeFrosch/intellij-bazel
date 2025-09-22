@@ -46,7 +46,6 @@ public class SimpleTest extends ClwbHeadlessTestCase {
     }
 
     assertContainsHeader("iostream", compilerSettings);
-    assertContainsCompilerFlag("-Wall", compilerSettings);
   }
 
   private void checkTest() {

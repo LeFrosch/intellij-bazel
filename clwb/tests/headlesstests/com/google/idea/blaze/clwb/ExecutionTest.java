@@ -2,6 +2,7 @@ package com.google.idea.blaze.clwb;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.idea.blaze.clwb.base.Utils.parseEchoOutput;
 
 import com.google.idea.blaze.base.bazel.BazelVersion;
 import com.google.idea.blaze.base.run.producers.BlazeBuildFileRunConfigurationProducer;
@@ -47,8 +48,6 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class ExecutionTest extends ClwbHeadlessTestCase {
-
-  private static final String ECHO_OUTPUT_MARKER = "ECHO_OUTPUT_FILE: ";
 
   @Test
   public void testClwb() throws Exception {
@@ -115,13 +114,7 @@ public class ExecutionTest extends ClwbHeadlessTestCase {
     final var result = execute(Label.of("//main:" + target), executorId, args);
     result.assertSuccess();
 
-    final var line = result.output().lines().filter((it) -> it.startsWith(ECHO_OUTPUT_MARKER)).findFirst();
-    assertThat(line).isPresent();
-
-    final var path = Path.of(line.get().substring(ECHO_OUTPUT_MARKER.length()));
-    assertThat(Files.exists(path)).isTrue();
-
-    return Files.readAllLines(path);
+    return parseEchoOutput(result.output());
   }
 
   /**

@@ -61,6 +61,7 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
 
   protected Path myProjectRoot;
   protected BazelInfo myBazelInfo;
+  protected Path myBazelBinary;
 
   protected static <T> T pullFuture(Future<T> future, long timeout, TimeUnit unit) {
     final var deadline = System.currentTimeMillis() + unit.toMillis(timeout);
@@ -130,16 +131,16 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
   }
 
   /**
-   * Runns bazel info to get the current execution root. The execroot might not
-   * exist yet.
+   * Runns a bazel command with the provided test bazel binary.
    */
-  private static BazelInfo getTestBazelInfo(Path bazel) throws ExecutionException, InterruptedException {
+  protected String runBazelCommand(String... args) throws ExecutionException, InterruptedException {
     final var outStream = new ByteArrayOutputStream();
     final var errStream = new ByteArrayOutputStream();
 
     // run bazel binary in project root to avoid downloading it twice
-    final var result = ExternalTask.builder(getTestProjectRoot())
-        .args(bazel.toString(), "info")
+    final var result = ExternalTask.builder(myProjectRoot)
+        .args(myBazelBinary.toString())
+        .args(args)
         .stderr(errStream)
         .stdout(outStream)
         .build()
@@ -147,20 +148,20 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
         .get();
 
     if (result != 0) {
-      abort("cannot run bazel info: " + errStream);
+      abort("bazel invokation failed: " + errStream);
     }
 
-    return BazelInfo.parse(outStream.toString());
+    return outStream.toString();
   }
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
 
-    final var bazelBinary = getTestBazelPath();
-    BlazeUserSettings.getInstance().setBazelBinaryPath(bazelBinary.toString());
+    myBazelBinary = getTestBazelPath();
+    myBazelInfo = BazelInfo.parse(runBazelCommand("info"));
 
-    myBazelInfo = getTestBazelInfo(bazelBinary);
+    BlazeUserSettings.getInstance().setBazelBinaryPath(myBazelBinary.toString());
 
     // register the tasks toolwindow, needs to be done manually
     final var windowManager = (ToolWindowHeadlessManagerImpl) ToolWindowManager.getInstance(myProject);
