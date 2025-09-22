@@ -54,9 +54,9 @@ def _expand_nested_variable(ctx, additional_vars, exp, execpath = True, targets 
                 exp = exp.replace("location", "rootpath", 1)
         data_targets = []
         if ctx.rule.attr.data:
-            print("WARNING: data dependencies cannot be resolved due to https://github.com/bazelbuild/bazel/issues/27047")
-            return ""
-            # data_targets = ctx.rule.attr.data
+            # print("WARNING: data dependencies cannot be resolved due to https://github.com/bazelbuild/bazel/issues/27047")
+            # return ""
+            data_targets = ctx.rule.attr.data
 
         # Make sure we do not duplicate targets.
         unified_targets_set = {}

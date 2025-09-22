@@ -21,6 +21,7 @@ import com.google.devtools.intellij.IntellijAspectTestFixtureOuterClass.Intellij
 import com.google.devtools.intellij.ideinfo.IntellijIdeInfo.CIdeInfo;
 import com.google.devtools.intellij.ideinfo.IntellijIdeInfo.TargetIdeInfo;
 import com.google.idea.blaze.BazelIntellijAspectTest;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -47,5 +48,18 @@ public class CcBinaryTest extends BazelIntellijAspectTest {
     assertThat(getOutputGroupFiles(testFixture, "intellij-info-cpp"))
         .contains(testRelative(intellijInfoFileName("simple")));
     assertThat(getOutputGroupFiles(testFixture, "intellij-info-generic")).isEmpty();
+  }
+
+  @Test
+  public void testExpandDataDeps() throws Exception {
+    IntellijAspectTestFixture testFixture = loadTestFixture(":expand_datadeps_fixture");
+    TargetIdeInfo target = findTarget(testFixture, ":expand_datadeps");
+    assertThat(target.getKindString()).isEqualTo("cc_binary");
+
+    List<String> args = target.getCIdeInfo().getArgsList();
+    assertThat(args).hasSize(1);
+    assertThat(args.get(0))
+        .endsWith(
+            "/aspect/testing/tests/src/com/google/idea/blaze/aspect/cpp/ccbinary/datadepfile.txt");
   }
 }

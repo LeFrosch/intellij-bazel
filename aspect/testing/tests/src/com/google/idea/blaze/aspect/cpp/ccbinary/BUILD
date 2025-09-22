@@ -12,15 +12,40 @@ cc_binary(
     srcs = ["simple/simple.cc"],
 )
 
+cc_binary(
+    name = "expand_datadeps",
+    srcs = ["simple/simple.cc"],
+    args = [
+        "--ARG1=$(location :datadepfile)",
+    ],
+    data = [":datadepfile"],
+)
+
+genrule(
+    name = "datadepfile",
+    outs = ["datadepfile.txt"],
+    cmd = "touch $@",
+)
+
 intellij_aspect_test_fixture(
     name = "simple_fixture",
     deps = [":simple"],
 )
 
+intellij_aspect_test_fixture(
+    name = "expand_datadeps_fixture",
+    deps = [
+        ":expand_datadeps",
+    ],
+)
+
 java_test(
     name = "CcBinaryTest",
     srcs = ["CcBinaryTest.java"],
-    data = [":simple_fixture"],
+    data = [
+        ":expand_datadeps_fixture",
+        ":simple_fixture",
+    ],
     deps = [
         "//aspect/testing:BazelIntellijAspectTest",
         "//aspect/testing:guava",
