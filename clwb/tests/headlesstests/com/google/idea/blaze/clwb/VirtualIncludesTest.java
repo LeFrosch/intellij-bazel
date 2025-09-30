@@ -49,7 +49,7 @@ public class VirtualIncludesTest extends ClwbHeadlessTestCase {
     super.addAllowedVfsRoots(roots);
     roots.add(AllowedVfsRoot.bazelBinRecursive(myBazelInfo, "lib/strip_absolut/_virtual_includes"));
     roots.add(AllowedVfsRoot.bazelBinRecursive(myBazelInfo, "lib/transitive"));
-    roots.add(AllowedVfsRoot.bazelBinRecursive(myBazelInfo, "external/+_repo_rules+sqlite"));
+    roots.add(AllowedVfsRoot.bazelBinRecursive(myBazelInfo, "lib/cmake/cmake_lib/include"));
   }
 
   private void checkIncludes() {
@@ -62,7 +62,7 @@ public class VirtualIncludesTest extends ClwbHeadlessTestCase {
     assertContainsHeader("raw_system.h", compilerSettings);
     assertContainsHeader("raw_quote.h", compilerSettings);
     assertContainsHeader("lib/transitive/generated.h", compilerSettings);
-    assertContainsHeader("sqlite3.h", compilerSettings);
+    assertContainsHeader("cmake_lib.h", compilerSettings);
 
     assertThat(findProjectFile("lib/strip_absolut/strip_absolut.h"))
         .isEqualTo(TestUtils.resolveHeader("strip_absolut/strip_absolut.h", compilerSettings));

@@ -52,8 +52,8 @@ public class VirtualIncludesCacheTest extends ClwbHeadlessTestCase {
     assertContainsHeader("lib/transitive/generated.h", compilerSettings);
     assertCachedHeader("lib/transitive/generated.h", compilerSettings, myProject);
 
-    assertContainsHeader("sqlite3.h", compilerSettings);
-    assertCachedHeader("sqlite3.h", compilerSettings, myProject);
+    assertContainsHeader("cmake_lib.h", compilerSettings);
+    assertCachedHeader("cmake_lib.h", compilerSettings, myProject);
   }
 
   private void checkImplDeps() {

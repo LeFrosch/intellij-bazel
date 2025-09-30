@@ -12,7 +12,6 @@ cc_binary(
             "/Ilib/raw_files/default",
             "/external:Ilib/raw_files/system",
             "/external:Ilib/raw_files/quote",
-            "/external:W0",
         ],
         "//conditions:default": [
             "-Ilib/raw_files/default",
@@ -25,6 +24,6 @@ cc_binary(
         "//lib/strip_absolut:gen",
         "//lib/strip_absolut:lib",
         "//lib/strip_relative:lib",
-        "@sqlite",
+        "//lib/cmake:cmake_lib",
     ],
 )
