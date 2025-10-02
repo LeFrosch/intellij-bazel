@@ -20,10 +20,10 @@ cc_binary(
         ],
     }),
     deps = [
+        "//lib/cmake:lib",
         "//lib/impl_deps:lib",
         "//lib/strip_absolut:gen",
         "//lib/strip_absolut:lib",
         "//lib/strip_relative:lib",
-        "//lib/cmake:cmake_lib",
     ],
 )
