@@ -23,6 +23,7 @@ cc_binary(
         "//lib/impl_deps:lib",
         "//lib/strip_absolut:gen",
         "//lib/strip_absolut:lib",
+        "@strip_include//:lib",
         "//lib/strip_relative:lib",
     ],
 )

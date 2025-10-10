@@ -1,3 +1,5 @@
 bazel_dep(name = "rules_cc", version = "0.2.8")
 bazel_dep(name = "platforms", version = "1.0.0")
 
+local_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:local.bzl", "local_repository")
+local_repository(name = "strip_include", path = "external/strip_include")

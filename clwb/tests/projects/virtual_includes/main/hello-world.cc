@@ -5,11 +5,13 @@
 #include "raw_default.h"
 #include "raw_system.h"
 #include "raw_quote.h"
+#include "strip_include_lib.h"
 
 int main() {
   strip_absolut_function();
   strip_relative_function();
   impl_deps_function();
+  strip_include_function();
 
   return GENERATED_MACRO + RAW_DEFAULT_MACRO + RAW_SYSTEM_MACRO + RAW_QUOTE_MACRO;
 }
