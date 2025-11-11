@@ -263,3 +263,14 @@ local_repository(
     name = "clwb_virtual_includes_external",
     path = "clwb/tests/projects/virtual_includes/lib/external",
 )
+
+bazel_dep(name = "bazel")
+git_override(
+    module_name = "bazel",
+    patch_strip = 1,
+    patches = [
+        "//third_party/bazel/patches:module_8_4_2.patch",
+    ],
+    remote = "https://github.com/bazelbuild/bazel.git",
+    tag = "8.4.2",
+)

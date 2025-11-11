@@ -1,0 +1,73 @@
+diff --git a/MODULE.bazel b/MODULE.bazel
+index b3dde1c838..f740d8ff72 100644
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -25,7 +25,6 @@ bazel_dep(name = "zstd-jni", version = "1.5.6-9")
+ bazel_dep(name = "blake3", version = "1.5.1.bcr.1")
+ bazel_dep(name = "zlib", version = "1.3.1.bcr.5")
+ bazel_dep(name = "rules_java", version = "8.14.0")
+-bazel_dep(name = "rules_graalvm", version = "0.11.1")
+ bazel_dep(name = "rules_proto", version = "7.0.2")
+ bazel_dep(name = "rules_jvm_external", version = "6.0")
+ bazel_dep(name = "rules_python", version = "0.40.0")
+@@ -44,9 +43,6 @@ bazel_dep(name = "rules_cc", version = "0.1.1")
+ # repo_name needs to be used, until WORKSPACE mode is to be supported in bazel_tools
+ bazel_dep(name = "protobuf", version = "29.0", repo_name = "com_google_protobuf")
+
+-# TODO: wyv@ - add remoteapis to the BCR
+-bazel_dep(name = "remoteapis", version = "")
+-
+ # TODO: wyv@ - eventually this part should be unnecessary (after we fix up the googleapis module
+ #   in the BCR)
+ switched_rules = use_extension("@googleapis//:extensions.bzl", "switched_rules")
+@@ -65,16 +61,6 @@ single_version_override(
+     version = "6.0",
+ )
+
+-# TODO(pcloudy): Remove once the next version of rules_graalvm is available.
+-single_version_override(
+-    module_name = "rules_graalvm",
+-    patch_strip = 1,
+-    patches = [
+-        "//third_party:rules_graalvm_fix.patch",
+-        "//third_party:rules_graalvm_unicode.patch",
+-    ],
+-)
+-
+ # Remove once the following PRs are available in a grpc-java release.
+ #   https://github.com/grpc/grpc-java/pull/12207
+ #   https://github.com/grpc/grpc-java/pull/12222
+@@ -87,11 +73,6 @@ single_version_override(
+     ],
+ )
+
+-local_path_override(
+-    module_name = "remoteapis",
+-    path = "./third_party/remoteapis",
+-)
+-
+ # The following Bazel modules are not direct dependencies for building Bazel,
+ # but are required for visibility from DIST_ARCHIVE_REPOS in repositories.bzl
+ bazel_dep(name = "rules_apple", version = "3.16.0")
+@@ -326,15 +307,6 @@ use_repo(
+ cc_configure = use_extension("@rules_cc//cc:extensions.bzl", "cc_configure_extension")
+ use_repo(cc_configure, "local_config_cc")
+
+-gvm = use_extension("@rules_graalvm//:extensions.bzl", "graalvm")
+-gvm.graalvm(
+-    name = "graalvm",
+-    distribution = "ce",
+-    java_version = "21",
+-    version = "21.0.2",
+-)
+-use_repo(gvm, "graalvm_toolchains")
+-
+ http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+ # DO NOT UPDATE the jq versions, they are used to verify compatibility with old and new versions.
+@@ -434,5 +406,3 @@ register_toolchains("@rules_python//python:autodetecting_toolchain")
+ register_toolchains("@local_config_winsdk//:all")
+
+ register_toolchains("//src/main/res:empty_rc_toolchain")
+-
+-register_toolchains("@graalvm_toolchains//:gvm")
