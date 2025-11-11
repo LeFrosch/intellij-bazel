@@ -94,6 +94,7 @@ intellij_plugin(
     deps = [
         ":plugin_library",
         "//base:plugin_library",
+        "//clwb/src/com/google/idea/blaze/clwb/repl:plugin_library",
         "//cpp:plugin_library",
         "//dart:plugin_library",
         "//javascript:plugin_library",

@@ -173,14 +173,15 @@ http_archive(
     url = CLION_251_URL,
 )
 
-CLION_252_SHA = "29b8cda11752215aaf273de283ea6245c9c55eb54cb5ef30e0765277eea9130a"
+CLION_252_SHA = "9387631c56d427d3b8a889ffca8518a00ca99da17a696a291becf0f561e10753"
 
-CLION_252_URL = "https://www.jetbrains.com/intellij-repository/releases/com/jetbrains/intellij/clion/clion/2025.2.4/clion-2025.2.4.zip"
+CLION_252_URL = "file:///Volumes/Projects/bazel/sdks/clion-252.zip"
 
 http_archive(
     name = "clion_2025_2",
     build_file = "@//intellij_platform_sdk:BUILD.clion252",
     sha256 = CLION_252_SHA,
+    strip_prefix = "clion-252/Contents",
     url = CLION_252_URL,
 )
 

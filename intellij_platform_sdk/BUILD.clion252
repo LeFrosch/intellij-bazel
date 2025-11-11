@@ -130,5 +130,5 @@ java_import(
 
 filegroup(
     name = "application_info_json",
-    srcs = ["product-info.json"],
+    srcs = ["Resources/product-info.json"],
 )
