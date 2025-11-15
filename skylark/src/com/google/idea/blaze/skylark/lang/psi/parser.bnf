@@ -1,0 +1,111 @@
+{
+  parserClass="com.google.idea.blaze.skylark.lang.psi.SkylarkParser"
+
+  psiClassPrefix="Skylark"
+  psiImplClassSuffix="Impl"
+  psiPackage="com.google.idea.blaze.skylark.lang.psi"
+  psiImplPackage="com.google.idea.blaze.skylark.lang.psi.impl"
+
+  elementTypeHolderClass="com.google.idea.blaze.skylark.lang.psi.SkylarkTokenTypes"
+  elementTypeClass="com.google.idea.blaze.skylark.lang.psi.SkylarkElementType"
+
+  tokenTypeClass="com.google.idea.blaze.skylark.lang.psi.SkylarkTokenType"
+
+  extends(".*_expr")=expression
+  extends("atom|funccall|getitem|slice|getattr")=atom_expr
+
+  tokens = [COMMENT = "COMMENT"]
+}
+
+file ::= statement*
+
+private statement ::= def_stmt | if_stmt | for_stmt | simple_stmt | NEWLINE
+
+def_stmt ::= DEF IDENTIFIER LPAREN parameters? RPAREN COLON suite
+
+parameters ::= parameter (COMMA parameter)* COMMA?
+parameter  ::= STAR IDENTIFIER
+  | STARSTAR IDENTIFIER
+  | STAR
+  | IDENTIFIER ASSIGN test
+  | IDENTIFIER
+
+if_stmt ::= IF test COLON suite if_elif* if_else?
+if_elif ::= ELIF test COLON suite
+if_else ::= ELSE COLON suite
+
+for_stmt ::= FOR loop_variables IN tests COLON suite
+
+suite ::= simple_stmt | (NEWLINE INDENT statement* DEDENT)
+
+private simple_stmt ::= small_stmt (SEMICOLON small_stmt)* SEMICOLON? NEWLINE
+
+private small_stmt ::= return_stmt
+  | break_stmt
+  | continue_stmt
+  | pass_stmt
+  | assign_stmt
+  | expr_stmt
+  | load_stmt
+
+return_stmt   ::= RETURN tests?
+break_stmt    ::= BREAK
+continue_stmt ::= CONTINUE
+pass_stmt     ::= PASS
+expr_stmt     ::= tests
+load_stmt     ::= LOAD LPAREN (arguments COMMA?)? RPAREN
+
+assign_stmt ::= test assign_op test
+
+private test        ::= expression (IF expression ELSE test)? | lambdef
+private test_nocond ::= expression | lambdef_nocond
+private tests       ::= test (COMMA test)*
+
+lambdef        ::= LAMBDA parameters? COLON test
+lambdef_nocond ::= LAMBDA parameters? COLON test_nocond
+
+expression          ::= unary_expr | binary_expr | atom_expr
+private expressions ::= expression (COMMA expression)*
+
+unary_expr ::= unary_op? binary_expr
+binary_expr ::= atom_expr (binary_op atom_expr)*
+
+atom_expr ::= atom | funccall | getitem | slice | getattr
+
+funccall ::= atom_expr LPAREN (arguments COMMA?)? RPAREN
+getitem  ::= atom_expr LBRACKET test RBRACKET
+slice    ::= atom_expr LBRACKET (test? COLON test? (COLON test)?) RBRACKET
+getattr  ::= atom_expr DOT IDENTIFIER
+
+atom ::= IDENTIFIER
+  | INT
+  | FLOAT
+  | STRING
+  | NONE
+  | TRUE
+  | FALSE
+  | list_expr
+  | list_comp
+  | dict_expr
+  | dict_comp
+  | LPAREN (expressions COMMA?)? RPAREN { extends = atom_expr}
+
+list_expr ::= LBRACKET (tests COMMA?)? RBRACKET
+list_comp ::= LBRACKET test comp_clause RBRACKET
+dict_expr ::= LBRACE (entries COMMA?)? RBRACE
+dict_comp ::= LBRACE entry comp_clause RBRACE
+
+entry           ::= test COLON test
+private entries ::= entry (COMMA entry)*
+
+private comp_clause ::= comp_for+ comp_if?
+comp_for            ::= FOR loop_variables IN expression
+comp_if             ::= IF test_nocond
+
+argument       ::= (IDENTIFIER ASSIGN | STAR | STARSTAR)? test
+arguments      ::= argument (COMMA argument)*
+loop_variables ::= atom_expr (COMMA atom_expr)*
+
+private unary_op  ::= PLUS | MINUS | TILDE | NOT
+private binary_op ::= L_AND | L_OR | PLUS | MINUS | SHL | SHR | OR | AND | XOR | MUL | DIV | MOD | FLOORDIV | LES | GRE | EQ | LEQ | GEQ | NEQ | IN | NOT IN | IS | IS NOT
+private assign_op ::= ASSIGN | PLUS_EQ | MINUS_EQ | MUL_EQ | DIV_EQ | FLOORDIV_EQ | MOD_EQ | AND_EQ | OR_EQ | XOR_EQ | SHL_EQ | SHR_EQ

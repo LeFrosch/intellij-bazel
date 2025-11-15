@@ -1,0 +1,25 @@
+package com.google.idea.blaze.skylark.lang.strpls
+
+import com.google.idea.blaze.skylark.lang.SkylarkFileType
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.platform.lsp.api.LspServerSupportProvider
+import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor
+
+class StarplsServerProvider : LspServerSupportProvider {
+
+  override fun fileOpened(project: Project, file: VirtualFile, serverStarter: LspServerSupportProvider.LspServerStarter) {
+    if (file.fileType == SkylarkFileType) {
+      serverStarter.ensureServerStarted(StarplsServerDescriptor(project))
+    }
+  }
+}
+
+private class StarplsServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(project, "starpls") {
+
+  override fun isSupportedFile(file: VirtualFile) = file.fileType == SkylarkFileType
+
+  override fun createCommandLine() = GeneralCommandLine("/Users/Daniel.Brauner/Downloads/starpls-darwin-arm64", "server")
+    .withWorkDirectory("/Volumes/Projects/bazel/intellij/clwb/tests/projects/llvm_toolchain")
+}

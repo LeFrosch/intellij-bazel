@@ -20,6 +20,27 @@
     <completion.contributor language="BUILD" implementationClass="com.google.idea.blaze.skylark.debugger.impl.DebuggerCompletionContributor"/>
     <executor implementation="com.google.idea.blaze.skylark.debugger.run.SkylarkDebugExecutor"/>
   </extensions>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <fileTypeFactory
+      implementation="com.google.idea.blaze.skylark.lang.SkylarkFileTypeFactory"/>
+    <lang.syntaxHighlighterFactory
+      language="Skylark"
+      implementationClass="com.google.idea.blaze.skylark.lang.lexer.SkylarkSyntaxHighlighter$Factory"/>
+    <lang.parserDefinition
+      language="Skylark"
+      implementationClass="com.google.idea.blaze.skylark.lang.psi.SkylarkParserDefinition"/>
+
+    <platform.lsp.serverSupportProvider
+      implementation="com.google.idea.blaze.skylark.lang.strpls.StarplsServerProvider"/>
+
+    <registryKey
+      defaultValue="false"
+      description="Use the starpls LSP for Starlark"
+      key="bazel.starlark.lsp.enabled"
+      restartRequired="true"/>
+  </extensions>
+
   <extensions defaultExtensionNs="com.google.idea.blaze">
     <BuildFlagsProvider implementation="com.google.idea.blaze.skylark.debugger.run.SkylarkDebugBuildFlagsProvider"/>
   </extensions>
