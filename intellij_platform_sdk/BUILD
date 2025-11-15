@@ -109,20 +109,23 @@ java_library(
     testonly = 1,
 )
 
-# These libraries should only be used by open-source plugins.
-# Otherwise, prefer using the google3 versions of these libraries. Note that
-# //third_party/java/truth must be repackaged, because it pulls in Guava.
 java_library(
-    exports = [
-        "//third_party/java/truth",
-        "@bytebuddy//jar",
-        "@bytebuddy_agent//jar",
-        "@mockito//jar",
-        "@objenesis//jar",
-    ],
+    name = "grammar_kit_libs",
+    exports = select_from_plugin_api_directory([":grammar_kit_libs"]),
+)
+
+java_library(
     name = "test_libs",
     testonly = 1,
     visibility = [":test_libs_visibility"],
+    exports = [
+        "//third_party/java/truth",
+        "@maven//:net_bytebuddy_byte_buddy",
+        "@maven//:net_bytebuddy_byte_buddy_agent",
+        "@maven//:org_mockito_mockito_core",
+        "@maven//:org_objenesis_objenesis",
+        "@maven//:org_opentest4j_opentest4j",
+    ],
 )
 
 # The version of guava bundled with the IntelliJ plugin API.
