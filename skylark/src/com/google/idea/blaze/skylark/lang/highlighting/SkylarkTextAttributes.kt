@@ -1,9 +1,11 @@
-package com.google.idea.blaze.skylark.lang.lexer
+package com.google.idea.blaze.skylark.lang.highlighting
 
+import com.google.idea.blaze.skylark.SkylarkBundle
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.HighlighterColors
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.options.colors.AttributesDescriptor
+import org.jetbrains.annotations.PropertyKey
 
 enum class SkylarkTextAttributes() {
   STRING(
@@ -30,6 +32,31 @@ enum class SkylarkTextAttributes() {
     "SKYLARK_KEYWORD",
     DefaultLanguageHighlighterColors.KEYWORD,
     "settings.colors.keyword",
+  ),
+  NAMED_ARGUMENT(
+    "SKYLARK_NAMED_ARGUMENT",
+    null,
+    "settings.colors.group.function", "settings.colors.function.named_argument",
+  ),
+  FUNCTION_CALL(
+    "SKYLARK_FUNCTION_CALL",
+    DefaultLanguageHighlighterColors.FUNCTION_DECLARATION,
+    "settings.colors.group.function", "settings.colors.function.call",
+  ),
+  FUNCTION_DECLARATION(
+    "SKYLARK_FUNCTION_DECLARATION",
+    DefaultLanguageHighlighterColors.FUNCTION_DECLARATION,
+    "settings.colors.group.function", "settings.colors.function.declaration",
+  ),
+  CONSTANT(
+    "SKYLARK_CONSTANT",
+    DefaultLanguageHighlighterColors.STATIC_FIELD,
+    "settings.colors.constant",
+  ),
+  PROVIDER(
+    "SKYLARK_PROVIDER",
+    DefaultLanguageHighlighterColors.METADATA,
+    "settings.colors.provider",
   ),
   PARENTHESES(
     "SKYLARK_PARENTHESES",
@@ -76,9 +103,10 @@ enum class SkylarkTextAttributes() {
   constructor(
     externalName: String,
     fallbackKey: TextAttributesKey?,
-    vararg bundleKey: /* @PropertyKey(resourceBundle = DtsBundle.BUNDLE) */ String,
+    vararg bundleKey: @PropertyKey(resourceBundle = SkylarkBundle.BUNDLE_FQN) String,
   ) : this() {
     attribute = TextAttributesKey.createTextAttributesKey(externalName, fallbackKey)
-    // descriptor = AttributesDescriptor(StringUtil.join(bundleKey.map { DtsBundle.message(it) }, "//"), attribute)
+    descriptor =
+      AttributesDescriptor(bundleKey.joinToString(separator = "//", transform = SkylarkBundle::message), attribute)
   }
 }

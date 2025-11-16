@@ -1,5 +1,6 @@
-package com.google.idea.blaze.skylark.lang.lexer
+package com.google.idea.blaze.skylark.lang.highlighting
 
+import com.google.idea.blaze.skylark.lang.lexer.SkylarkLexer
 import com.google.idea.blaze.skylark.lang.psi.SkylarkTokenSets
 import com.google.idea.blaze.skylark.lang.psi.SkylarkTokenTypes
 import com.intellij.lexer.FlexAdapter

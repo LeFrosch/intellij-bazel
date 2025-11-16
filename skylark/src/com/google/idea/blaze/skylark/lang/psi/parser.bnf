@@ -1,6 +1,8 @@
 {
   parserClass="com.google.idea.blaze.skylark.lang.psi.SkylarkParser"
 
+  generate=[visitor="no" fqn="yes"]
+
   psiClassPrefix="Skylark"
   psiImplClassSuffix="Impl"
   psiPackage="com.google.idea.blaze.skylark.lang.psi"
@@ -11,16 +13,16 @@
 
   tokenTypeClass="com.google.idea.blaze.skylark.lang.psi.SkylarkTokenType"
 
-  extends("atom|funccall|getitem|slice|getattr")=atom_expr
+  extends("atom|funccall|getitem|slice|getattr")="atom_expr"
 
   tokens = [COMMENT = "COMMENT"]
 }
 
 file ::= statement*
 
-private statement ::= def_stmt | if_stmt | for_stmt | simple_stmt | NEWLINE
+private statement ::= funcdef | if_stmt | for_stmt | simple_stmt | NEWLINE
 
-def_stmt ::= DEF IDENTIFIER LPAREN parameters? RPAREN COLON suite
+funcdef ::= DEF IDENTIFIER LPAREN parameters? RPAREN COLON suite
 
 parameters ::= parameter (COMMA parameter)* COMMA?
 parameter  ::= STAR IDENTIFIER

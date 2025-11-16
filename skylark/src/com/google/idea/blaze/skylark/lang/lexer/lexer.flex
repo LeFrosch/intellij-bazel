@@ -7,6 +7,7 @@ import com.google.idea.blaze.skylark.lang.psi.SkylarkTokenTypes;
 
 %%
 
+%public
 %class SkylarkLexer
 %implements FlexLexer
 %unicode

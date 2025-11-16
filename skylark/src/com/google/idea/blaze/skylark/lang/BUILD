@@ -23,5 +23,6 @@ kt_jvm_library(
     deps = [
         "//base",  # only required for migration from BuildFileLanguage
         "//intellij_platform_sdk:plugin_api",
-    ],
+        "//skylark/src/com/google/idea/blaze/skylark:bundle",
+    ]
 )
