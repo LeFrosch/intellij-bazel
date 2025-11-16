@@ -55,6 +55,8 @@ class SkylarkIndentLexer : LookAheadLexer(FlexAdapter(SkylarkLexer(null))) {
         if (bracketLevel > 0) bracketLevel--
         advanceLexer(baseLexer)
       }
+
+      else -> advanceLexer(baseLexer)
     }
   }
 

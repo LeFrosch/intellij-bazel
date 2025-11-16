@@ -20,9 +20,9 @@ class SkylarkFileTypeFactory : FileTypeFactory() {
 
 
     if (SkylarkLanguage.enabled) {
-      consumer.consume(SkylarkFileType, *fileNameMatchers);
+      consumer.consume(SkylarkFileType, *fileNameMatchers)
     } else {
-      consumer.consume(BuildFileType.INSTANCE, *fileNameMatchers);
+      consumer.consume(BuildFileType.INSTANCE, *fileNameMatchers)
     }
   }
 }

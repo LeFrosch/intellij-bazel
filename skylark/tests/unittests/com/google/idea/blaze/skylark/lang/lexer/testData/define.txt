@@ -1,0 +1,8 @@
+WHITE_SPACE ('')
+IDENTIFIER ('CC_INFO')
+WHITE_SPACE (' ')
+ASSIGN ('=')
+WHITE_SPACE (' ')
+STRING ('"@@rules_cc+//cc/private:cc_info.bzl%CcInfo"')
+NEWLINE ('\n')
+NEWLINE ('')
