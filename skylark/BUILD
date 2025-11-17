@@ -4,6 +4,7 @@ intellij_plugin_library(
     name = "plugin_library",
     visibility = ["//visibility:public"],
     deps = [
+        "//skylark/src/com/google/idea/blaze/skylark/repl",
         "//skylark/src/com/google/idea/blaze/skylark/debugger",
     ],
 )
