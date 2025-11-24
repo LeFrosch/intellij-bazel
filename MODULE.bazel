@@ -94,6 +94,7 @@ maven.install(
         "org.jetbrains.pty4j:pty4j:0.13.0",
         # Only required for the maintenance script, otherwise use the stdlib for the sdk
         "org.jetbrains.kotlin:kotlin-stdlib:2.1.21",
+        "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0",
     ],
     fail_if_repin_required = True,
     generate_compat_repositories = True,
@@ -137,8 +138,8 @@ intellij_platform = use_extension("//intellij_platform_sdk:extension.bzl", "inte
 intellij_platform.sdk(
     name = "clion",
     build_file = "//intellij_platform_sdk:BUILD.clion251",
-    sha256 = "1222a7915371d0f80292215ec63aceed330dd887ce1ad058bfed8384623908a8",
-    version = "2025.1.6",
+    sha256 = "3a5e75b37445ffa9bef10667dfd4e79feac385519c7722035f890749a991533a",
+    version = "2025.1.7",
 )
 intellij_platform.sdk(
     name = "clion",
@@ -150,8 +151,8 @@ intellij_platform.sdk(
     name = "clion",
     alias = "clion_2025_3",
     build_file = "//intellij_platform_sdk:BUILD.clion253",
-    sha256 = "de0e78665204adea9e906af351bdd4e988fe7a47a8b6288136eb23ec89d8d83e",
-    version = "253.27642.28-EAP-SNAPSHOT",
+    sha256 = "a6658d1339ca0578e1a60e24f2b6cf5c9ba77f6e34e0131d111d74af7f014e9d",
+    version = "253.28294.125-EAP-SNAPSHOT",
 )
 intellij_platform.plugin(
     name = "PythonCore",
@@ -164,14 +165,14 @@ intellij_platform.plugin(
     name = "PythonCore",
     alias = "python_2025_2",
     build_file = "//intellij_platform_sdk:BUILD.python",
-    sha256 = "f56a95f3aa127bc7057700583cb201044f4b41bfacd8f1f7d4a827c7020cf4a4",
-    version = "252.27397.103",
+    sha256 = "dd58ebbc9f2fd539804e874b8f01ade391dcaac8ac7b2c6fb6c2437433a90040",
+    version = "252.28238.7",
 )
 intellij_platform.plugin(
     name = "PythonCore",
     alias = "python_2025_3",
     build_file = "//intellij_platform_sdk:BUILD.python",
-    sha256 = "f2643e4f3ab5bf3b7b77cbf0797e8c33318c9d21a3807462f6034d0613ecebc6",
-    version = "253.27864.23",
+    sha256 = "fa3dc8a5038736e8c4aef5a8da42ab933d32ac9b416a6f5f900697aefe799487",
+    version = "253.28294.169",
 )
 use_repo(intellij_platform, "clion_2025_1", "clion_2025_2", "clion_2025_3", "python_2025_1", "python_2025_2", "python_2025_3")
