@@ -90,15 +90,10 @@ class BlazeCidrRunConfigurationRunner(private val configuration: BlazeCommandRun
       return getFlagsForDebugging(configuration.handler.getState())
     }
 
-    val switchBuilder = when (RunConfigurationUtils.getCompilerKind(configuration)) {
-      MSVCCompilerKind -> MSVCSwitchBuilder()
-      ClangClCompilerKind -> ClangClSwitchBuilder()
-      ClangCompilerKind -> ClangSwitchBuilder()
-      else -> GCCSwitchBuilder() // default to GCC, as usual
-    }
+    val flagsBuilder = ImmutableList.builder<String>()
 
+    // Bazel specific flags
     if (Registry.`is`("bazel.clwb.debug.enforce.dbg.compilation.mode")) {
-      switchBuilder.withSwitches()
       flagsBuilder.add("--compilation_mode=dbg")
       flagsBuilder.add("--strip=never")
       flagsBuilder.add("--dynamic_mode=off")
@@ -108,13 +103,11 @@ class BlazeCidrRunConfigurationRunner(private val configuration: BlazeCommandRun
     if (compilerKind === ClangClCompilerKind || compilerKind === MSVCCompilerKind) {
       val sb = CidrSwitchBuilder()
       val sb2 = compilerKind.getSwitchBuilder(sb)
-      sb2
-        .withDebugInfo(-1) // ignored for msvc/clangcl
-        .withDisableOptimization()
 
-      sb2.buildRaw().forEach(Consumer { opt: String? ->
+      switchBuilder.buildRaw().forEach { opt ->
         flagsBuilder.add("--copt=$opt")
-      })
+        flagsBuilder.add("--linkopt=$opt")
+      }
     } else {
       if (debuggerKind == BlazeDebuggerKind.BUNDLED_LLDB && !Registry.`is`("bazel.trim.absolute.path.disabled")) {
         flagsBuilder.add(
@@ -134,7 +127,34 @@ class BlazeCidrRunConfigurationRunner(private val configuration: BlazeCommandRun
   }
 
   private fun getExtraCompilerSwitches(env: ExecutionEnvironment): CidrSwitchBuilder {
+    val compilerKind = RunConfigurationUtils.getCompilerKind(configuration)
+    val switchBuilder = when (compilerKind) {
+      MSVCCompilerKind -> MSVCSwitchBuilder()
+      ClangClCompilerKind -> ClangClSwitchBuilder()
+      ClangCompilerKind -> ClangSwitchBuilder()
+      else -> GCCSwitchBuilder() // default to GCC, as usual
+    }
 
+    switchBuilder.withDebugInfo(2) // ignored for msvc/clangcl
+    switchBuilder.withDisableOptimization()
+
+    val debuggerKind = RunConfigurationUtils.getDebuggerKind(configuration)
+    if (debuggerKind == BlazeDebuggerKind.BUNDLED_LLDB && !Registry.`is`("bazel.trim.absolute.path.disabled")) {
+      switchBuilder.withSwitch("-fdebug-compilation-dir=" + WorkspaceRoot.fromProject(env.project))
+    }
+  }
+
+  private fun getExtraLinkerSwitches(env: ExecutionEnvironment): ImmutableList<String> {
+    val flags = ImmutableList.builder<String>()
+
+    val debuggerKind = RunConfigurationUtils.getDebuggerKind(configuration)
+    if (debuggerKind == BlazeDebuggerKind.BUNDLED_LLDB && !Registry.`is`("bazel.trim.absolute.path.disabled")) {
+      if (SystemInfo.isMac) {
+        flags.add("-Wl,-oso_prefix,.")
+      }
+    }
+
+    return flags.build()
   }
 
   /**
