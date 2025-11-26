@@ -15,6 +15,7 @@
  */
 package com.google.idea.blaze.clwb.run
 
+import androidx.compose.ui.graphics.CloseSegment
 import com.google.common.collect.ImmutableList
 import com.google.idea.blaze.base.command.BlazeCommandName
 import com.google.idea.blaze.base.command.BlazeInvocationContext
@@ -44,7 +45,12 @@ import com.intellij.util.asSafely
 import com.jetbrains.cidr.execution.CidrCommandLineState
 import com.jetbrains.cidr.lang.toolchains.CidrSwitchBuilder
 import com.jetbrains.cidr.lang.workspace.compiler.ClangClCompilerKind
+import com.jetbrains.cidr.lang.workspace.compiler.ClangClSwitchBuilder
+import com.jetbrains.cidr.lang.workspace.compiler.ClangCompilerKind
+import com.jetbrains.cidr.lang.workspace.compiler.ClangSwitchBuilder
+import com.jetbrains.cidr.lang.workspace.compiler.GCCSwitchBuilder
 import com.jetbrains.cidr.lang.workspace.compiler.MSVCCompilerKind
+import com.jetbrains.cidr.lang.workspace.compiler.MSVCSwitchBuilder
 import java.io.File
 import java.util.concurrent.CancellationException
 import java.util.function.Consumer
@@ -84,8 +90,15 @@ class BlazeCidrRunConfigurationRunner(private val configuration: BlazeCommandRun
       return getFlagsForDebugging(configuration.handler.getState())
     }
 
-    val flagsBuilder = ImmutableList.builder<String>()
+    val switchBuilder = when (RunConfigurationUtils.getCompilerKind(configuration)) {
+      MSVCCompilerKind -> MSVCSwitchBuilder()
+      ClangClCompilerKind -> ClangClSwitchBuilder()
+      ClangCompilerKind -> ClangSwitchBuilder()
+      else -> GCCSwitchBuilder() // default to GCC, as usual
+    }
+
     if (Registry.`is`("bazel.clwb.debug.enforce.dbg.compilation.mode")) {
+      switchBuilder.withSwitches()
       flagsBuilder.add("--compilation_mode=dbg")
       flagsBuilder.add("--strip=never")
       flagsBuilder.add("--dynamic_mode=off")
@@ -118,6 +131,10 @@ class BlazeCidrRunConfigurationRunner(private val configuration: BlazeCommandRun
       flagsBuilder.addAll(getOptionalFissionArguments())
     }
     return flagsBuilder.build()
+  }
+
+  private fun getExtraCompilerSwitches(env: ExecutionEnvironment): CidrSwitchBuilder {
+
   }
 
   /**
