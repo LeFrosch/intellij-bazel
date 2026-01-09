@@ -64,19 +64,19 @@ class AbortedParser : BuildEventParser {
     }
   }
 
-	override fun parse(event: BuildEvent, issueReportingMode: IssueReportingMode): IssueOutput? {
-		if (!event.hasAborted()) return null
+  override fun parse(event: BuildEvent, issueReportingMode: IssueReportingMode): IssueOutput? {
+    if (!event.hasAborted()) return null
 
-		// do not report skipped targets, this event is expected because sync is executed with `--skip_incompatible_explicit_targets`
-		if (event.aborted.reason == AbortReason.SKIPPED) return null
+    // do not report skipped targets, this event is expected because sync is executed with `--skip_incompatible_explicit_targets`
+    if (event.aborted.reason == AbortReason.SKIPPED) return null
 
-		val label = getLabel(event.id) ?: return null
-		val issue = BazelBuildIssue(
-			label = label,
-			title = "${event.aborted.reason}: $label",
-			description = buildDescription(event) ?: return null,
-		)
+    val label = getLabel(event.id) ?: return null
+    val issue = BazelBuildIssue(
+      label = label,
+      title = "${event.aborted.reason}: $label",
+      description = buildDescription(event) ?: return null,
+    )
 
-		return IssueOutput(issue, MessageEvent.Kind.ERROR)
-	}
+    return IssueOutput(issue, MessageEvent.Kind.ERROR)
+  }
 }

@@ -32,41 +32,42 @@ class ActionCompletedParser : BuildEventParser {
     }
   }
 
-	override fun parse(event: BuildEvent, issueReportingMode: IssueReportingMode): IssueOutput? {
-		if (!event.id.hasActionCompleted()) return null
-		val id = event.id.actionCompleted
+  override fun parse(event: BuildEvent, issueReportingMode: IssueReportingMode): IssueOutput? {
+    if (!event.id.hasActionCompleted()) return null
+    val id = event.id.actionCompleted
 
-		val isExternal = !id.label.startsWith("//")
+    val isExternal = !id.label.startsWith("//")
 
-		if (!event.hasAction()) return null
-		val body = event.action
+    if (!event.hasAction()) return null
+    val body = event.action
 
-		val isWarning = !body.hasFailureDetail()
+    val isWarning = !body.hasFailureDetail()
 
-		// ignore warnings from external projects
-		if (isExternal && isWarning) return null
+    // ignore warnings from external projects
+    if (isExternal && isWarning) return null
 
-		val name = if (isWarning) {
-			"BUILD_WARNING"
-		} else {
-			"BUILD_FAILURE"
-		}
+    val name = if (isWarning) {
+      "BUILD_WARNING"
+    } else {
+      "BUILD_FAILURE"
+    }
 
-		val issue = BazelBuildIssue(
-			label = id.label,
-			title = "$name: ${id.label}",
-			description = getDescription(body) ?: return null,
-		)
+    val issue = BazelBuildIssue(
+      label = id.label,
+      title = "$name: ${id.label}",
+      description = getDescription(body) ?: return null,
+    )
 
-		val kind = when (issueReportingMode) {
-			IssueReportingMode.SYNC -> {
-				if (isWarning) MessageEvent.Kind.INFO else MessageEvent.Kind.WARNING
-			}
-			IssueReportingMode.BUILD -> {
-				if (isWarning) MessageEvent.Kind.WARNING else MessageEvent.Kind.ERROR
-			}
-		}
+    val kind = when (issueReportingMode) {
+      IssueReportingMode.SYNC -> {
+        if (isWarning) MessageEvent.Kind.INFO else MessageEvent.Kind.WARNING
+      }
 
-		return IssueOutput(issue, kind)
-	}
+      IssueReportingMode.BUILD -> {
+        if (isWarning) MessageEvent.Kind.WARNING else MessageEvent.Kind.ERROR
+      }
+    }
+
+    return IssueOutput(issue, kind)
+  }
 }

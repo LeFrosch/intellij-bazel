@@ -9,14 +9,14 @@ import com.intellij.openapi.extensions.ExtensionPointName
 internal val LOG = logger<BuildEventParser>()
 
 interface BuildEventParser {
-	companion object {
-		val EP_NAME: ExtensionPointName<BuildEventParser> =
-			ExtensionPointName.create("com.google.idea.blaze.BuildEventParser")
+  companion object {
+    val EP_NAME: ExtensionPointName<BuildEventParser> =
+      ExtensionPointName.create("com.google.idea.blaze.BuildEventParser")
 
-		fun parse(event: BuildEvent, issueReportingMode: IssueReportingMode): IssueOutput? {
-			return EP_NAME.extensions.firstNotNullOfOrNull { it.parse(event, issueReportingMode) }
-		}
-	}
+    fun parse(event: BuildEvent, issueReportingMode: IssueReportingMode): IssueOutput? {
+      return EP_NAME.extensions.firstNotNullOfOrNull { it.parse(event, issueReportingMode) }
+    }
+  }
 
-	fun parse(event: BuildEvent, issueReportingMode: IssueReportingMode): IssueOutput?
+  fun parse(event: BuildEvent, issueReportingMode: IssueReportingMode): IssueOutput?
 }
