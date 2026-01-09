@@ -51,8 +51,8 @@ single_version_override(
     patch_strip = 1,
     patches = [
         "//third_party/kotlin/patches:strip_stdlib.patch",
-        "//third_party/kotlin/patches:win_classpath.patch",
-        "//third_party/kotlin/patches:jarjar.patch",
+        # "//third_party/kotlin/patches:win_classpath.patch",
+        # "//third_party/kotlin/patches:jarjar.patch",
     ],
 )
 
