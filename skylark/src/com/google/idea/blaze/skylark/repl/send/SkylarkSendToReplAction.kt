@@ -13,30 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.idea.blaze.skylark.repl
+package com.google.idea.blaze.skylark.repl.send
 
 import com.google.idea.blaze.base.lang.buildfile.psi.BuildFile
 import com.google.idea.blaze.base.lang.buildfile.psi.BuildFile.BlazeFileType
-import com.google.idea.blaze.skylark.repl.SkylarkSendToReplAction
+import com.google.idea.blaze.skylark.repl.REPL_JAR_PATH
+import com.google.idea.blaze.skylark.repl.SkylarkReplActiveConsoleService
+import com.google.idea.blaze.skylark.repl.SkylarkReplConsole
 import com.google.idea.common.util.RunJarService
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.codeInspection.util.IntentionFamilyName
 import com.intellij.codeInspection.util.IntentionName
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.LogicalPosition
 import com.intellij.openapi.progress.currentThreadCoroutineScope
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Iconable
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.util.IncorrectOperationException
+import icons.BlazeIcons
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import javax.swing.Icon
 
-abstract class SkylarkSendToReplAction : IntentionAction {
+abstract class SkylarkSendToReplAction : IntentionAction, Iconable {
 
   override fun getFamilyName(): @IntentionFamilyName String = "Send to Starlark REPL"
 
@@ -45,6 +47,8 @@ abstract class SkylarkSendToReplAction : IntentionAction {
   override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
     return editor != null && file is BuildFile && file.blazeFileType == BlazeFileType.SkylarkExtension
   }
+
+  override fun getIcon(flags: Int): Icon = BlazeIcons.BuildFile
 
   class Line : SkylarkSendToReplAction() {
 
@@ -66,7 +70,7 @@ abstract class SkylarkSendToReplAction : IntentionAction {
         )
       )
 
-      sendToRepl(project, lineText.trim())
+      sendToRepl(project, lineText)
     }
   }
 
@@ -80,7 +84,7 @@ abstract class SkylarkSendToReplAction : IntentionAction {
 
     override fun invoke(project: Project, editor: Editor?, file: PsiFile?) {
       val text = editor?.selectionModel?.selectedText ?: return
-      sendToRepl(project, text.trim())
+      sendToRepl(project, text)
     }
   }
 }

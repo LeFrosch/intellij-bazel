@@ -13,11 +13,13 @@
   <extensions defaultExtensionNs="com.intellij">
     <intentionAction>
       <language/>
-      <className>com.google.idea.blaze.skylark.repl.SkylarkSendToReplAction$Line</className>
+      <className>com.google.idea.blaze.skylark.repl.send.SkylarkSendToReplAction$Line</className>
+      <descriptionDirectoryName>SkylarkSendLineToRepl</descriptionDirectoryName>
     </intentionAction>
     <intentionAction>
       <language/>
-      <className>com.google.idea.blaze.skylark.repl.SkylarkSendToReplAction$Selection</className>
+      <className>com.google.idea.blaze.skylark.repl.send.SkylarkSendToReplAction$Selection</className>
+      <descriptionDirectoryName>SkylarkSendSelectionToRepl</descriptionDirectoryName>
     </intentionAction>
   </extensions>
 </idea-plugin>

@@ -83,10 +83,9 @@ class SkylarkReplConsole(
 
   fun sendText(text: String) {
     val view = consoleView ?: return
-    view.print("$text\n", ConsoleViewContentType.USER_INPUT)
-    val outputStream = handler.processInput ?: return
-    outputStream.write("$text\n".toByteArray())
-    outputStream.flush()
+
+    view.setInputText(text.trim() + "\n")
+    consoleExecuteActionHandler.runExecuteAction(view)
   }
 
   fun showConsole() {
