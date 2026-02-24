@@ -1,0 +1,8 @@
+<idea-plugin>
+  <actions>
+    <action
+      id="Bazel.ParseExeclog"
+      text="Parse Execution Log"
+      class="com.google.idea.blaze.base.execlog.ExeclogParserAction"/>
+  </actions>
+</idea-plugin>
