@@ -22,9 +22,13 @@ def _bazel_build_jars_impl(rctx):
 
     # windows requires non-hermetic build to avoid long paths issues :(
     if "windows" in rctx.os.name.lower():
-        build_cmd = [bazel, "build"]
+        bazel_cmd = [bazel]
     else:
-        build_cmd = [bazel, "--output_user_root=%s" % rctx.path("output"), "build"]
+        bazel_cmd = [bazel, "--output_user_root=%s" % rctx.path("output")]
+
+    # Use --curses=no and --color=no to get clean, line-by-line progress output
+    # (without these, Bazel uses cursor control codes that don't work in file redirects)
+    build_cmd = bazel_cmd + ["build", "--curses=no", "--color=no"]
 
     rctx.report_progress("building: %s" % ", ".join(rctx.attr.jars))
     cmd = build_cmd + list(rctx.attr.jars)
@@ -34,14 +38,26 @@ def _bazel_build_jars_impl(rctx):
     print("bazel_build_jars: running: %s" % " ".join(cmd))
     print("bazel_build_jars: working_directory: %s" % source_dir)
 
-    # redirect output to a log file so we can read it even after a timeout
+    # Redirect output to a log file so we can read it even after a timeout.
+    # Use stdbuf where available to force line-buffered output — this ensures each
+    # line is flushed to disk immediately, so the log file is readable even when
+    # the process is killed on timeout (without this, block buffering causes the
+    # log to appear empty).
     shell_cmd = " ".join(cmd) + " > " + log_file + " 2>&1"
-    result = rctx.execute(["bash", "-c", shell_cmd], working_directory = source_dir, timeout = 3600)
+    if "windows" not in rctx.os.name.lower() and rctx.execute(["which", "stdbuf"]).return_code == 0:
+        shell_cmd = "stdbuf -oL -eL " + shell_cmd
+
+    result = rctx.execute(["bash", "-c", shell_cmd], working_directory = source_dir, timeout = 600)
+
+    # Always shut down the nested Bazel server to free resources. The timeout kills
+    # the client process, but the Bazel server is a daemon that keeps running.
+    rctx.execute(bazel_cmd + ["shutdown"], working_directory = source_dir, timeout = 60)
 
     if result.return_code != 0:
         log = rctx.execute(["tail", "-200", log_file])
+        timeout_msg = " (TIMEOUT)" if result.return_code == 256 else ""
         fail("\n".join([
-            "could not build jars (exit code %s)" % result.return_code,
+            "could not build jars (exit code %s%s)" % (result.return_code, timeout_msg),
             "command: %s" % " ".join(cmd),
             "--- build.log (last 200 lines) ---",
             log.stdout if log.return_code == 0 else "(could not read log file: %s)" % log.stderr,
