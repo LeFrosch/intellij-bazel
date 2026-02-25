@@ -26,38 +26,58 @@ def _bazel_build_jars_impl(rctx):
     else:
         bazel_cmd = [bazel, "--output_user_root=%s" % rctx.path("output")]
 
-    # Use --client_debug to get detailed output about what the Bazel client is doing
-    # during extraction and server startup (the phase where it hangs on CI).
-    cmd = bazel_cmd + ["--client_debug", "build", "--curses=no", "--color=no"] + list(rctx.attr.jars)
+    # --- Diagnostics (print() appears in outer Bazel log even if nested build hangs) ---
+    if "windows" not in rctx.os.name.lower():
+        mem = rctx.execute(["free", "-m"])
+        disk = rctx.execute(["df", "-h", source_dir])
+        print("bazel_build_jars: memory:\n%s" % mem.stdout.strip())
+        print("bazel_build_jars: disk:\n%s" % disk.stdout.strip())
+
+    # Step 1: Check that the Bazel binary works (--version doesn't require extraction)
+    rctx.report_progress("checking Bazel binary...")
+    version = rctx.execute([bazel, "--version"], timeout = 30)
+    print("bazel_build_jars: version: %s (exit: %s)" % (version.stdout.strip(), version.return_code))
+
+    # Step 2: Test extraction + server startup separately (where the hang occurs on CI).
+    # Use --client_debug for detailed client output. Write to file since rctx.execute
+    # discards pipe output on timeout (replaces stderr with "Timed out").
+    rctx.report_progress("starting nested Bazel server...")
+    server_log = str(rctx.path("server.log"))
+    server_cmd = " ".join(bazel_cmd + ["--client_debug", "info", "server_pid"]) + " > " + server_log + " 2>&1"
+    server_result = rctx.execute(["bash", "-c", server_cmd], working_directory = source_dir, timeout = 300)
+    server_log_content = rctx.execute(["cat", server_log])
+    print("bazel_build_jars: server startup (exit: %s):\n%s" % (server_result.return_code, server_log_content.stdout.strip()[-2000:]))
+
+    if server_result.return_code != 0:
+        timeout_msg = " (TIMEOUT)" if server_result.return_code == 256 else ""
+        fail("\n".join([
+            "could not start nested Bazel server (exit code %s%s)" % (server_result.return_code, timeout_msg),
+            "--- server.log ---",
+            server_log_content.stdout if server_log_content.return_code == 0 else "(could not read log)",
+        ]))
+
+    # Step 3: Run the actual build (server is already running from step 2)
+    cmd = bazel_cmd + ["build", "--curses=no", "--color=no"] + list(rctx.attr.jars)
+    log_file = str(rctx.path("build.log"))
 
     rctx.report_progress("building: %s" % ", ".join(rctx.attr.jars))
-
-    # print the command for debugging CI issues
     print("bazel_build_jars: running: %s" % " ".join(cmd))
     print("bazel_build_jars: working_directory: %s" % source_dir)
 
-    # Run directly without shell redirect. The Bazel client writes all output to
-    # stderr (progress, errors, and --client_debug messages). rctx.execute captures
-    # stderr through a pipe, which is more reliable than file redirect + stdbuf.
-    result = rctx.execute(cmd, working_directory = source_dir, timeout = 600)
+    shell_cmd = " ".join(cmd) + " > " + log_file + " 2>&1"
+    result = rctx.execute(["bash", "-c", shell_cmd], working_directory = source_dir, timeout = 600)
 
-    # Always shut down the nested Bazel server to free resources. The timeout kills
-    # the client process, but the Bazel server is a daemon that keeps running.
+    # Always shut down the nested Bazel server to free resources.
     rctx.execute(bazel_cmd + ["shutdown"], working_directory = source_dir, timeout = 60)
 
     if result.return_code != 0:
+        log = rctx.execute(["tail", "-200", log_file])
         timeout_msg = " (TIMEOUT)" if result.return_code == 256 else ""
-        output = result.stderr.strip() if result.stderr.strip() else result.stdout.strip()
-        if output:
-            lines = output.split("\n")
-            last_lines = "\n".join(lines[-200:])
-        else:
-            last_lines = "(no output captured)"
         fail("\n".join([
             "could not build jars (exit code %s%s)" % (result.return_code, timeout_msg),
             "command: %s" % " ".join(cmd),
-            "--- build output (last 200 lines) ---",
-            last_lines,
+            "--- build.log (last 200 lines) ---",
+            log.stdout if log.return_code == 0 else "(could not read log file: %s)" % log.stderr,
         ]))
 
     for target in rctx.attr.jars:
