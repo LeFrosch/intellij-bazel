@@ -22,53 +22,40 @@ def _bazel_build_jars_impl(rctx):
 
     # windows requires non-hermetic build to avoid long paths issues :(
     if "windows" in rctx.os.name.lower():
-        bazel_cmd = [bazel]
+        bazel_cmd = [bazel, "build"]
     else:
-        bazel_cmd = [bazel, "--output_user_root=%s" % rctx.path("output")]
-
-    # --- Diagnostics (print() appears in outer Bazel log even if nested build hangs) ---
-    if "windows" not in rctx.os.name.lower():
-        mem = rctx.execute(["free", "-m"])
-        disk = rctx.execute(["df", "-h", source_dir])
-        print("bazel_build_jars: memory:\n%s" % mem.stdout.strip())
-        print("bazel_build_jars: disk:\n%s" % disk.stdout.strip())
-
-    # Step 1: Check that the Bazel binary works (--version doesn't require extraction)
-    rctx.report_progress("checking Bazel binary...")
-    version = rctx.execute([bazel, "--version"], timeout = 30)
-    print("bazel_build_jars: version: %s (exit: %s)" % (version.stdout.strip(), version.return_code))
-
-    # Step 2: Test extraction + server startup separately (where the hang occurs on CI).
-    # Use --client_debug for detailed client output. Write to file since rctx.execute
-    # discards pipe output on timeout (replaces stderr with "Timed out").
-    rctx.report_progress("starting nested Bazel server...")
-    server_log = str(rctx.path("server.log"))
-    server_cmd = " ".join(bazel_cmd + ["--client_debug", "info", "server_pid"]) + " > " + server_log + " 2>&1"
-    server_result = rctx.execute(["bash", "-c", server_cmd], working_directory = source_dir, timeout = 300)
-    server_log_content = rctx.execute(["cat", server_log])
-    print("bazel_build_jars: server startup (exit: %s):\n%s" % (server_result.return_code, server_log_content.stdout.strip()[-2000:]))
-
-    if server_result.return_code != 0:
-        timeout_msg = " (TIMEOUT)" if server_result.return_code == 256 else ""
-        fail("\n".join([
-            "could not start nested Bazel server (exit code %s%s)" % (server_result.return_code, timeout_msg),
-            "--- server.log ---",
-            server_log_content.stdout if server_log_content.return_code == 0 else "(could not read log)",
-        ]))
-
-    # Step 3: Run the actual build (server is already running from step 2)
-    cmd = bazel_cmd + ["build", "--curses=no", "--color=no"] + list(rctx.attr.jars)
-    log_file = str(rctx.path("build.log"))
+        # --nohome_rc and --nosystem_rc prevent external RC files (e.g. ~/.bazelrc
+        # written by setup-bazel) from overriding --output_user_root. Without these,
+        # the nested Bazel can end up sharing the outer Bazel's output base, causing
+        # it to find and try to shut down the outer server — which deadlocks because
+        # the outer server is waiting for this repo rule to complete.
+        bazel_cmd = [
+            bazel,
+            "--nohome_rc",
+            "--nosystem_rc",
+            "--output_user_root=%s" % rctx.path("output"),
+            "build",
+        ]
 
     rctx.report_progress("building: %s" % ", ".join(rctx.attr.jars))
+    cmd = bazel_cmd + list(rctx.attr.jars)
+    log_file = str(rctx.path("build.log"))
+
+    # print the command for debugging CI issues
     print("bazel_build_jars: running: %s" % " ".join(cmd))
     print("bazel_build_jars: working_directory: %s" % source_dir)
 
+    # redirect output to a log file so we can read it even after a timeout
     shell_cmd = " ".join(cmd) + " > " + log_file + " 2>&1"
-    result = rctx.execute(["bash", "-c", shell_cmd], working_directory = source_dir, timeout = 600)
+    result = rctx.execute(["bash", "-c", shell_cmd], working_directory = source_dir, timeout = 3600)
 
-    # Always shut down the nested Bazel server to free resources.
-    rctx.execute(bazel_cmd + ["shutdown"], working_directory = source_dir, timeout = 60)
+    # Always shut down the nested Bazel server to free resources. The timeout kills
+    # the client process, but the Bazel server is a daemon that keeps running.
+    rctx.execute(
+        [bazel, "--nohome_rc", "--nosystem_rc", "--output_user_root=%s" % rctx.path("output"), "shutdown"],
+        working_directory = source_dir,
+        timeout = 60,
+    )
 
     if result.return_code != 0:
         log = rctx.execute(["tail", "-200", log_file])
