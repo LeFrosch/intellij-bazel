@@ -28,21 +28,23 @@ def _bazel_build_jars_impl(rctx):
 
     rctx.report_progress("building: %s" % ", ".join(rctx.attr.jars))
     cmd = build_cmd + list(rctx.attr.jars)
+    log_file = str(rctx.path("build.log"))
 
     # print the command for debugging CI issues
     print("bazel_build_jars: running: %s" % " ".join(cmd))
     print("bazel_build_jars: working_directory: %s" % source_dir)
 
-    result = rctx.execute(cmd, working_directory = source_dir, timeout = 3600)
+    # redirect output to a log file so we can read it even after a timeout
+    shell_cmd = " ".join(cmd) + " > " + log_file + " 2>&1"
+    result = rctx.execute(["bash", "-c", shell_cmd], working_directory = source_dir, timeout = 3600)
 
     if result.return_code != 0:
+        log = rctx.execute(["tail", "-200", log_file])
         fail("\n".join([
             "could not build jars (exit code %s)" % result.return_code,
             "command: %s" % " ".join(cmd),
-            "--- stdout ---",
-            result.stdout,
-            "--- stderr ---",
-            result.stderr,
+            "--- build.log (last 200 lines) ---",
+            log.stdout if log.return_code == 0 else "(could not read log file: %s)" % log.stderr,
         ]))
 
     for target in rctx.attr.jars:
