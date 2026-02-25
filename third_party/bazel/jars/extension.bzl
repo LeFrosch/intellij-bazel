@@ -26,13 +26,26 @@ def _bazel_build_jars_impl(rctx):
     else:
         build_cmd = [bazel, "--output_user_root=%s" % rctx.path("output"), "build"]
 
+    rctx.report_progress("building: %s" % ", ".join(rctx.attr.jars))
+    cmd = build_cmd + list(rctx.attr.jars)
+
+    # print the command for debugging CI issues
+    print("bazel_build_jars: running: %s" % " ".join(cmd))
+    print("bazel_build_jars: working_directory: %s" % source_dir)
+
+    result = rctx.execute(cmd, working_directory = source_dir, timeout = 3600)
+
+    if result.return_code != 0:
+        fail("\n".join([
+            "could not build jars (exit code %s)" % result.return_code,
+            "command: %s" % " ".join(cmd),
+            "--- stdout ---",
+            result.stdout,
+            "--- stderr ---",
+            result.stderr,
+        ]))
+
     for target in rctx.attr.jars:
-        rctx.report_progress("building: %s" % target)
-        result = rctx.execute(build_cmd + [target], working_directory = source_dir, timeout = 1800)
-
-        if result.return_code != 0:
-            fail("could not build %s: %s" % (target, result.stderr))
-
         rctx.symlink(_resolve_target_artifact(rctx, target, source_dir), _resolve_target_jar_name(target))
 
     files = ", ".join(["'%s'" % _resolve_target_jar_name(target) for target in rctx.attr.jars])
