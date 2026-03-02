@@ -118,6 +118,7 @@ class HeaderCacheService(private val project: Project) {
     val info = target.getcIdeInfo() ?: return
 
     val targetCacheDirectory = key.cacheDirectory()
+    val decoder = projectData.artifactLocationDecoder()
 
     for (header in info.compilationContext().headers()) {
       // check if the header is inside bazel-bin
@@ -131,18 +132,47 @@ class HeaderCacheService(private val project: Project) {
       try {
         Files.createDirectories(path.parent)
 
-        // NOTE: this also copies symlinked headers like in _virtual_includes
-        Files.newOutputStream(
-          path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
-        ).use { dst ->
-          projectData.artifactLocationDecoder().resolveOutput(header).inputStream.use { src ->
+        // Delete existing entry to handle type changes (symlink <-> regular file) on incremental sync.
+        // Without this, TRUNCATE_EXISTING on a symlink would follow it and corrupt the target file.
+        Files.deleteIfExists(path)
+
+        val execRootFile = decoder.decode(header).toPath()
+
+        if (Files.isSymbolicLink(execRootFile)) {
+          // For symlinked headers (e.g. _virtual_includes), create a symlink to the real file
+          // so that navigation takes the user to the actual source instead of a cache copy.
+          val realPath = execRootFile.toRealPath()
+          if (tryCreateSymlink(path, realPath)) continue
+          // Fall through to content-copy if symlink creation failed (e.g. Windows without Developer Mode)
+        }
+
+        // Content copy for regular (generated) files or as a fallback when symlink creation fails
+        decoder.resolveOutput(header).inputStream.use { src ->
+          Files.newOutputStream(
+            path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+          ).use { dst ->
             src.transferTo(dst)
           }
         }
       } catch (e: IOException) {
         cacheTracker.remove(header.relativePath())
-        LOG.warn("failed to copy generated header ${header.relativePath()} for ${key.label()}", e)
+        LOG.warn("failed to cache header ${header.relativePath()} for ${key.label()}", e)
       }
+    }
+  }
+
+  /**
+   * Attempts to create a symbolic link at [link] pointing to [target].
+   * Returns true if successful, false otherwise (e.g. on Windows without Developer Mode).
+   */
+  private fun tryCreateSymlink(link: Path, target: Path): Boolean {
+    return try {
+      Files.createSymbolicLink(link, target)
+      true
+    } catch (e: IOException) {
+      LOG.debug("failed to create symlink $link -> $target, falling back to copy", e)
+      try { Files.deleteIfExists(link) } catch (_: IOException) {}
+      false
     }
   }
 
