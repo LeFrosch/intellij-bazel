@@ -206,8 +206,8 @@ public final class BlazeCWorkspace implements ProjectComponent {
     builder.append(String.format("Configuring resolve configuration: %s\n", config.getDisplayName()));
     builder.append(String.format("-> targets: %s\n", StringUtil.join(config.getTargets(), ", ")));
 
-    final var compiler = config.getCompilerSettings();
     final var data = config.getConfigurationData();
+    final var compiler = data.compilerSettings();
 
     final var includes = compiler.builtInIncludes().stream()
         .map((it) -> it.getAbsoluteOrRelativeFile().toString())
@@ -248,13 +248,13 @@ public final class BlazeCWorkspace implements ProjectComponent {
       indicator.setText2(resolveConfiguration.getDisplayName());
       indicator.setFraction(((double) progress) / configurations.size());
 
-      final var compilerSettings = resolveConfiguration.getCompilerSettings();
+      final var configData = resolveConfiguration.getConfigurationData();
+      final var compilerSettings = configData.compilerSettings();
       final var configLanguages = new HashMap<OCLanguageKind, PerLanguageCompilerOpts>();
       final var configSourceFiles = new HashMap<VirtualFile, PerFileCompilerOpts>();
 
       // All targets in a resolve configuration share the same flags, defines, and includes
       // (they are grouped by equivalence class). Compute switches once per configuration.
-      final var configData = resolveConfiguration.getConfigurationData();
       final var compilerSwitchesBuilder = compilerSettings.createSwitchBuilder();
 
       CoptsProcessor.apply(
