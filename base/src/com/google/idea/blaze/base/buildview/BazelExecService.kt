@@ -32,6 +32,7 @@ import java.io.BufferedInputStream
 import java.io.FileInputStream
 import java.util.Optional
 import kotlin.io.path.pathString
+import kotlin.time.Duration.Companion.milliseconds
 
 private val LOG: Logger = Logger.getInstance(BazelExecService::class.java)
 
@@ -66,7 +67,11 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
     }
   }
 
-  private suspend fun execute(ctx: BlazeContext, cmdBuilder: BlazeCommand.Builder): Int {
+  private suspend fun execute(
+    ctx: BlazeContext,
+    cmdBuilder: BlazeCommand.Builder,
+    textAvailable: (String) -> Unit,
+  ): Int {
     configureProxy(cmdBuilder)
 
     // the old sync view does not use a PTY based terminal, and idk why it does not work on windows :c
@@ -96,19 +101,19 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
 
       handler.addProcessListener(object : ProcessListener {
         override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-          if (outputType == ProcessOutputTypes.SYSTEM) {
-            ctx.println(event.text)
-          } else {
-            ctx.output(PrintOutput.process(event.text))
+          when (outputType) {
+            ProcessOutputTypes.STDOUT -> textAvailable(event.text)
+            ProcessOutputTypes.SYSTEM -> ctx.println(event.text)
+            else -> ctx.output(PrintOutput.process(event.text))
           }
 
-          LOG.debug("BUILD OUTPUT: " + event.text)
+          LOG.debug("BAZEL OUTPUT: " + event.text)
         }
       })
       handler.startNotify()
 
       while (!handler.isProcessTerminated) {
-        delay(100)
+        delay(100.milliseconds)
       }
 
       handler.exitCode ?: 1
@@ -126,7 +131,7 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
   private suspend fun parseEvent(ctx: BlazeContext, stream: BufferedInputStream) {
     // make sure that there are at least four bytes already available
     while (stream.available() < 4) {
-      delay(10)
+      delay(10.milliseconds)
     }
 
     // protobuf messages are delimited by size (encoded as varint32),
@@ -134,7 +139,7 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
     val size = CodedInputStream.readRawVarint32(stream.read(), stream)
 
     while (stream.available() < size) {
-      delay(10)
+      delay(10.milliseconds)
     }
 
     val eventStream = LimitedInputStream(stream, size)
@@ -160,7 +165,7 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
       try {
         // wait for bazel to create the output file
         while (!helper.outputFile.exists()) {
-          delay(10)
+          delay(10.milliseconds)
         }
 
         FileInputStream(helper.outputFile).buffered().use { stream ->
@@ -178,6 +183,10 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
     }
   }
 
+  /**
+   * Runs a Bazel build and returns its result. Stderr and stdout are piped to the context for visibility as well as
+   * BEP events are reported as context events.
+   */
   fun build(ctx: BlazeContext, cmdBuilder: BlazeCommand.Builder): BlazeBuildOutputs {
     assertNonBlocking()
     LOG.assertTrue(cmdBuilder.name == BlazeCommandName.BUILD)
@@ -187,7 +196,7 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
 
       val parseJob = parseEvents(ctx, provider)
 
-      val exitCode = execute(ctx, cmdBuilder)
+      val exitCode = execute(ctx, cmdBuilder, ctx::println)
       val result = BuildResult.fromExitCode(exitCode)
 
       parseJob.cancelAndJoin()
@@ -203,4 +212,20 @@ class BazelExecService(private val project: Project, private val scope: Coroutin
       }
     }
   }
+
+  /**
+   * Runs a Bazel command and returns its stdout as a string. Stderr is piped to the context for visibility.
+   */
+  fun exec(ctx: BlazeContext, cmdBuilder: BlazeCommand.Builder): String {
+    assertNonBlocking()
+    LOG.assertTrue(cmdBuilder.name != BlazeCommandName.BUILD)
+
+    return executionScope(ctx) {
+      val stdout = StringBuilder()
+      execute(ctx, cmdBuilder, stdout::append)
+
+      stdout.toString()
+    }
+  }
+
 }
