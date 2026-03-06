@@ -30,6 +30,8 @@ import com.google.idea.blaze.base.buildview.BuildViewMigration;
 import com.google.idea.blaze.base.command.BlazeInvocationContext;
 import com.google.idea.blaze.base.command.BlazeInvocationContext.ContextType;
 import com.google.idea.blaze.base.command.buildresult.BuildResult;
+import com.google.idea.blaze.base.command.config.BlazeConfigRunner;
+import com.google.idea.blaze.base.model.BlazeConfigurationData;
 import com.google.idea.blaze.base.dependencies.BlazeQuerySourceToTargetProvider;
 import com.google.idea.blaze.base.dependencies.TargetInfo;
 import com.google.idea.blaze.base.io.FileOperationProvider;
@@ -146,6 +148,7 @@ public final class BuildPhaseSyncTask {
     SyncListener.EP_NAME
         .extensions()
         .forEach(l -> l.buildStarted(project, context, fullProjectSync, buildId, targets));
+    project.getMessageBus().syncPublisher(SyncListener.TOPIC).buildStarted(project, context, fullProjectSync, buildId, targets);
   }
 
   private void doRun(BlazeContext context) throws SyncFailedException, SyncCanceledException, ExecutionException, InterruptedException {
@@ -249,6 +252,14 @@ public final class BuildPhaseSyncTask {
     buildStats
         .setBuildResult(blazeBuildResult.buildResult())
         .setBuildBinaryType(syncBuildInvoker.getType());
+
+    // Fetch all configurations from Skyframe (captures transition configs that BEP misses)
+    context.output(new StatusOutput("Fetching build configurations..."));
+    BlazeConfigurationData configData =
+        BlazeConfigRunner.fetchAllConfigurations(project, syncBuildInvoker, context);
+    if (configData != null) {
+      resultBuilder.setConfigurationData(configData);
+    }
 
     if (context.isCancelled()) {
       throw new SyncCanceledException();

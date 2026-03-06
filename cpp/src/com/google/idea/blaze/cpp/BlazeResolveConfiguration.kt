@@ -38,6 +38,7 @@ data class BlazeResolveConfiguration(
 ) {
 
   companion object {
+
     @JvmStatic
     fun create(
       blazeProjectData: BlazeProjectData,
@@ -49,6 +50,10 @@ data class BlazeResolveConfiguration(
       ImmutableList.copyOf(targets),
       computeTargetToSources(blazeProjectData, targets)
     )
+  }
+
+  fun getUniqueId(): BlazeResolveConfigurationID {
+    return BlazeResolveConfigurationID.fromBlazeResolveConfigurationData(configurationData)
   }
 
   fun getSources(targetKey: TargetKey): ImmutableList<VirtualFile> {
@@ -74,7 +79,6 @@ data class BlazeResolveConfiguration(
     val kind = OCFileTypeHelpers.getLanguageKind(sourceFile.name)
     return kind ?: DEFAULT_LANGUAGE_KIND
   }
-
 }
 
 private fun computeDisplayName(targets: Collection<TargetKey>): String {

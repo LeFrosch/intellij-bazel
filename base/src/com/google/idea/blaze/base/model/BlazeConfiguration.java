@@ -18,16 +18,20 @@ package com.google.idea.blaze.base.model;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos;
+import com.google.devtools.intellij.model.ProjectData;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.idea.blaze.base.ideinfo.ProtoWrapper;
 
 /**
- * Represents a Bazel build configuration from the Build Event Protocol (BEP).
+ * Represents a Bazel build configuration.
  *
  * <p>Configurations contain platform-specific build information including CPU architecture,
  * platform name, make variables, and whether the configuration is used for building tools vs targets.
  */
 @AutoValue
-public abstract class BlazeConfiguration implements ProtoWrapper<BuildEventStreamProtos.Configuration> {
+public abstract class BlazeConfiguration implements ProtoWrapper<ProjectData.BlazeConfiguration> {
 
   public abstract String mnemonic();
 
@@ -39,6 +43,18 @@ public abstract class BlazeConfiguration implements ProtoWrapper<BuildEventStrea
 
   public abstract boolean isToolConfiguration();
 
+  /** Creates a BlazeConfiguration from a project Configuration proto. */
+  public static BlazeConfiguration fromProto(ProjectData.BlazeConfiguration proto) {
+    return builder()
+        .setMnemonic(proto.getMnemonic())
+        .setPlatformName(proto.getPlatformName())
+        .setCpu(proto.getCpu())
+        .setMakeVariables(ImmutableMap.copyOf(proto.getMakeVariablesMap()))
+        .setIsToolConfiguration(proto.getIsTool())
+        .build();
+  }
+
+  /** Creates a BlazeConfiguration from a BEP Configuration proto. */
   public static BlazeConfiguration fromProto(BuildEventStreamProtos.Configuration proto) {
     return builder()
         .setMnemonic(proto.getMnemonic())
@@ -49,13 +65,46 @@ public abstract class BlazeConfiguration implements ProtoWrapper<BuildEventStrea
         .build();
   }
 
+  /** Creates a BlazeConfiguration from a bazel config json entry. */
+  public static BlazeConfiguration fromConfigJson(JsonObject json) {
+    final var mnemonic = json.has("mnemonic") ? json.get("mnemonic").getAsString() : "";
+    final var isExec = json.has("isExec") && json.get("isExec").getAsBoolean();
+    final var cpu = extractCpuFromJson(json);
+
+    return builder()
+        .setMnemonic(mnemonic)
+        .setPlatformName(cpu)
+        .setCpu(cpu)
+        .setMakeVariables(ImmutableMap.of())
+        .setIsToolConfiguration(isExec)
+        .build();
+  }
+
+  private static String extractCpuFromJson(JsonObject json) {
+    if (!json.has("fragmentOptions")) {
+      return "";
+    }
+    JsonArray fragments = json.getAsJsonArray("fragmentOptions");
+    for (JsonElement frag : fragments) {
+      JsonObject fragObj = frag.getAsJsonObject();
+      String name = fragObj.has("name") ? fragObj.get("name").getAsString() : "";
+      if (name.contains("CoreOptions")) {
+        JsonObject options = fragObj.has("options") ? fragObj.getAsJsonObject("options") : null;
+        if (options != null && options.has("cpu")) {
+          return options.get("cpu").getAsString();
+        }
+      }
+    }
+    return "";
+  }
+
   @Override
-  public BuildEventStreamProtos.Configuration toProto() {
-    return BuildEventStreamProtos.Configuration.newBuilder()
+  public ProjectData.BlazeConfiguration toProto() {
+    return ProjectData.BlazeConfiguration.newBuilder()
         .setMnemonic(mnemonic())
         .setPlatformName(platformName())
         .setCpu(cpu())
-        .putAllMakeVariable(makeVariables())
+        .putAllMakeVariables(makeVariables())
         .setIsTool(isToolConfiguration())
         .build();
   }

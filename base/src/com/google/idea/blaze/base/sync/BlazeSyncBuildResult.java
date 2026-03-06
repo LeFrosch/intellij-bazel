@@ -19,6 +19,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.idea.blaze.base.command.info.BlazeInfo;
 import com.google.idea.blaze.base.logging.utils.BuildPhaseSyncStats;
+import com.google.idea.blaze.base.model.BlazeConfigurationData;
 import com.google.idea.blaze.base.sync.aspects.BlazeBuildOutputs;
 import javax.annotation.Nullable;
 
@@ -34,14 +35,20 @@ public abstract class BlazeSyncBuildResult {
    * start time), prior to the project update phase.
    */
   public BlazeSyncBuildResult updateResult(BlazeSyncBuildResult nextResult) {
-    return nextResult.toBuilder()
+    BlazeSyncBuildResult.Builder builder = nextResult.toBuilder()
         .setBuildResult(getBuildResult().updateOutputs(nextResult.getBuildResult()))
         .setBuildPhaseStats(
             ImmutableList.<BuildPhaseSyncStats>builder()
                 .addAll(getBuildPhaseStats())
                 .addAll(nextResult.getBuildPhaseStats())
-                .build())
-        .build();
+                .build());
+    // Prefer the newer result's configuration data if available
+    BlazeConfigurationData configData = nextResult.getConfigurationData();
+    if (configData == null) {
+      configData = getConfigurationData();
+    }
+    builder.setConfigurationData(configData);
+    return builder.build();
   }
 
   /** Returns true if at least one build shard does not have fatal errors */
@@ -55,6 +62,9 @@ public abstract class BlazeSyncBuildResult {
   public abstract BlazeBuildOutputs getBuildResult();
 
   public abstract ImmutableList<BuildPhaseSyncStats> getBuildPhaseStats();
+
+  @Nullable
+  public abstract BlazeConfigurationData getConfigurationData();
 
   public static Builder builder() {
     return new AutoValue_BlazeSyncBuildResult.Builder().setBuildPhaseStats(ImmutableList.of());
@@ -70,6 +80,8 @@ public abstract class BlazeSyncBuildResult {
     public abstract Builder setBuildResult(BlazeBuildOutputs buildResult);
 
     public abstract Builder setBuildPhaseStats(Iterable<BuildPhaseSyncStats> stats);
+
+    public abstract Builder setConfigurationData(@Nullable BlazeConfigurationData configurationData);
 
     public abstract BlazeSyncBuildResult build();
   }

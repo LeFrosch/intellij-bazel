@@ -19,11 +19,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.devtools.intellij.model.ProjectData;
 import com.google.idea.blaze.base.ideinfo.ProtoWrapper;
-import com.google.idea.blaze.base.ideinfo.TargetKey;
 import javax.annotation.Nullable;
 
 /**
- * Container for Bazel build configuration data extracted from the Build Event Protocol (BEP).
+ * Container for Bazel build configuration data.
  *
  * <p>Stores a map of configuration IDs to their corresponding configuration details.
  */
@@ -56,15 +55,15 @@ public final class BlazeConfigurationData implements ProtoWrapper<ProjectData.Bl
   }
 
   @Nullable
-  public BlazeConfiguration get(TargetKey key) {
+  public BlazeConfiguration get(String configurationId) {
     // if no configuration id is provided, return null
-    if (key.configurationId().isBlank()) {
+    if (configurationId.isBlank()) {
       return null;
     }
 
     for (final var entry : configurations.entrySet()) {
       // the short_id provided by the aspect is the prefix of the actual configuration hash
-      if (entry.getKey().startsWith(key.configurationId())) {
+      if (entry.getKey().startsWith(configurationId)) {
         return entry.getValue();
       }
     }
