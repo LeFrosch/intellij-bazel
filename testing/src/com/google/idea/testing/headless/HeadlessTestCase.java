@@ -6,6 +6,7 @@ import static com.google.idea.testing.headless.Assertions.assertPathExists;
 
 import com.google.idea.blaze.base.async.process.ExternalTask;
 import com.google.idea.blaze.base.bazel.BazelVersion;
+import com.google.idea.blaze.base.ideinfo.TargetIdeInfo;
 import com.google.idea.blaze.base.lang.buildfile.psi.BuildFile;
 import com.google.idea.blaze.base.lang.buildfile.psi.FuncallExpression;
 import com.google.idea.blaze.base.model.primitives.WorkspaceRoot;
@@ -23,6 +24,7 @@ import com.google.idea.blaze.base.sync.SyncMode;
 import com.google.idea.blaze.base.sync.SyncPhaseCoordinator;
 import com.google.idea.blaze.base.sync.autosync.ProjectTargetManager.SyncStatus;
 import com.google.idea.blaze.base.sync.data.BlazeDataStorage;
+import com.google.idea.blaze.base.sync.data.BlazeProjectDataManager;
 import com.google.idea.blaze.base.sync.workspace.WorkspacePathResolverImpl;
 import com.google.idea.blaze.base.syncstatus.LegacySyncStatusContributor;
 import com.google.idea.blaze.base.toolwindow.TasksToolWindowFactory;
@@ -49,6 +51,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -83,8 +86,8 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
   }
 
   /**
-   * Normalizes an absolut posix path for windows. Since tests have to be run with `MSYS_NO_PATHCONV`
-   * set to true. Paths are no longer converted by the bazel test setup.
+   * Normalizes an absolut posix path for windows. Since tests have to be run with `MSYS_NO_PATHCONV` set to true. Paths
+   * are no longer converted by the bazel test setup.
    */
   private static String normalizePath(String path) {
     if (!SystemInfo.isWindows || !path.startsWith("/")) {
@@ -98,9 +101,8 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
   }
 
   /**
-   * Gets the path to the test project and performs some basic checks. The path
-   * is provided by `bazel_integration_test` rule in the `BIT_WORKSPACE_DIR`
-   * environment variable.
+   * Gets the path to the test project and performs some basic checks. The path is provided by `bazel_integration_test`
+   * rule in the `BIT_WORKSPACE_DIR` environment variable.
    */
   private static Path getTestProjectRoot() {
     final var bitWorkspaceDir = System.getenv("BIT_WORKSPACE_DIR");
@@ -113,10 +115,10 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
   }
 
   /**
-   * Runs a executable in the current execution root (the execroot might not
-   * exist yet) and returns stdout or fails the test.
+   * Runs a executable in the current execution root (the execroot might not exist yet) and returns stdout or fails the
+   * test.
    */
-  private static String exec(String ... args) throws ExecutionException, InterruptedException {
+  private static String exec(String... args) throws ExecutionException, InterruptedException {
     final var outStream = new ByteArrayOutputStream();
     final var errStream = new ByteArrayOutputStream();
 
@@ -136,13 +138,11 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
   }
 
   /**
-   * Gets the path to the bazelisk binary and performs some basic checks.
-   * The path is provided by `bazel_integration_test` rule in the `BIT_BAZEL_BINARY`
-   * environment variable.
-   *
-   * To avoid argument passing issues on Windows caused by sh_binary a patch to
-   * rules_bazel_integration test is applied to resolve to the actual bazelisk
-   * binary (see https://github.com/bazelbuild/bazel/issues/17487).
+   * Gets the path to the bazelisk binary and performs some basic checks. The path is provided by
+   * `bazel_integration_test` rule in the `BIT_BAZEL_BINARY` environment variable.
+   * <p>
+   * To avoid argument passing issues on Windows caused by sh_binary a patch to rules_bazel_integration test is applied
+   * to resolve to the actual bazelisk binary (see https://github.com/bazelbuild/bazel/issues/17487).
    */
   private static Path getTestBazelPath() throws ExecutionException, InterruptedException {
     final var bitBazelWrapper = System.getenv("BIT_BAZEL_BINARY");
@@ -177,9 +177,9 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
 
   /**
    * Very similar to {@link AutoImportProjectOpenProcessor}.
-   *
-   * However, it is not possible to use the auto import processor directly because it immediately runs a sync, and it
-   * is not possible to perform any kind of project setup between the import and the initial sync.
+   * <p>
+   * However, it is not possible to use the auto import processor directly because it immediately runs a sync, and it is
+   * not possible to perform any kind of project setup between the import and the initial sync.
    */
   @Override
   protected void setUpProject() throws Exception {
@@ -324,5 +324,16 @@ public abstract class HeadlessTestCase extends HeavyPlatformTestCase {
     assertThat(status).isNotNull();
 
     return status;
+  }
+
+  protected List<TargetIdeInfo> findTargetInfo(Label label) {
+    final var projectData = BlazeProjectDataManager.getInstance(myProject).getBlazeProjectData();
+    assertThat(projectData).isNotNull();
+
+    return projectData.targetMap()
+        .targets()
+        .stream()
+        .filter(it -> it.getKey().label().equals(label))
+        .toList();
   }
 }
