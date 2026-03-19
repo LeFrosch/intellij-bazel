@@ -2,10 +2,14 @@ package com.google.idea.blaze.base.buildview
 
 import com.google.idea.blaze.base.bazel.BazelExitCodeException
 import com.google.idea.blaze.exception.BuildException
+import com.intellij.openapi.diagnostic.logger
+import okio.IOException
 import java.io.BufferedInputStream
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
+
+private val LOG = logger<ExecResult>()
 
 /**
  * Result of a non-build Bazel command execution.
@@ -43,6 +47,11 @@ class ExecResult(
   }
 
   override fun close() {
-    Files.deleteIfExists(tempFile)
+    try {
+      Files.deleteIfExists(tempFile)
+    } catch (e: IOException) {
+      // best effort cleanup
+      LOG.warn("could not delete temp output file", e)
+    }
   }
 }

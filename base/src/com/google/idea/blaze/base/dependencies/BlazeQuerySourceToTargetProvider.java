@@ -22,8 +22,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.Futures;
-import com.google.errorprone.annotations.MustBeClosed;
-import com.google.idea.blaze.base.bazel.BuildSystem.BuildInvoker;
+import com.google.idea.blaze.base.buildview.BazelExecService;
 import com.google.idea.blaze.base.command.BlazeCommand;
 import com.google.idea.blaze.base.command.BlazeCommandName;
 import com.google.idea.blaze.base.command.BlazeInvocationContext.ContextType;
@@ -41,6 +40,7 @@ import com.google.idea.blaze.base.sync.workspace.WorkspacePathResolverProvider;
 import com.google.idea.blaze.common.PrintOutput;
 import com.google.idea.blaze.exception.BuildException;
 import com.google.idea.common.experiments.BoolExperiment;
+import com.intellij.execution.ExecutionException;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import java.io.BufferedReader;
@@ -263,14 +263,19 @@ public class BlazeQuerySourceToTargetProvider implements SourceToTargetProvider 
   }
 
   @Nullable
-  @MustBeClosed
   private static InputStream runQuery(
-      Project project, BlazeCommand.Builder blazeCommand, BlazeContext context)
-      throws BuildException {
-    return Blaze.getBuildSystemProvider(project)
-        .getBuildSystem()
-        .getDefaultInvoker(project)
-        .invokeQuery(blazeCommand, context);
+      Project project,
+      BlazeCommand.Builder blazeCommand,
+      BlazeContext context
+  ) throws BuildException {
+    try {
+      final var result = BazelExecService.instance(project).exec(context, blazeCommand);
+      // Don't close the ExecResult here — caller closes the returned InputStream.
+      // Partial success (exit code 3) is acceptable for queries.
+      return result.getStdout();
+    } catch (ExecutionException e) {
+      throw new BuildException("Failed to execute query", e);
+    }
   }
 
   private static BlazeCommand.Builder getBlazeCommandBuilder(
@@ -283,9 +288,7 @@ public class BlazeQuerySourceToTargetProvider implements SourceToTargetProvider 
         type == ContextType.Sync
             ? null
             : BlazeQueryOutputBaseProvider.getInstance(project).getOutputBaseFlag();
-    BuildInvoker buildInvoker =
-        Blaze.getBuildSystemProvider(project).getBuildSystem().getDefaultInvoker(project);
-    return BlazeCommand.builder(buildInvoker, BlazeCommandName.QUERY)
+    return BlazeCommand.builder(BlazeCommandName.QUERY)
         .addBlazeFlags(additionalBlazeFlags)
         .addBlazeFlags("--keep_going")
         .addBlazeFlags(query)

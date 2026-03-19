@@ -20,16 +20,17 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.idea.blaze.base.async.executor.BlazeExecutor;
 import com.google.idea.blaze.base.bazel.BuildSystem.BuildInvoker;
+import com.google.idea.blaze.base.buildview.BazelExecService;
 import com.google.idea.blaze.base.command.BlazeCommand;
 import com.google.idea.blaze.base.command.BlazeCommandName;
 import com.google.idea.blaze.base.scope.BlazeContext;
 import com.google.idea.blaze.base.settings.BuildSystemName;
 import com.intellij.openapi.project.Project;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 class BlazeInfoRunnerImpl extends BlazeInfoRunner {
+
   @Override
   public ListenableFuture<byte[]> runBlazeInfoGetBytes(
       Project project,
@@ -37,18 +38,18 @@ class BlazeInfoRunnerImpl extends BlazeInfoRunner {
       BlazeContext context,
       List<String> blazeFlags,
       String... keys) {
-    return BlazeExecutor.getInstance()
-        .submit(
-            () -> {
-              BlazeCommand.Builder builder = BlazeCommand.builder(invoker, BlazeCommandName.INFO);
-              builder.addBlazeFlags(blazeFlags);
-              if (keys != null) {
-                builder.addBlazeFlags(keys);
-              }
-              try (InputStream blazeInfoStream = invoker.invokeInfo(builder, context)) {
-                return blazeInfoStream.readAllBytes();
-              }
-            });
+    return BlazeExecutor.getInstance().submit(() -> {
+      final var builder = BlazeCommand.builder(BlazeCommandName.INFO);
+      builder.addBlazeFlags(blazeFlags);
+      if (keys != null) {
+        builder.addBlazeFlags(keys);
+      }
+
+      try (final var result = BazelExecService.instance(project).exec(context, builder)) {
+        result.throwOnFailure();
+        return result.getStdout().readAllBytes();
+      }
+    });
   }
 
   @Override

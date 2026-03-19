@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.idea.blaze.base.async.FutureUtil;
 import com.google.idea.blaze.base.bazel.BuildSystem.BuildInvoker;
+import com.google.idea.blaze.base.buildview.BazelExecService;
 import com.google.idea.blaze.base.command.BlazeCommand;
 import com.google.idea.blaze.base.command.BlazeCommandName;
 import com.google.idea.blaze.base.command.BlazeFlags;
@@ -45,14 +46,15 @@ import com.google.idea.blaze.base.settings.Blaze;
 import com.google.idea.blaze.base.sync.SyncProjectTargetsHelper;
 import com.google.idea.blaze.base.sync.projectview.LanguageSupport;
 import com.google.idea.blaze.base.sync.workspace.WorkspacePathResolver;
+import com.google.idea.blaze.base.bazel.BazelExitCodeException;
 import com.google.idea.blaze.exception.BuildException;
 import com.google.idea.common.experiments.BoolExperiment;
+import com.intellij.execution.ExecutionException;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -215,11 +217,10 @@ public class WildcardTargetExpander {
       // will be empty if there are no non-excluded targets
       return new ExpandedTargetsResult(ImmutableList.of(), BuildResult.SUCCESS);
     }
-    BlazeCommand.Builder builder =
-        BlazeCommand.builder(buildBinary, BlazeCommandName.QUERY)
-            .addBlazeFlags(BlazeFlags.KEEP_GOING)
-            .addBlazeFlags("--output=label_kind")
-            .addBlazeFlags(query.build());
+    final var builder = BlazeCommand.builder(BlazeCommandName.QUERY)
+        .addBlazeFlags(BlazeFlags.KEEP_GOING)
+        .addBlazeFlags("--output=label_kind")
+        .addBlazeFlags(query.build());
 
     // it's fine to include wildcards here; they're guaranteed not to clash with actual labels.
     Set<String> explicitTargets =
@@ -229,12 +230,16 @@ public class WildcardTargetExpander {
             ? t -> true
             : t -> handledRulesPredicate.test(t.ruleType) || explicitTargets.contains(t.label);
 
-    BlazeQueryLabelKindParser outputProcessor = new BlazeQueryLabelKindParser(filter);
-    try (InputStream queryResultStream = buildBinary.invokeQuery(builder, context)) {
-      new BufferedReader(new InputStreamReader(queryResultStream, UTF_8))
-          .lines()
-          .forEach(outputProcessor::processLine);
-    } catch (IOException | BuildException e) {
+    final var outputProcessor = new BlazeQueryLabelKindParser(filter);
+    try (final var result = BazelExecService.instance(project).exec(context, builder)) {
+      result.throwOnFailure(BazelExitCodeException.ThrowOption.ALLOW_PARTIAL_SUCCESS);
+
+      try (final var queryResultStream = result.getStdout()) {
+        new BufferedReader(new InputStreamReader(queryResultStream, UTF_8))
+            .lines()
+            .forEach(outputProcessor::processLine);
+      }
+    } catch (IOException | ExecutionException | BuildException e) {
       Logger.getInstance(WildcardTargetExpander.class)
           .warn("Error running blaze query to expand the input target pattern", e);
       return new ExpandedTargetsResult(outputProcessor.getTargetLabels(), BuildResult.FATAL_ERROR);

@@ -16,18 +16,17 @@
 package com.google.idea.blaze.base.query;
 
 import com.google.common.collect.ImmutableList;
-import com.google.idea.blaze.base.async.process.ExternalTask;
-import com.google.idea.blaze.base.async.process.LineProcessingOutputStream;
-import com.google.idea.blaze.base.bazel.BuildSystemProvider;
+import com.google.idea.blaze.base.buildview.BazelExecService;
+import com.google.idea.blaze.base.command.BlazeCommand;
+import com.google.idea.blaze.base.command.BlazeCommandName;
 import com.google.idea.blaze.base.model.primitives.Label;
 import com.google.idea.blaze.base.model.primitives.TargetExpression;
-import com.google.idea.blaze.base.model.primitives.WorkspaceRoot;
-import com.google.idea.blaze.base.settings.Blaze;
+import com.google.idea.blaze.base.scope.Scope;
+import com.google.idea.blaze.base.scope.scopes.IdeaLogScope;
 import com.google.idea.common.experiments.BoolExperiment;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import javax.annotation.Nullable;
 
@@ -61,35 +60,28 @@ public class BlazeQueryMacroTargetProvider implements MacroTargetProvider {
             "attr('generator_function', '^.+$', %s)",
             TargetExpression.allFromPackageNonRecursive(label.blazePackage()));
 
-    // would be nicer to use the Process inputStream directly, rather having two round trips...
-    ByteArrayOutputStream out = new ByteArrayOutputStream(/* size= */ 4096);
-    int retVal =
-        ExternalTask.builder(WorkspaceRoot.fromProject(project))
-            .args(getBinaryPath(project), outputBase, "query", "--output=proto", query)
-            .stdout(out)
-            .stderr(
-                LineProcessingOutputStream.of(
-                    line -> {
-                      // errors are expected, so limit logging to info level
-                      logger.info(line);
-                      return true;
-                    }))
-            .build()
-            .run();
-    if (retVal != 0 && retVal != 3) {
-      // exit code of 3 indicates non-fatal error (for example, a non-existent directory)
-      return null;
-    }
-    try {
-      return BlazeQueryProtoParser.parseProtoOutput(new ByteArrayInputStream(out.toByteArray()));
-    } catch (IOException e) {
-      logger.warn("Couldn't parse blaze query proto output", e);
-      return null;
-    }
-  }
+    final var command = BlazeCommand.builder(BlazeCommandName.QUERY)
+        .addBlazeFlags("--output=proto")
+        .addBlazeFlags(query)
+        .addBlazeStartupFlags(ImmutableList.of(outputBase));
 
-  private static String getBinaryPath(Project project) {
-    BuildSystemProvider buildSystemProvider = Blaze.getBuildSystemProvider(project);
-    return buildSystemProvider.getBinaryPath(project);
+    return Scope.root(context -> {
+      context.push(new IdeaLogScope());
+
+      try (final var result = BazelExecService.instance(project).exec(context, command)) {
+        // exit code of 3 indicates non-fatal error (for example, a non-existent directory)
+        if (result.exitCode != 0 && result.exitCode != 3) {
+          return null;
+        }
+
+        return BlazeQueryProtoParser.parseProtoOutput(new ByteArrayInputStream(result.getStdout().readAllBytes()));
+      } catch (IOException e) {
+        logger.warn("Couldn't parse blaze query proto output", e);
+        return null;
+      } catch (Exception e) {
+        logger.warn("Failed to run blaze query", e);
+        return null;
+      }
+    });
   }
 }
