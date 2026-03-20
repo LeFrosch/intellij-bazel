@@ -160,7 +160,7 @@ private fun executeBuild(
     .addBlazeFlags(flags)
     .addBlazeFlags(requiredFlags)
 
-  val result = BazelExecService.instance(project).build(ctx, commandBuilder)
+  val result = BazelExecService.of(project).build(ctx, commandBuilder)
 
   if (result.buildResult().status != BuildResult.Status.SUCCESS) {
     throw ExecutionException("$progressMessage failed")
