@@ -46,7 +46,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
   @Nullable private final AndroidSdkIdeInfo androidSdkIdeInfo;
   @Nullable private final AndroidAarIdeInfo androidAarIdeInfo;
   @Nullable private final PyIdeInfo pyIdeInfo;
-  @Nullable private final GoIdeInfo goIdeInfo;
   @Nullable private final JsIdeInfo jsIdeInfo;
   @Nullable private final TsIdeInfo tsIdeInfo;
   @Nullable private final DartIdeInfo dartIdeInfo;
@@ -69,7 +68,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
       @Nullable AndroidSdkIdeInfo androidSdkIdeInfo,
       @Nullable AndroidAarIdeInfo androidAarIdeInfo,
       @Nullable PyIdeInfo pyIdeInfo,
-      @Nullable GoIdeInfo goIdeInfo,
       @Nullable JsIdeInfo jsIdeInfo,
       @Nullable TsIdeInfo tsIdeInfo,
       @Nullable DartIdeInfo dartIdeInfo,
@@ -90,7 +88,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
     this.androidSdkIdeInfo = androidSdkIdeInfo;
     this.androidAarIdeInfo = androidAarIdeInfo;
     this.pyIdeInfo = pyIdeInfo;
-    this.goIdeInfo = goIdeInfo;
     this.jsIdeInfo = jsIdeInfo;
     this.tsIdeInfo = tsIdeInfo;
     this.dartIdeInfo = dartIdeInfo;
@@ -150,9 +147,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
         proto.hasPyIdeInfo()
             ? PyIdeInfo.fromProto(proto.getPyIdeInfo())
             : null,
-        proto.hasGoIdeInfo()
-            ? GoIdeInfo.fromProto(proto.getGoIdeInfo(), key.label(), kind)
-            : null,
         proto.hasJsIdeInfo()
             ? JsIdeInfo.fromProto(proto.getJsIdeInfo())
             : null,
@@ -194,7 +188,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setAndroidSdkIdeInfo, androidSdkIdeInfo);
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setAndroidAarIdeInfo, androidAarIdeInfo);
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setPyIdeInfo, pyIdeInfo);
-    ProtoWrapper.unwrapAndSetIfNotNull(builder::setGoIdeInfo, goIdeInfo);
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setJsIdeInfo, jsIdeInfo);
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setTsIdeInfo, tsIdeInfo);
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setDartIdeInfo, dartIdeInfo);
@@ -228,7 +221,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
         androidSdkIdeInfo,
         androidAarIdeInfo,
         pyIdeInfo,
-        goIdeInfo,
         jsIdeInfo,
         tsIdeInfo,
         dartIdeInfo,
@@ -296,11 +288,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
   @Nullable
   public PyIdeInfo getPyIdeInfo() {
     return pyIdeInfo;
-  }
-
-  @Nullable
-  public GoIdeInfo getGoIdeInfo() {
-    return goIdeInfo;
   }
 
   @Nullable
@@ -383,7 +370,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
     private AndroidIdeInfo androidIdeInfo;
     private AndroidAarIdeInfo androidAarIdeInfo;
     private PyIdeInfo pyIdeInfo;
-    private GoIdeInfo goIdeInfo;
     private JsIdeInfo jsIdeInfo;
     private TsIdeInfo tsIdeInfo;
     private DartIdeInfo dartIdeInfo;
@@ -482,12 +468,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
     }
 
     @CanIgnoreReturnValue
-    public Builder setGoInfo(GoIdeInfo.Builder goInfo) {
-      this.goIdeInfo = goInfo.build();
-      return this;
-    }
-
-    @CanIgnoreReturnValue
     public Builder setJsInfo(JsIdeInfo.Builder jsInfo) {
       this.jsIdeInfo = jsInfo.build();
       return this;
@@ -574,7 +554,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
           null,
           androidAarIdeInfo,
           pyIdeInfo,
-          goIdeInfo,
           jsIdeInfo,
           tsIdeInfo,
           dartIdeInfo,
@@ -607,7 +586,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
         && Objects.equals(androidSdkIdeInfo, that.androidSdkIdeInfo)
         && Objects.equals(androidAarIdeInfo, that.androidAarIdeInfo)
         && Objects.equals(pyIdeInfo, that.pyIdeInfo)
-        && Objects.equals(goIdeInfo, that.goIdeInfo)
         && Objects.equals(jsIdeInfo, that.jsIdeInfo)
         && Objects.equals(tsIdeInfo, that.tsIdeInfo)
         && Objects.equals(dartIdeInfo, that.dartIdeInfo)
@@ -633,7 +611,6 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
         androidSdkIdeInfo,
         androidAarIdeInfo,
         pyIdeInfo,
-        goIdeInfo,
         jsIdeInfo,
         tsIdeInfo,
         dartIdeInfo,
