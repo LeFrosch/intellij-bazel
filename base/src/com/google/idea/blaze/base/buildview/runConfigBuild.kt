@@ -26,8 +26,6 @@ class RunConfigBuild(
   private val project: Project,
   private val configuration: BlazeCommandRunConfiguration,
   private val invocationContext: BlazeInvocationContext,
-  private val requiredFlags: List<String>,
-  private val overridableFlags: List<String>,
   private val target: Label,
 ) : ContextRoutine<RunConfigBuild.Output> {
 
@@ -53,9 +51,7 @@ class RunConfigBuild(
 
     val cmd = BlazeCommand.builder(BlazeCommandName.BUILD)
       .addTargets(target)
-      .addBlazeFlags(overridableFlags)
       .addBlazeFlags(flags)
-      .addBlazeFlags(requiredFlags)
       .addBlazeFlags(externalFlags)
       .addBlazeFlags()
 
@@ -64,7 +60,7 @@ class RunConfigBuild(
       throw ExecutionException("Build failed (${result.buildResult().exitCode})")
     }
 
-    return Output(target = target, executable = findExecutable(ctx, result, target))
+    return Output(target = target, executable = findExecutable(result, target))
   }
 
   data class Output(
@@ -74,7 +70,7 @@ class RunConfigBuild(
 }
 
 @Throws(ExecutionException::class)
-private fun findExecutable(ctx: BlazeContext, output: BlazeBuildOutputs, target: Label): Path {
+private fun findExecutable(output: BlazeBuildOutputs, target: Label): Path {
   // should only be called if the build succeeds
   require(output.buildResult().status == BuildResult.Status.SUCCESS)
 

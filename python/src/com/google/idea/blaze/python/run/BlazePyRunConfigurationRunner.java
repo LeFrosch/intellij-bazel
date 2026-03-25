@@ -298,8 +298,6 @@ public class BlazePyRunConfigurationRunner implements BlazeCommandRunConfigurati
           configuration,
           BlazeInvocationContext.runConfigContext(
               ExecutorType.fromExecutor(env.getExecutor()), configuration.getType(), true),
-          ImmutableList.of(),
-          ImmutableList.of(),
           target
       ), ctx);
 

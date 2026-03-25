@@ -12,7 +12,7 @@ import com.intellij.openapi.project.Project
 import java.io.IOException
 import kotlin.jvm.Throws
 
-private val CC_MNEMONICS = listOf("CppCompile", "CppLink")
+private const val CC_COMPILE_MNEMONIC = "CppCompile"
 
 class DiscoverTargetConfigurations(
   private val project: Project,
@@ -21,37 +21,42 @@ class DiscoverTargetConfigurations(
 
   override val name: String = "Discover CC Target Configurations"
 
+  override val propagateErrors: Boolean = false
+
   @Throws(ExecutionException::class)
   override fun run(ctx: BlazeContext): Output {
     val cmd = BlazeCommand.builder(BlazeCommandName.AQUERY)
-    cmd.addBlazeFlags("--output=streamed_proto", target.toString())
+      .addBlazeFlags("--output=streamed_proto")
+      .addTargets(target)
 
-    val result = BazelExecService.of(project).exec(ctx, cmd)
-    result.throwOnFailure()
+    BazelExecService.of(project).exec(ctx, cmd).use { result ->
+      result.throwOnFailure()
 
-    val graph = try {
-      ActionGraph.fromProto(result.stdout)
-    } catch (e: IOException) {
-      throw ExecutionException("failed to parse action graph", e)
-    }
-
-    val configurations = graph.targets.mapNotNull { target ->
-      target.actions.firstOrNull { it.mnemonic in CC_MNEMONICS }?.let {
-        Label.create(target.label) to it.configuration
+      val graph = try {
+        ActionGraph.fromProto(result.stdout)
+      } catch (e: IOException) {
+        throw ExecutionException("failed to parse action graph", e)
       }
-    }.toMap()
 
-    return Output(
-      mainTarget = Label.create(graph.defaultTarget.label),
-      mainConfiguration = graph.defaultConfiguration,
-      targetConfigurations = configurations,
-    )
+      val configurations = graph.targets.mapNotNull { target ->
+        target.compileAction()?.let { Label.create(target.label) to it }
+      }.toMap()
+
+      return Output(
+        mainTarget = Label.create(graph.defaultTarget.label),
+        mainConfiguration = graph.defaultConfiguration,
+        compileActions = configurations,
+      )
+    }
   }
 
   data class Output(
     val mainTarget: Label,
     val mainConfiguration: String,
-    val targetConfigurations: Map<Label, String>,
+    val compileActions: Map<Label, ActionGraph.Action>,
   )
 }
 
+private fun ActionGraph.Target.compileAction(): ActionGraph.Action? {
+  return actions.firstOrNull { it.mnemonic == CC_COMPILE_MNEMONIC }
+}

@@ -18,6 +18,7 @@ package com.google.idea.blaze.base.buildview
 
 import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEvent
 import com.google.errorprone.annotations.MustBeClosed
+import com.google.idea.blaze.base.async.process.LineProcessingOutputStream
 import com.google.idea.blaze.base.buildview.events.BuildEventParser
 import com.google.idea.blaze.base.command.BlazeCommand
 import com.google.idea.blaze.base.command.BlazeCommandName
@@ -51,7 +52,9 @@ import com.intellij.util.system.OS
 import com.intellij.util.ui.EDT
 import kotlinx.coroutines.*
 import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.FileInputStream
+import java.io.OutputStream
 import java.nio.file.Files
 import java.util.Optional
 import kotlin.io.path.pathString
@@ -107,7 +110,7 @@ class BazelExecServiceImpl(private val project: Project, private val scope: Coro
     ctx: BlazeContext,
     cmdBuilder: BlazeCommand.Builder,
     usePty: Boolean,
-    textAvailable: (String) -> Unit,
+    stdout: OutputStream,
   ): Int {
     performGuardCheck()
 
@@ -136,30 +139,32 @@ class BazelExecServiceImpl(private val project: Project, private val scope: Coro
       .withEnvironment(cmd.environment())
       .withWorkDirectory(root.pathString)
 
+    ctx.println("Executing: ${cmdLine.commandLineString}")
+
     var handler: OSProcessHandler? = null
     val exitCode = try {
       handler = withContext(Dispatchers.IO) {
         OSProcessHandler(cmdLine)
       }
 
-      handler.addProcessListener(object : ProcessListener {
-        override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-          when (outputType) {
-            ProcessOutputTypes.STDOUT -> textAvailable(event.text)
-            ProcessOutputTypes.SYSTEM -> ctx.println(event.text)
-            else -> ctx.output(PrintOutput.process(event.text))
-          }
-
-          LOG.debug("BAZEL OUTPUT: " + event.text)
+      coroutineScope {
+        launch(Dispatchers.IO + CoroutineName("stdout")) {
+          handler.process.inputStream.transferTo(stdout)
         }
-      })
-      handler.startNotify()
 
-      while (!handler.isProcessTerminated) {
-        delay(100.milliseconds)
+        launch(Dispatchers.IO + CoroutineName("stderr")) {
+          handler.process.errorStream.bufferedReader().use { reader ->
+            reader.lines().forEach { line -> ctx.println(line) }
+          }
+        }
+
+        handler.startNotify()
+        while (!handler.isProcessTerminated) {
+          delay(100.milliseconds)
+        }
+
+        handler.exitCode ?: 1
       }
-
-      handler.exitCode ?: 1
     } finally {
       handler?.destroyProcess()
     }
@@ -236,7 +241,8 @@ class BazelExecServiceImpl(private val project: Project, private val scope: Coro
 
       val parseJob = parseEvents(ctx, provider)
 
-      val exitCode = execute(ctx, cmdBuilder, usePty = true, ctx::println)
+      val lineProcessor = LineProcessingOutputStream.of({ line -> ctx.println(line); false })
+      val exitCode = execute(ctx, cmdBuilder, usePty = true, stdout = lineProcessor)
       val result = BuildResult.fromExitCode(exitCode)
 
       parseJob.cancelAndJoin()
@@ -263,9 +269,7 @@ class BazelExecServiceImpl(private val project: Project, private val scope: Coro
 
     val exitCode = executionScope(ctx) {
       Files.newOutputStream(tempFile).use { out ->
-        execute(ctx, cmdBuilder, usePty = false) { text ->
-          out.write(text.toByteArray())
-        }
+        execute(ctx, cmdBuilder, usePty = false, stdout = out)
       }
     }
 

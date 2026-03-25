@@ -51,7 +51,7 @@ fun interface BuildRoutine<T> {
 }
 
 @Throws(ExecutionException::class)
-fun <T> buildRoutine(project: Project, title: String, body: BuildRoutine<T>): Future<T?> {
+fun <T> buildRoutine(project: Project, title: String, body: BuildRoutine<T>): Future<T> {
   return pluginProjectScope(project).async(Dispatchers.Default) {
     BlazeContext.create().use { ctx ->
       ctx.push(TimingScope(title, TimingScope.EventType.Other))

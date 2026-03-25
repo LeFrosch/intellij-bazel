@@ -15,13 +15,12 @@
  */
 package com.google.idea.blaze.clwb.run
 
-import com.google.common.collect.ImmutableList
 import com.google.idea.base.src.com.google.idea.blaze.base.buildview.buildRoutine
 import com.google.idea.base.src.com.google.idea.blaze.base.buildview.launch
 import com.google.idea.blaze.base.buildview.RunConfigBuild
+import com.google.idea.blaze.base.buildview.println
 import com.google.idea.blaze.base.command.BlazeInvocationContext
 import com.google.idea.blaze.base.model.primitives.Label
-import com.google.idea.blaze.base.model.primitives.WorkspaceRoot
 import com.google.idea.blaze.base.run.BlazeCommandRunConfiguration
 import com.google.idea.blaze.base.run.ExecutorType
 import com.google.idea.blaze.base.run.confighandler.BlazeCommandRunConfigurationRunner
@@ -34,7 +33,6 @@ import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ExecutionUtil
-import com.intellij.openapi.util.registry.Registry
 import com.jetbrains.cidr.execution.CidrCommandLineState
 import java.nio.file.Path
 import kotlin.coroutines.cancellation.CancellationException
@@ -72,28 +70,24 @@ class BlazeCidrRunConfigurationRunner(private val configuration: BlazeCommandRun
   private fun getExecutableToDebug(env: ExecutionEnvironment): Path {
     SaveUtil.saveAllFiles()
 
-    val flagsBuilder: BazelDebugFlagsBuilder = BazelDebugFlagsBuilder.fromDefaults(
-      RunConfigurationUtils.getDebuggerKind(configuration),
-      RunConfigurationUtils.getCompilerKind(configuration)
-    )
-
-    if (!Registry.`is`("bazel.clwb.debug.extraflags.disabled")) {
-      flagsBuilder.withBuildFlags(WorkspaceRoot.fromProject(env.project).toString())
-    }
-
     val target: Label = getSingleTarget(configuration)
 
     val executableFuture = buildRoutine(env.project, "Build $target") { ctx ->
       val config = DiscoverTargetConfigurations(env.project, target).launch(ctx)
+      if (config != null) {
+        ctx.println("Target configuration: ${config.mainTarget} ${config.mainConfiguration}")
 
-      // if can debug, check for debug-ability for debug builder here
+        for ((label, action) in config.compileActions) {
+          if (!action.arguments.contains("-g")) {
+            throw ExecutionException("debugging requires -g flag for $label")
+          }
+        }
+      }
 
       val build = RunConfigBuild(
         env.project,
         configuration,
         BlazeInvocationContext.runConfigContext(ExecutorType.fromExecutor(env.executor), configuration.type, true),
-        ImmutableList.of(),
-        flagsBuilder.build(),
         target
       ).launch(ctx) ?: throw ExecutionException("Failed to build $target")
 

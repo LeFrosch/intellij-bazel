@@ -28,7 +28,10 @@ class ActionGraph(
 
     @Throws(IOException::class)
     fun fromProto(stream: InputStream): ActionGraph {
-      return fromProto(AnalysisProtosV2.ActionGraphContainer.parseFrom(stream))
+      val builder = AnalysisProtosV2.ActionGraphContainer.newBuilder()
+      generateSequence { AnalysisProtosV2.ActionGraphContainer.parseDelimitedFrom(stream) }.forEach(builder::mergeFrom)
+
+      return fromProto(builder.build())
     }
 
     fun fromProto(input: AnalysisProtosV2.ActionGraphContainer): ActionGraph = ActionGraph(
