@@ -72,6 +72,7 @@ kt_jvm_library(
         "//base",
         "//base/src/com/google/idea/blaze/base/command/buildresult/bepparser",
         "//common/actions",
+        "//common/aquery:action_graph",
         "//common/experiments",
         "//common/util:datafiles",
         "//cpp",

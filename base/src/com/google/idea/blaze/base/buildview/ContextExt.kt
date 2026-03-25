@@ -17,7 +17,9 @@
 package com.google.idea.blaze.base.buildview
 
 import com.google.idea.blaze.base.scope.BlazeContext
+import com.google.idea.blaze.base.util.pluginProjectScope
 import com.google.idea.blaze.common.PrintOutput
+import com.intellij.openapi.project.Project
 import kotlinx.coroutines.*
 
 fun BlazeContext.println(msg: String) {

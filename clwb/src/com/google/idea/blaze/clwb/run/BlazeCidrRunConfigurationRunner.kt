@@ -16,6 +16,9 @@
 package com.google.idea.blaze.clwb.run
 
 import com.google.common.collect.ImmutableList
+import com.google.idea.base.src.com.google.idea.blaze.base.buildview.buildRoutine
+import com.google.idea.base.src.com.google.idea.blaze.base.buildview.launch
+import com.google.idea.blaze.base.buildview.RunConfigBuild
 import com.google.idea.blaze.base.command.BlazeInvocationContext
 import com.google.idea.blaze.base.model.primitives.Label
 import com.google.idea.blaze.base.model.primitives.WorkspaceRoot
@@ -23,6 +26,7 @@ import com.google.idea.blaze.base.run.BlazeCommandRunConfiguration
 import com.google.idea.blaze.base.run.ExecutorType
 import com.google.idea.blaze.base.run.confighandler.BlazeCommandRunConfigurationRunner
 import com.google.idea.blaze.base.util.SaveUtil
+import com.google.idea.clwb.src.com.google.idea.blaze.clwb.run.DiscoverTargetConfigurations
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.RunCanceledByUserException
@@ -32,7 +36,6 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ExecutionUtil
 import com.intellij.openapi.util.registry.Registry
 import com.jetbrains.cidr.execution.CidrCommandLineState
-import java.io.File
 import java.nio.file.Path
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -40,28 +43,24 @@ import kotlin.coroutines.cancellation.CancellationException
 class BlazeCidrRunConfigurationRunner(private val configuration: BlazeCommandRunConfiguration) :
   BlazeCommandRunConfigurationRunner {
 
-  /** Calculated during the before-run task, and made available to the debugger. */
+  /** Calculated during the before-run task. */
   @JvmField
-  var executableToDebug: File? = null
+  var executable: Path? = null
 
   override fun getRunProfileState(executor: Executor, env: ExecutionEnvironment): RunProfileState {
     return CidrCommandLineState(env, BlazeCidrLauncher(configuration, this, env))
   }
 
   override fun executeBeforeRunTask(env: ExecutionEnvironment): Boolean {
-    executableToDebug = null
-    if (!isDebugging(env)) return true
+    executable = null
 
     try {
-      val executable: Path? = getExecutableToDebug(env)
-      if (executable != null) {
-        executableToDebug = executable.toFile()
-        return true
-      }
+      executable = getExecutableToDebug(env)
+      return true
     } catch (e: ExecutionException) {
       ExecutionUtil.handleExecutionError(env.project, env.executor.toolWindowId, env.runProfile, e)
+      return false
     }
-    return false
   }
 
   /**
@@ -69,7 +68,7 @@ class BlazeCidrRunConfigurationRunner(private val configuration: BlazeCommandRun
    * 
    * @throws ExecutionException if no unique output artifact was found.
    */
-  @kotlin.Throws(ExecutionException::class)
+  @Throws(ExecutionException::class)
   private fun getExecutableToDebug(env: ExecutionEnvironment): Path {
     SaveUtil.saveAllFiles()
 
@@ -84,14 +83,22 @@ class BlazeCidrRunConfigurationRunner(private val configuration: BlazeCommandRun
 
     val target: Label = getSingleTarget(configuration)
 
-    val executableFuture = BazelBuildService.buildForRunConfig(
+    val executableFuture = buildRoutine(env.project, "Build $target") { ctx ->
+      val config = DiscoverTargetConfigurations(env.project, target).launch(ctx)
+
+      // if can debug, check for debug-ability for debug builder here
+
+      val build = RunConfigBuild(
         env.project,
         configuration,
         BlazeInvocationContext.runConfigContext(ExecutorType.fromExecutor(env.executor), configuration.type, true),
         ImmutableList.of(),
         flagsBuilder.build(),
         target
-      )
+      ).launch(ctx) ?: throw ExecutionException("Failed to build $target")
+
+      build.executable
+    }
 
     try {
       return executableFuture.get()

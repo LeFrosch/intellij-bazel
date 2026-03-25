@@ -15,10 +15,13 @@
  */
 package com.google.idea.blaze.python.run;
 
+import static com.google.idea.base.src.com.google.idea.blaze.base.buildview.ContextRoutineKt.buildRoutine;
+import static com.google.idea.base.src.com.google.idea.blaze.base.buildview.ContextRoutineKt.launch;
+
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.idea.blaze.base.buildview.BazelBuildService;
+import com.google.idea.blaze.base.buildview.RunConfigBuild;
 import com.google.idea.blaze.base.command.BlazeCommandName;
 import com.google.idea.blaze.base.command.BlazeFlags;
 import com.google.idea.blaze.base.command.BlazeInvocationContext;
@@ -76,15 +79,22 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
-/** Python-specific run configuration runner. */
+/**
+ * Python-specific run configuration runner.
+ */
 public class BlazePyRunConfigurationRunner implements BlazeCommandRunConfigurationRunner {
 
-  /** Used to store a runner to an {@link ExecutionEnvironment}. */
+  /**
+   * Used to store a runner to an {@link ExecutionEnvironment}.
+   */
   private static final Key<AtomicReference<PyExecutionInfo>> EXECUTABLE_KEY =
       Key.create("blaze.debug.py.executable");
 
-  /** Converts to the native python plugin debug configuration state */
+  /**
+   * Converts to the native python plugin debug configuration state
+   */
   static class BlazePyDummyRunProfileState implements RunProfileState {
+
     final BlazeCommandRunConfiguration configuration;
 
     BlazePyDummyRunProfileState(BlazeCommandRunConfiguration configuration) {
@@ -258,7 +268,9 @@ public class BlazePyRunConfigurationRunner implements BlazeCommandRunConfigurati
     return false;
   }
 
-  /** Make a best-effort attempt to get the runfiles path. Returns null if it can't be found. */
+  /**
+   * Make a best-effort attempt to get the runfiles path. Returns null if it can't be found.
+   */
   @Nullable
   private static String getRunfilesPath(File executable, @Nullable WorkspaceRoot root) {
     if (root == null) {
@@ -305,15 +317,24 @@ public class BlazePyRunConfigurationRunner implements BlazeCommandRunConfigurati
     }
 
     SaveUtil.saveAllFiles();
-    final var executableFuture = BazelBuildService.buildForRunConfig(
-        project,
-        configuration,
-        BlazeInvocationContext.runConfigContext(
-            ExecutorType.fromExecutor(env.getExecutor()), configuration.getType(), true),
-        BlazePyDebugHelper.getAllBlazeDebugFlags(configuration.getProject(), target),
-        ImmutableList.of(),
-        target
-    );
+
+    final var executableFuture = buildRoutine(env.getProject(), "Build " + target, ctx -> {
+      final var build = launch(new RunConfigBuild(
+          env.getProject(),
+          configuration,
+          BlazeInvocationContext.runConfigContext(
+              ExecutorType.fromExecutor(env.getExecutor()), configuration.getType(), true),
+          BlazePyDebugHelper.getAllBlazeDebugFlags(configuration.getProject(), target),
+          ImmutableList.of(),
+          target
+      ), ctx);
+
+      if (build == null) {
+        throw new ExecutionException("Failed to build " + target);
+      }
+
+      return build.getExecutable();
+    });
 
     try {
       final var executable = executableFuture.get().toFile();
@@ -341,6 +362,7 @@ public class BlazePyRunConfigurationRunner implements BlazeCommandRunConfigurati
   }
 
   private static class PyExecutionInfo {
+
     public final File executable;
     public final ImmutableList<String> args;
 
