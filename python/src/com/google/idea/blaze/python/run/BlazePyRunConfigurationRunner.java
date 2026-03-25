@@ -142,29 +142,7 @@ public class BlazePyRunConfigurationRunner implements BlazeCommandRunConfigurati
         nativeConfig.setEnvs(envState.getEnvs());
       }
       nativeConfig.setScriptParameters(Strings.emptyToNull(ParametersListUtil.join(args)));
-      Label target = getSingleTarget(configuration);
       return new PythonScriptCommandLineState(nativeConfig, env) {
-
-        private final CommandLinePatcher applyHelperPydevFlags =
-            (commandLine) ->
-                BlazePyDebugHelper.doBlazeDebugCommandlinePatching(
-                    nativeConfig.getProject(), target, commandLine);
-
-        @Override
-        protected ProcessHandler startProcess(
-            PythonProcessStarter starter, @Nullable CommandLinePatcher... patchers)
-            throws ExecutionException {
-          // Need to run after the other CommandLinePatchers
-          List<CommandLinePatcher> modifiedPatchers = new ArrayList<>();
-          if (patchers != null) {
-            Collections.addAll(modifiedPatchers, patchers);
-          }
-          modifiedPatchers.add(applyHelperPydevFlags);
-          ProcessHandler process =
-              super.startProcess(starter, modifiedPatchers.toArray(new CommandLinePatcher[0]));
-          BlazePyDebugHelper.attachProcessListeners(target, process);
-          return process;
-        }
 
         @Override
         public boolean isDebug() {
@@ -311,10 +289,6 @@ public class BlazePyRunConfigurationRunner implements BlazeCommandRunConfigurati
 
     Label target = getSingleTarget(configuration);
     ImmutableList<String> args = getPythonArgsFor(blazeProjectData, target);
-    String validationError = BlazePyDebugHelper.validateDebugTarget(env.getProject(), target);
-    if (validationError != null) {
-      throw new WithBrowserHyperlinkExecutionException(validationError);
-    }
 
     SaveUtil.saveAllFiles();
 
@@ -324,7 +298,7 @@ public class BlazePyRunConfigurationRunner implements BlazeCommandRunConfigurati
           configuration,
           BlazeInvocationContext.runConfigContext(
               ExecutorType.fromExecutor(env.getExecutor()), configuration.getType(), true),
-          BlazePyDebugHelper.getAllBlazeDebugFlags(configuration.getProject(), target),
+          ImmutableList.of(),
           ImmutableList.of(),
           target
       ), ctx);
