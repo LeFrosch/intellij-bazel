@@ -1,7 +1,4 @@
 load("@rules_java//java:defs.bzl", "java_binary", "java_library")
-PLUGIN_PACKAGES_VISIBILITY = ["//visibility:public"]
-DEFAULT_TEST_VISIBILITY = ["//visibility:public"]
-FAST_BUILD_JAVAC_VISIBILITY = ["//visibility:public"]
 load(
     "//build_defs:build_defs.bzl",
     "intellij_plugin",
@@ -15,30 +12,12 @@ load(
     "intellij_unit_test_suite",
 )
 
-_FAST_BUILD_JAVAC_SRCS = ["src/com/google/idea/blaze/java/fastbuild/FastBuildJavac.java"]
-
-# This interface is used by two classloaders (the plugin's and the compiler's) whose only shared
-# classes are those from the JRE, so it can't have any dependencies at all!
-java_library(
-    name = "fast_build_javac_interface",
-    srcs = _FAST_BUILD_JAVAC_SRCS,
-)
-
-_FAST_BUILD_JAVAC_IMPL_SRCS = [
-    "src/com/google/idea/blaze/java/fastbuild/FastBuildJavacImpl.java",
-    "src/com/google/idea/blaze/java/fastbuild/FormattedJavacDiagnostic.java",
-]
-
 java_library(
     name = "java",
-    srcs = glob(
-        ["src/**/*.java"],
-        exclude = _FAST_BUILD_JAVAC_SRCS + _FAST_BUILD_JAVAC_IMPL_SRCS,
-    ),
+    srcs = glob(["src/**/*.java"]),
     javacopts = ["-Xep:FutureReturnValueIgnored:OFF"],
-    visibility = PLUGIN_PACKAGES_VISIBILITY,
+    visibility = ["//visibility:public"],
     deps = [
-        ":fast_build_javac_interface",
         "//base",
         "//base/src/com/google/idea/blaze/base/command/buildresult/bepparser",
         "//common/actions",
@@ -51,26 +30,12 @@ java_library(
         "//intellij_platform_sdk:junit",
         "//intellij_platform_sdk:plugin_api",
         "//proto:proto_deps",
-
         "//sdkcompat",
         "//shared",
         "//shared:artifact",
         "//third_party/java/auto_value",
         "@error_prone_annotations//jar",
     ],
-)
-
-# Packaged with the plugin as a separate jar.
-java_library(
-    name = "fast_build_javac",
-    srcs = _FAST_BUILD_JAVAC_SRCS + _FAST_BUILD_JAVAC_IMPL_SRCS,
-    javacopts = [
-        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
-    ],
-    visibility = FAST_BUILD_JAVAC_VISIBILITY,
 )
 
 optional_plugin_xml(
@@ -102,34 +67,16 @@ intellij_plugin_library(
         ":optional_java_coverage",
     ],
     plugin_xmls = ["src/META-INF/blaze-java.xml"],
-    visibility = PLUGIN_PACKAGES_VISIBILITY,
+    visibility = ["//visibility:public"],
     deps = [":java"],
 )
 
 intellij_unit_test_suite(
     name = "unit_tests",
     srcs = glob(["tests/unittests/**/*.java"]),
-    # Used for the compiler tests
-    data = [
-        ":auto_value_lib_deploy.jar",
-        ":auto_value_plugin_lib_deploy.jar",
-        ":fast_build_javac",
-        ":guava_lib_deploy.jar",
-        ":truth_lib_deploy.jar",
-    ],
-    jvm_flags = [
-        "-Dauto_value.jar=$(location :auto_value_lib_deploy.jar)",
-        "-Dauto_value_plugin.jar=$(location :auto_value_plugin_lib_deploy.jar)",
-        "-Dfast_build_javac.jar=$(location :fast_build_javac)",
-        "-Dguava.jar=$(location :guava_lib_deploy.jar)",
-        "-Dtruth.jar=$(location :truth_lib_deploy.jar)",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
-        "--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
-    ],
     tags = ["noci:studio-win"],
     test_package_root = "com.google.idea.blaze.java",
-    visibility = DEFAULT_TEST_VISIBILITY,
+    visibility = ["//visibility:public"],
     deps = [
         ":java",
         "//base",
@@ -146,36 +93,6 @@ intellij_unit_test_suite(
         "//third_party/java/junit",
         "@com_google_guava_guava//jar",
         "@org_opentest4j_opentest4j//jar",
-    ],
-)
-
-java_binary(
-    name = "auto_value_lib",
-    main_class = "None",
-    runtime_deps = ["//third_party/java/auto_value"],
-)
-
-java_binary(
-    name = "auto_value_plugin_lib",
-    main_class = "None",
-    runtime_deps = ["//third_party/java/auto_value"],
-)
-
-java_binary(
-    name = "guava_lib",
-    testonly = True,
-    main_class = "None",
-    runtime_deps = [
-        "//intellij_platform_sdk:guava",
-    ],
-)
-
-java_binary(
-    name = "truth_lib",
-    testonly = 1,
-    main_class = "None",
-    runtime_deps = [
-        "//intellij_platform_sdk:truth",
     ],
 )
 
@@ -198,22 +115,16 @@ intellij_plugin(
 
 intellij_integration_test_suite(
     name = "integration_tests",
-    srcs = glob(
-        ["tests/integrationtests/**/*.java"],
-    ),
+    srcs = glob(["tests/integrationtests/**/*.java"]),
     jvm_flags = [
         "--add-exports java.base/sun.nio.ch=ALL-UNNAMED",
         "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED",
     ],
     required_plugins = "com.google.idea.blaze.java",
-    tags = [
-        "noci:studio-win",
-    ],
+    tags = ["noci:studio-win"],
     test_package_root = "com.google.idea.blaze.java",
-    visibility = DEFAULT_TEST_VISIBILITY,
-    runtime_deps = [
-        ":java_integration_test_plugin",
-    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [":java_integration_test_plugin"],
     deps = [
         ":java",
         "//base",
@@ -225,7 +136,6 @@ intellij_integration_test_suite(
         "//intellij_platform_sdk:plugin_api_for_tests",
         "//intellij_platform_sdk:test_libs",
         "//proto:proto_deps",
-
         "//shared",
         "//third_party/java/junit",
         "//third_party/java/truth",
