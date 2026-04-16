@@ -7,6 +7,9 @@ INDIRECT_IJ_PRODUCTS = {
     "clion-oss-oldest-stable": "clion-2025.2",
     "clion-oss-latest-stable": "clion-2025.3",
     "clion-oss-under-dev": "clion-2026.1",
+    "idea-oss-oldest-stable": "idea-2026.1",
+    "idea-oss-latest-stable": "idea-2026.1",
+    "idea-oss-under-dev": "idea-2026.1",
 }
 
 (CHANNEL_STABLE, CHANNEL_BETA, CHANNEL_CANARY, CHANNEL_FREEFORM) = ("stable", "beta", "canary", "freeform")
@@ -16,6 +19,9 @@ INDIRECT_PRODUCT_CHANNELS = {
     "clion-oss-oldest-stable": CHANNEL_STABLE,
     "clion-oss-latest-stable": CHANNEL_STABLE,
     "clion-oss-under-dev": CHANNEL_CANARY,
+    "idea-oss-oldest-stable": CHANNEL_STABLE,
+    "idea-oss-latest-stable": CHANNEL_STABLE,
+    "idea-oss-under-dev": CHANNEL_CANARY,
 }
 
 def _check_channel_map():
@@ -39,14 +45,16 @@ def _build_ij_product(ide, directory, version):
         version = version,
     )
 
-def _build_ij_product_dict(versions):
-    result = {}
-    for version in versions:
-        result["clion-%s" % version] = _build_ij_product("clion", "clion", version)
+_VERSIONS = ["2025.2", "2025.3", "2026.1"]
 
+def _build_ij_product_dict():
+    result = {}
+    for ide in ["clion", "idea"]:
+        for version in _VERSIONS:
+            result["%s-%s" % (ide, version)] = _build_ij_product(ide, ide, version)
     return result
 
-DIRECT_IJ_PRODUCTS = _build_ij_product_dict(["2025.2", "2025.3", "2026.1"])
+DIRECT_IJ_PRODUCTS = _build_ij_product_dict()
 
 def _do_select_for_plugin_api(params):
     """A version of select_for_plugin_api which accepts indirect products."""
@@ -114,23 +122,40 @@ def select_for_version(versions, default = []):
 def _plugin_api_directory(value):
     return "@" + value.directory + "//"
 
-def select_from_plugin_api_directory(targets):
-    """Internal convenience method to generate select statement from the IDE's plugin_api directories.
+def select_from_plugin_api_directory(clion, idea):
+    """Generates a select resolving targets from each IDE's plugin_api directory.
 
     Args:
-      intellij: the items that IntelliJ product to use.
-      clion: the items that clion product to use.
-      intellij_ue: the items that intellij ue product to use.
+      clion: list of target names for CLion products.
+      idea: list of target names for IntelliJ IDEA products.
 
     Returns:
-      a select statement map from DIRECT_IJ_PRODUCTS to items that they should use.
-
+      A select statement mapping each product to the resolved targets.
     """
 
-    # Map (direct ij_product) -> corresponding product directory
     params = dict()
     for ij_product, value in DIRECT_IJ_PRODUCTS.items():
-        params[ij_product] = [_plugin_api_directory(value) + item for item in targets]
+        ide_targets = clion if value.ide == "clion" else idea
+        params[ij_product] = [_plugin_api_directory(value) + item for item in ide_targets]
+
+    return _do_select_for_plugin_api(params)
+
+def select_for_ide(clion = [], idea = []):
+    """Selects values based on the target IDE.
+
+    Args:
+      clion: value to use for CLion builds.
+      idea: value to use for IntelliJ IDEA builds.
+
+    Returns:
+      A select statement choosing between the values based on the IDE.
+    """
+    params = dict()
+    for ij_product, value in DIRECT_IJ_PRODUCTS.items():
+        if value.ide == "clion":
+            params[ij_product] = clion
+        elif value.ide == "idea":
+            params[ij_product] = idea
 
     return _do_select_for_plugin_api(params)
 

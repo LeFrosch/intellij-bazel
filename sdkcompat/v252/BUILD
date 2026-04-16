@@ -23,7 +23,6 @@ kt_jvm_library(
     srcs = glob([
         "com/google/idea/sdkcompat/javascript/**",
         "com/google/idea/sdkcompat/python/**",
-        "com/google/idea/sdkcompat/clion/**",  #api252
         "com/google/idea/sdkcompat/ide/**",  #api252
     ]),
     visibility = ["//sdkcompat:__pkg__"],
@@ -31,6 +30,15 @@ kt_jvm_library(
         "//intellij_platform_sdk:jsr305",  # unuseddeps: keep
         "//intellij_platform_sdk:plugin_api",
         "//third_party/javascript",
+    ],
+)
+
+kt_jvm_library(
+    name = "v252_clion",
+    srcs = glob(["com/google/idea/sdkcompat/clion/**"]),  #api252
+    visibility = ["//sdkcompat:__pkg__"],
+    deps = [
+        "//intellij_platform_sdk:plugin_api",
     ],
 )
 

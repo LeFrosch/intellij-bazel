@@ -34,6 +34,17 @@ java_library(
     }),
 )
 
+# CLion-specific compat code - depends on CLion APIs not available in IntelliJ IDEA
+java_library(
+    name = "clion",
+    visibility = SDK_COMPAT_VISIBILITY,
+    exports = select_for_version({
+        "2025.2": ["//sdkcompat/v252:v252_clion"],
+        "2025.3": ["//sdkcompat/v253:v253_clion"],
+        "2026.1": ["//sdkcompat/v261:v261_clion"],
+    }),
+)
+
 #api252 needs to be a separate target since radler sources are not always available
 java_library(
     name = "radler",

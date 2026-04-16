@@ -117,6 +117,14 @@ java_import(
     tags = ["intellij-provided-by-sdk"],
 )
 
+java_import(
+    name = "textmate",
+    jars = glob([
+        "plugins/textmate/lib/*.jar",
+        "plugins/textmate/lib/modules/*.jar",
+    ]),
+)
+
 filegroup(
     name = "application_info_json",
     srcs = ["product-info.json"],

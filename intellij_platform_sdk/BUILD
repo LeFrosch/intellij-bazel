@@ -58,17 +58,62 @@ config_setting(
     values = {"define": "ij_product=clion-2026.1"},
 )
 
+config_setting(
+    name = "idea-oss-oldest-stable",
+    values = {
+        "define": "ij_product=idea-oss-oldest-stable",
+    },
+)
+
+config_setting(
+    name = "idea-oss-latest-stable",
+    values = {
+        "define": "ij_product=idea-oss-latest-stable",
+    },
+)
+
+config_setting(
+    name = "idea-oss-under-dev",
+    values = {
+        "define": "ij_product=idea-oss-under-dev",
+    },
+)
+
+config_setting(
+    name = "idea-2025.2",
+    values = {"define": "ij_product=idea-2025.2"},
+)
+
+config_setting(
+    name = "idea-2025.3",
+    values = {"define": "ij_product=idea-2025.3"},
+)
+
+config_setting(
+    name = "idea-2026.1",
+    values = {"define": "ij_product=idea-2026.1"},
+)
+
 # The purpose of this rule is to hide the versioning
 # complexity from users of this api.
 # There will be additional versions added in the future
 java_library(
     name = "plugin_api_internal",
     visibility = ["//visibility:private"],
-    exports = select_from_plugin_api_directory([
-        ":clion_plugins",
-        ":test_framework",
-        ":sdk",
-    ]),
+    exports = select_from_plugin_api_directory(
+        clion = [
+            ":clion_plugins",
+            ":test_framework",
+            ":sdk",
+        ],
+        idea = [
+            ":java",
+            ":kotlin",
+            ":platform_images",
+            ":test_framework",
+            ":sdk",
+        ],
+    ),
 )
 
 # The outward facing plugin api
@@ -82,13 +127,13 @@ java_library(
 java_library(
     name = "plugin_api_for_tests",
     testonly = 1,
-    data = select_from_plugin_api_directory([":clion_tools"]),
+    data = select_from_plugin_api_directory(clion = [":clion_tools"], idea = []),
     exports = [":plugin_api_internal"],
 )
 java_library(
     name = "textmate",
     neverlink = 1,
-    exports = select_from_plugin_api_directory([":textmate"]),
+    exports = select_from_plugin_api_directory(clion = [":textmate"], idea = [":textmate"]),
 )
 
 java_library(
@@ -107,7 +152,7 @@ java_library(
 # The version of guava bundled with the IntelliJ plugin API.
 java_library(
     name = "guava",
-    exports = select_from_plugin_api_directory([":guava"]),
+    exports = select_from_plugin_api_directory(clion = [":guava"], idea = [":guava"]),
 )
 
 java_library(
@@ -125,29 +170,49 @@ java_library(
     ],
 )
 
+# IntelliJ Kotlin plugin
+java_library(
+    name = "kotlin",
+    neverlink = 1,
+    exports = select_from_plugin_api_directory(clion = [":kotlin"], idea = [":kotlin"]),
+)
+
+java_library(
+    name = "kotlin_for_tests",
+    testonly = 1,
+    exports = select_from_plugin_api_directory(clion = [":kotlin"], idea = [":kotlin"]),
+)
+
+# IntelliJ JUnit plugin
+java_library(
+    name = "junit",
+    neverlink = 1,
+    exports = select_from_plugin_api_directory(clion = [":junit"], idea = [":junit"]),
+)
+
 # terminal plugin
 java_library(
     name = "terminal",
     neverlink = 1,
-    exports = select_from_plugin_api_directory([":terminal"]),
+    exports = select_from_plugin_api_directory(clion = [":terminal"], idea = [":terminal"]),
 )
 
 java_library(
     name = "terminal_for_tests",
     testonly = 1,
-    exports = select_from_plugin_api_directory([":terminal"]),
+    exports = select_from_plugin_api_directory(clion = [":terminal"], idea = [":terminal"]),
 )
 
 # Bundled plugins required by integration tests
 java_library(
     name = "bundled_plugins",
     testonly = 1,
-    runtime_deps = select_from_plugin_api_directory([":bundled_plugins"]),
+    runtime_deps = select_from_plugin_api_directory(clion = [":bundled_plugins"], idea = [":bundled_plugins"]),
 )
 
 filegroup(
     name = "application_info_json",
-    srcs = select_from_plugin_api_directory([":application_info_json"]),
+    srcs = select_from_plugin_api_directory(clion = [":application_info_json"], idea = [":application_info_json"]),
 )
 
 write_file(
