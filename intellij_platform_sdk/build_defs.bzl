@@ -159,6 +159,29 @@ def select_for_ide(clion = [], idea = []):
 
     return _do_select_for_plugin_api(params)
 
+def select_for_product(products, default = []):
+    """Selects values based on exact product keys (e.g. 'clion-2026.1', 'idea-2026.1').
+
+    Supports both direct product keys and indirect aliases (e.g. 'idea-oss-latest-stable').
+
+    Args:
+      products: dict mapping product keys to values.
+      default: value for products not present in the map.
+
+    Returns:
+      A select statement.
+    """
+    params = dict()
+    for ij_product in DIRECT_IJ_PRODUCTS.keys():
+        params[ij_product] = products.get(ij_product, default)
+
+    # pass through any indirect aliases the caller specified directly
+    for k, v in products.items():
+        if k not in DIRECT_IJ_PRODUCTS:
+            params[k] = v
+
+    return _do_select_for_plugin_api(params)
+
 def select_build_name():
     """Returns a select for name of the current build target, e.g. clion-2025.2"""
 

@@ -34,10 +34,7 @@ import java.util.Set;
 final class BlazeCSyncPlugin implements BlazeSyncPlugin {
   @Override
   public Set<LanguageClass> getSupportedLanguagesInWorkspace(WorkspaceType workspaceType) {
-    if (workspaceType == WorkspaceType.C) {
-      return ImmutableSet.of(LanguageClass.C);
-    }
-    return ImmutableSet.of();
+    return ImmutableSet.of(LanguageClass.C);
   }
 
   @Override

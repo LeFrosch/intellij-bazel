@@ -13,6 +13,8 @@ load(
 load(
     ":build_defs.bzl",
     "select_build_name",
+    "select_for_ide",
+    "select_for_product",
     "select_from_plugin_api_directory",
 )
 
@@ -127,13 +129,20 @@ java_library(
 java_library(
     name = "plugin_api_for_tests",
     testonly = 1,
-    data = select_from_plugin_api_directory(clion = [":clion_tools"], idea = []),
+    data = select_from_plugin_api_directory(
+        clion = [":clion_tools"],
+        idea = [],
+    ),
     exports = [":plugin_api_internal"],
 )
+
 java_library(
     name = "textmate",
     neverlink = 1,
-    exports = select_from_plugin_api_directory(clion = [":textmate"], idea = [":textmate"]),
+    exports = select_from_plugin_api_directory(
+        clion = [":textmate"],
+        idea = [":textmate"],
+    ),
 )
 
 java_library(
@@ -152,7 +161,10 @@ java_library(
 # The version of guava bundled with the IntelliJ plugin API.
 java_library(
     name = "guava",
-    exports = select_from_plugin_api_directory(clion = [":guava"], idea = [":guava"]),
+    exports = select_from_plugin_api_directory(
+        clion = [":guava"],
+        idea = [":guava"],
+    ),
 )
 
 java_library(
@@ -174,45 +186,82 @@ java_library(
 java_library(
     name = "kotlin",
     neverlink = 1,
-    exports = select_from_plugin_api_directory(clion = [":kotlin"], idea = [":kotlin"]),
+    exports = select_from_plugin_api_directory(
+        clion = [],
+        idea = [":kotlin"],
+    ),
 )
 
 java_library(
     name = "kotlin_for_tests",
     testonly = 1,
-    exports = select_from_plugin_api_directory(clion = [":kotlin"], idea = [":kotlin"]),
+    exports = select_from_plugin_api_directory(
+        clion = [],
+        idea = [":kotlin"],
+    ),
 )
 
 # IntelliJ JUnit plugin
 java_library(
     name = "junit",
     neverlink = 1,
-    exports = select_from_plugin_api_directory(clion = [":junit"], idea = [":junit"]),
+    exports = select_from_plugin_api_directory(
+        clion = [],
+        idea = [":junit"],
+    ),
+)
+
+# CLion/CIDR plugin APIs - for CLion these come bundled with the SDK,
+# for IntelliJ IDEA they come from the separately installed CLion plugin.
+java_library(
+    name = "clion",
+    neverlink = 1,
+    exports = select_for_product({
+        "clion-2025.2": ["@clion_2025_2//:clion_plugins"],
+        "clion-2025.3": ["@clion_2025_3//:clion_plugins"],
+        "clion-2026.1": ["@clion_2026_1//:clion_plugins"],
+        "idea-2026.1": [
+            "@clion_plugin_2026_1//:clion",
+            "@native_debug_2026_1//:native_debug",
+        ],
+    }),
 )
 
 # terminal plugin
 java_library(
     name = "terminal",
     neverlink = 1,
-    exports = select_from_plugin_api_directory(clion = [":terminal"], idea = [":terminal"]),
+    exports = select_from_plugin_api_directory(
+        clion = [":terminal"],
+        idea = [":terminal"],
+    ),
 )
 
 java_library(
     name = "terminal_for_tests",
     testonly = 1,
-    exports = select_from_plugin_api_directory(clion = [":terminal"], idea = [":terminal"]),
+    exports = select_from_plugin_api_directory(
+        clion = [":terminal"],
+        idea = [":terminal"],
+    ),
 )
 
 # Bundled plugins required by integration tests
 java_library(
     name = "bundled_plugins",
     testonly = 1,
-    runtime_deps = select_from_plugin_api_directory(clion = [":bundled_plugins"], idea = [":bundled_plugins"]),
+    runtime_deps = select_from_plugin_api_directory(
+        clion = [":bundled_plugins"],
+        idea = [":bundled_plugins"],
+    ),
 )
 
 filegroup(
     name = "application_info_json",
-    srcs = select_from_plugin_api_directory(clion = [":application_info_json"], idea = [":application_info_json"]),
+    srcs = select_from_plugin_api_directory(
+        clion = [":application_info_json"],
+        idea = [":application_info_json"],
+    ),
 )
 
 write_file(

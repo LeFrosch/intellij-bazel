@@ -308,7 +308,7 @@
     "//intellij_platform_sdk:extension.bzl%intellij_platform": {
       "general": {
         "bzlTransitiveDigest": "y+Kp9vPuSOYOltOnAVPGSyQAOJk0D2+6jsaohd9jzho=",
-        "usagesDigest": "ZxstNdkhyD3SPEdXnHEs6ojoZJ01Gj3nd1RhMF9RUZA=",
+        "usagesDigest": "WKWnRtOhGLF+Z274JYXEK9LjnNnV/miNMCvwzi5Z7N4=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_tools bazel_tools"
         ],
@@ -379,6 +379,14 @@
               "build_file": "@@//intellij_platform_sdk:BUILD.clion",
               "sha256": "8371876b15d2685708fdcbb40e318dd0ca807c4e89933b6cbafd1032a19e6ddd",
               "url": "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/com.intellij.clion/261.23567.28/com.intellij.clion-261.23567.28.zip"
+            }
+          },
+          "native_debug_2026_1": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "build_file": "@@//intellij_platform_sdk:BUILD.native_debug",
+              "sha256": "3932347afba34aad97a656f4cc95362066f5739163055c2a21c472264aee1718",
+              "url": "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/com.intellij.nativeDebug/261.23567.28/com.intellij.nativeDebug-261.23567.28.zip"
             }
           },
           "go_2026_1": {

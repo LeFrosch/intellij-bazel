@@ -38,6 +38,7 @@ kt_jvm_library(
     srcs = glob(["com/google/idea/sdkcompat/clion/**"]),  #api252
     visibility = ["//sdkcompat:__pkg__"],
     deps = [
+        "//intellij_platform_sdk:clion",
         "//intellij_platform_sdk:plugin_api",
     ],
 )

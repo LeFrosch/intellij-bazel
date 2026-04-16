@@ -25,6 +25,7 @@ kt_jvm_library(
     deps = [
         "//base",
         "//common/experiments",
+        "//intellij_platform_sdk:clion",
         "//intellij_platform_sdk:jsr305",
         "//intellij_platform_sdk:plugin_api",
         "//proto:proto_deps",
@@ -35,21 +36,19 @@ kt_jvm_library(
     ],
 )
 
-stamped_plugin_xml(
-    name = "non_optional_cidr",
-    plugin_xml = "src/META-INF/blaze-cpp.xml",
-)
-
 optional_plugin_xml(
-    name = "optional_cidr",
-    module = ["com.intellij.cidr.lang"],
-    plugin_xml = "src/META-INF/blaze-cpp-oclang.xml",
+    name = "optional_cpp",
+    module = [
+        "com.intellij.nativeDebug",
+        "com.intellij.clion",
+    ],
+    plugin_xml = "src/META-INF/cpp-contents.xml",
 )
 
 intellij_plugin_library(
     name = "plugin_library",
-    optional_plugin_xmls = [":optional_cidr"],
-    plugin_xmls = [":non_optional_cidr"],
+    optional_plugin_xmls = [":optional_cpp"],
+    plugin_xmls = ["src/META-INF/blaze-cpp.xml"],
     visibility = PLUGIN_PACKAGES_VISIBILITY,
     deps = [":cpp"],
 )

@@ -197,6 +197,13 @@ intellij_platform.plugin(
     version = "261.23567.28",
 )
 intellij_platform.plugin(
+    name = "com.intellij.nativeDebug",
+    alias = "native_debug_2026_1",
+    build_file = "//intellij_platform_sdk:BUILD.native_debug",
+    sha256 = "3932347afba34aad97a656f4cc95362066f5739163055c2a21c472264aee1718",
+    version = "261.23567.28",
+)
+intellij_platform.plugin(
     name = "org.jetbrains.plugins.go",
     alias = "go_2026_1",
     build_file = "//intellij_platform_sdk:BUILD.go",
@@ -218,6 +225,7 @@ use_repo(
     "clion_plugin_2026_1",
     "go_2026_1",
     "idea_2026_1",
+    "native_debug_2026_1",
     "python_2025_2",
     "python_2025_3",
     "python_2026_1",

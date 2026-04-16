@@ -1,0 +1,12 @@
+load("@rules_java//java:defs.bzl", "java_import")
+
+java_import(
+    name = "native_debug",
+    jars = glob(["nativeDebug-plugin/lib/*.jar"]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "tools",
+    srcs = glob(["nativeDebug-plugin/bin/**/*"]),
+)

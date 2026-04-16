@@ -1,0 +1,89 @@
+<!--
+  ~ Copyright 2021 The Bazel Authors. All rights reserved.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<idea-plugin>
+  <depends>com.intellij.nativeDebug</depends>
+  <depends>com.intellij.clion</depends>
+
+  <extensionPoints>
+    <extensionPoint qualifiedName="com.google.idea.blaze.cpp.SourceFileFinder"
+                    interface="com.google.idea.blaze.cpp.SourceFileFinder"/>
+    <extensionPoint interface="com.google.idea.blaze.cpp.CppEnvironmentProvider"
+                    qualifiedName="com.google.idea.blaze.cpp.CppEnvironmentProvider"/>
+    <extensionPoint interface="com.google.idea.blaze.cpp.copts.CoptsProcessor"
+                    qualifiedName="com.google.idea.blaze.cpp.copts.CoptsProcessor"/>
+  </extensionPoints>
+
+  <extensions defaultExtensionNs="com.google.idea.blaze">
+    <SyncPlugin implementation="com.google.idea.blaze.cpp.BlazeCSyncPlugin"/>
+    <PrefetchFileSource implementation="com.google.idea.blaze.cpp.CPrefetchFileSource"/>
+    <FileCache implementation="com.google.idea.blaze.cpp.sync.HeaderFileCache"/>
+    <LoggedDirectoryProvider implementation="com.google.idea.blaze.cpp.sync.HeaderCacheLoggedDirectory"/>
+  </extensions>
+
+  <extensions defaultExtensionNs="com.google.idea.blaze.cpp.copts">
+    <CoptsProcessor implementation="com.google.idea.blaze.cpp.copts.CoptsLegacyIncludeFilter"/>
+    <CoptsProcessor implementation="com.google.idea.blaze.cpp.copts.CoptsEmptyOptionsFilter"/>
+    <CoptsProcessor implementation="com.google.idea.blaze.cpp.copts.CoptsIncludeProcessor$Default"/>
+    <CoptsProcessor implementation="com.google.idea.blaze.cpp.copts.CoptsIncludeProcessor$System"/>
+    <CoptsProcessor implementation="com.google.idea.blaze.cpp.copts.CoptsIncludeProcessor$Quote"/>
+    <CoptsProcessor implementation="com.google.idea.blaze.cpp.copts.CoptsSysrootProcessor"/>
+  </extensions>
+
+  <extensions defaultExtensionNs="cidr.lang">
+    <languageKindHelper implementation="com.google.idea.blaze.cpp.BlazeLanguageKindCalculatorHelper"/>
+    <ownModuleDetector implementation="com.google.idea.blaze.cpp.BlazeOwnModuleDetector"/>
+  </extensions>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <projectService serviceImplementation="com.google.idea.blaze.cpp.BlazeCTargetInfoService"/>
+    <projectService serviceInterface="com.google.idea.blaze.cpp.XcodeCompilerSettingsProvider"
+                    serviceImplementation="com.google.idea.blaze.cpp.XcodeCompilerSettingsProviderNoopImpl"/>
+    <projectService serviceInterface="com.google.idea.blaze.cpp.XcodeCompilerSettingsProvider"
+                    serviceImplementation="com.google.idea.blaze.cpp.XcodeCompilerSettingsProviderImpl"
+                    os="mac"
+                    overrides="true"/>
+
+    <registryKey defaultValue="true"
+                 description="Launch LLDB from execution root"
+                 key="bazel.cpp.lldb.launch.execroot"/>
+    <registryKey defaultValue="true"
+                 description="Allow external targets from source directories be imported in"
+                 key="bazel.cpp.sync.external.targets.from.directories"/>
+    <registryKey defaultValue="false"
+                 description="Filter out some incompatible compiler flags (-include)"
+                 key="bazel.cpp.sync.workspace.filter.out.incompatible.flags"/>
+    <registryKey defaultValue="true"
+                 description="Filter out some empty compiler flags"
+                 key="bazel.cpp.sync.workspace.filter.out.empty.flags"/>
+    <registryKey defaultValue="true"
+                 description="Use _cpp_use_get_tool_for_action to get compiler executable"
+                 key="bazel.cc.aspect.use_get_tool_for_action"/>
+    <registryKey defaultValue="true"
+                 description="Whether to allow bazel-bin as a header search path; directly using bazel-bin as a header search path could cause performance problems"
+                 key="bazel.cpp.sync.allow.bazel.bin.header.search.path"/>
+    <registryKey defaultValue="false"
+                 description="Use enables the HeaderCacheService"
+                 key="bazel.cpp.header.cache.enabled"/>
+
+    <applicationService serviceInterface="com.google.idea.blaze.cpp.CompilerVersionChecker"
+                        serviceImplementation="com.google.idea.blaze.cpp.CompilerVersionCheckerImpl"/>
+    <applicationService serviceInterface="com.google.idea.blaze.cpp.CompilerWrapperProvider"
+                        serviceImplementation="com.google.idea.blaze.cpp.CompilerWrapperProviderImpl"/>
+    <projectService serviceInterface="com.google.idea.blaze.cpp.HeaderRootTrimmer"
+                    serviceImplementation="com.google.idea.blaze.cpp.HeaderRootTrimmerImpl"/>
+    <postStartupActivity implementation="com.google.idea.blaze.cpp.CMakeWorkspaceOverride"/>
+  </extensions>
+</idea-plugin>
