@@ -88,7 +88,7 @@ public final class BlazeGoTestLocator implements SMTestLocator {
       }
     }
     // More than one source file or we failed to get one source file, we'll point to the rule.
-    PsiElement rule = getTargetRule(project, target.getKey().getLabel());
+    PsiElement rule = getTargetRule(project, target.getKey().label());
     return rule != null ? ImmutableList.of(new PsiLocation<>(rule)) : ImmutableList.of();
   }
 
@@ -150,7 +150,7 @@ public final class BlazeGoTestLocator implements SMTestLocator {
     if (projectData == null) {
       return null;
     }
-    TargetIdeInfo target = projectData.getTargetMap().get(TargetKey.forPlainTarget(label));
+    TargetIdeInfo target = projectData.targetMap().get(TargetKey.forPlainTarget(label));
     if (target != null
         && target.getKind().hasLanguage(LanguageClass.GO)
         && target.getKind().getRuleType().equals(RuleType.TEST)) {
@@ -170,7 +170,7 @@ public final class BlazeGoTestLocator implements SMTestLocator {
       return ImmutableList.of();
     }
     return target.getGoIdeInfo().getSources().stream()
-        .map(projectData.getArtifactLocationDecoder()::resolveSource)
+        .map(projectData.artifactLocationDecoder()::resolveSource)
         .filter(Objects::nonNull)
         .map(lfs::findFileByIoFile)
         .collect(Collectors.toList());

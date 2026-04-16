@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.idea.blaze.base.command.BlazeCommand;
 import com.google.idea.blaze.base.command.BlazeCommandName;
 import com.google.idea.blaze.base.command.BlazeInvocationContext;
 import com.google.idea.blaze.base.command.buildresult.BuildResult;
@@ -45,13 +46,13 @@ import com.google.idea.blaze.base.model.BlazeProjectData;
 import com.google.idea.blaze.base.model.primitives.Label;
 import com.google.idea.blaze.base.model.primitives.TargetExpression;
 import com.google.idea.blaze.base.model.primitives.WorkspaceRoot;
-import com.google.idea.blaze.base.run.BlazeBeforeRunCommandHelper;
+import com.google.idea.blaze.base.buildview.BazelExecService;
+import com.google.idea.blaze.base.scope.BlazeContext;
 import com.google.idea.blaze.base.run.BlazeCommandRunConfiguration;
 import com.google.idea.blaze.base.run.ExecutorType;
 import com.google.idea.blaze.base.run.confighandler.BlazeCommandGenericRunConfigurationRunner.BlazeCommandRunProfileState;
 import com.google.idea.blaze.base.run.confighandler.BlazeCommandRunConfigurationRunner;
 import com.google.idea.blaze.base.run.state.BlazeCommandRunConfigurationCommonState;
-import com.google.idea.blaze.base.scope.BlazeContext;
 import com.google.idea.blaze.base.settings.Blaze;
 import com.google.idea.blaze.base.settings.BuildSystemName;
 import com.google.idea.blaze.base.sync.aspects.BlazeBuildOutputs;
@@ -321,82 +322,27 @@ public class BlazeGoRunConfigurationRunner implements BlazeCommandRunConfigurati
         flags.add("--compilation_mode=dbg");
       }
 
-      Optional<Path> scriptPath = Optional.empty();
-      if (scriptPathEnabled.getValue()) {
-        try {
-          scriptPath = Optional.of(BlazeBeforeRunCommandHelper.createScriptPathFile());
-          flags.add("--script_path=" + scriptPath.get());
-        } catch (IOException e) {
-          // Could still work without script path.
-          // Script path is only needed to parse arguments from target.
-          logger.warn("Failed to create script path file. Target arguments will not be parsed.", e);
-        }
-      }
+      // this should probably be attachted to toolwindow with a proper scope, good enough for now
+      BlazeContext context = BlazeContext.create();
+      BlazeInvocationContext invocationContext =
+          BlazeInvocationContext.runConfigContext(
+              ExecutorType.fromExecutor(env.getExecutor()), configuration.getType(), true);
 
-      ListenableFuture<BuildEventStreamProvider> streamProviderFuture =
-          BlazeBeforeRunCommandHelper.runBlazeCommand(
-              scriptPath.isPresent() ? BlazeCommandName.RUN : BlazeCommandName.BUILD,
-              configuration,
-              flags.build(),
-              ImmutableList.of("--dynamic_mode=off", "--test_sharding_strategy=disabled"),
-              BlazeInvocationContext.runConfigContext(
-                  ExecutorType.fromExecutor(env.getExecutor()), configuration.getType(), true),
-              "Building debug binary");
+      BlazeCommand.Builder command =
+          BlazeCommand.builder(BlazeCommandName.BUILD)
+              .addTargets(label)
+              .addBlazeFlags(flags.build())
+              .addBlazeFlags("--dynamic_mode=off", "--test_sharding_strategy=disabled")
+              .addBlazeFlags(buildResultHelper.getBuildFlags());
 
-      try {
-        BuildResult result =
-            BuildResult.fromExitCode(
-                BuildResultParser.getBuildOutput(streamProviderFuture.get(), Interners.STRING)
-                    .buildResult());
-        if (result.outOfMemory()) {
-          throw new ExecutionException("Out of memory while trying to build debug target");
-        } else if (result.status == Status.BUILD_ERROR) {
-          throw new ExecutionException("Build error while trying to build debug target");
-        } else if (result.status == Status.FATAL_ERROR) {
-          throw new ExecutionException(
-              String.format(
-                  "Fatal error (%d) while trying to build debug target", result.exitCode));
-        }
-      } catch (InterruptedException | CancellationException e) {
-        streamProviderFuture.cancel(true);
-        throw new RunCanceledByUserException();
-      } catch (java.util.concurrent.ExecutionException e) {
-        throw new ExecutionException(e);
-      } catch (GetArtifactsException e) {
-        throw new ExecutionException(
-            String.format(
-                "Failed to get output artifacts when building %s: %s", label, e.getMessage()));
-      }
-      if (scriptPath.isPresent()) {
-        if (!Files.exists(scriptPath.get())) {
-          throw new ExecutionException(
-              String.format(
-                  "No debugger executable script path file produced. Expected file at: %s",
-                  scriptPath.get()));
-        }
-        WorkspaceRoot workspaceRoot = WorkspaceRoot.fromProject(project);
-        BlazeInfo blazeInfo =
-            BlazeProjectDataManager.getInstance(project).getBlazeProjectData().getBlazeInfo();
-        return parseScriptPathFile(workspaceRoot, blazeInfo.getExecutionRoot(), scriptPath.get());
-      } else {
-        List<File> candidateFiles;
-        try (final var bepStream = buildResultHelper.getBepStream(Optional.empty())) {
-          candidateFiles =
-              LocalFileArtifact.getLocalFiles(
-                   com.google.idea.blaze.common.Label.of(label.toString()),
-                   BlazeBuildOutputs.fromParsedBepOutput(
-                      BuildResultParser.getBuildOutput(bepStream, Interners.STRING))
-                          .getOutputGroupTargetArtifacts(DEFAULT_OUTPUT_GROUP_NAME, label.toString()),
-                      BlazeContext.create(),
-                      env.getProject())
-                  .stream()
-                  .filter(File::canExecute)
-                  .collect(Collectors.toList());
-        } catch (GetArtifactsException e) {
-          throw new ExecutionException(
-              String.format(
-                  "Failed to get output artifacts when building %s: %s", label, e.getMessage()));
-        }
+      BlazeBuildOutputs outputs = BazelExecService.of(project).build(context, command);
+      {
+        List<File> candidateFiles =
+            LocalFileArtifact.getLocalFiles(
+                    outputs.getOutputGroupTargetArtifacts(DEFAULT_OUTPUT_GROUP_NAME, label.toString()))
+                .stream()
+                .filter(File::canExecute)
+                .collect(Collectors.toList());
         if (candidateFiles.isEmpty()) {
           throw new ExecutionException(
               String.format("No output artifacts found when building %s", label));

@@ -130,7 +130,7 @@ class DeployableJarRunConfigurationProducer
       return null;
     }
     return SourceToTargetMap.getInstance(project).getRulesForSourceFile(sourceFile).stream()
-        .map(blazeProjectData.getTargetMap()::get)
+        .map(blazeProjectData.targetMap()::get)
         .filter(Objects::nonNull)
         .filter(t -> relevantTarget(t))
         .map(TargetIdeInfo::toTargetInfo)

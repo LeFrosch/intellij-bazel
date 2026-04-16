@@ -44,6 +44,7 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
   @Nullable private final JavaIdeInfo javaIdeInfo;
   @Nullable private final JavaToolchainIdeInfo javaToolchainIdeInfo;
   @Nullable private final KotlinToolchainIdeInfo ktToolchainIdeInfo;
+  @Nullable private final GoIdeInfo goIdeInfo;
   @Nullable private final PyIdeInfo pyIdeInfo;
   @Nullable private final JsIdeInfo jsIdeInfo;
   @Nullable private final TsIdeInfo tsIdeInfo;
@@ -63,6 +64,7 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
       @Nullable JavaIdeInfo javaIdeInfo,
       @Nullable JavaToolchainIdeInfo javaToolchainIdeInfo,
       @Nullable KotlinToolchainIdeInfo ktToolchainIdeInfo,
+      @Nullable GoIdeInfo goIdeInfo,
       @Nullable PyIdeInfo pyIdeInfo,
       @Nullable JsIdeInfo jsIdeInfo,
       @Nullable TsIdeInfo tsIdeInfo,
@@ -80,6 +82,7 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
     this.javaIdeInfo = javaIdeInfo;
     this.javaToolchainIdeInfo = javaToolchainIdeInfo;
     this.ktToolchainIdeInfo = ktToolchainIdeInfo;
+    this.goIdeInfo = goIdeInfo;
     this.pyIdeInfo = pyIdeInfo;
     this.jsIdeInfo = jsIdeInfo;
     this.tsIdeInfo = tsIdeInfo;
@@ -132,6 +135,9 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
         proto.hasKtToolchainIdeInfo()
             ? KotlinToolchainIdeInfo.fromProto(proto.getKtToolchainIdeInfo())
             : null,
+        proto.hasGoIdeInfo()
+            ? GoIdeInfo.fromProto(proto.getGoIdeInfo(), key.label(), kind)
+            : null,
         proto.hasPyIdeInfo()
             ? PyIdeInfo.fromProto(proto.getPyIdeInfo())
             : null,
@@ -168,6 +174,7 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setJavaIdeInfo, javaIdeInfo);
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setJavaToolchainIdeInfo, javaToolchainIdeInfo);
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setKtToolchainIdeInfo, ktToolchainIdeInfo);
+    ProtoWrapper.unwrapAndSetIfNotNull(builder::setGoIdeInfo, goIdeInfo);
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setPyIdeInfo, pyIdeInfo);
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setJsIdeInfo, jsIdeInfo);
     ProtoWrapper.unwrapAndSetIfNotNull(builder::setTsIdeInfo, tsIdeInfo);
@@ -198,6 +205,7 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
         javaIdeInfo,
         javaToolchainIdeInfo,
         ktToolchainIdeInfo,
+        goIdeInfo,
         pyIdeInfo,
         jsIdeInfo,
         tsIdeInfo,
@@ -254,6 +262,11 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
   @Nullable
   public KotlinToolchainIdeInfo getKtToolchainIdeInfo() {
     return ktToolchainIdeInfo;
+  }
+
+  @Nullable
+  public GoIdeInfo getGoIdeInfo() {
+    return goIdeInfo;
   }
 
   @Nullable
@@ -330,6 +343,7 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
     private JavaIdeInfo javaIdeInfo;
     private JavaToolchainIdeInfo javaToolchainIdeInfo;
     private KotlinToolchainIdeInfo ktToolchainIdeInfo;
+    private GoIdeInfo goIdeInfo;
     private PyIdeInfo pyIdeInfo;
     private JsIdeInfo jsIdeInfo;
     private TsIdeInfo tsIdeInfo;
@@ -400,6 +414,12 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
     @CanIgnoreReturnValue
     public Builder setKtToolchainIdeInfo(KotlinToolchainIdeInfo.Builder builder) {
       ktToolchainIdeInfo = builder.build();
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder setGoInfo(GoIdeInfo.Builder builder) {
+      goIdeInfo = builder.build();
       return this;
     }
 
@@ -499,6 +519,7 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
           javaIdeInfo,
           javaToolchainIdeInfo,
           ktToolchainIdeInfo,
+          goIdeInfo,
           pyIdeInfo,
           jsIdeInfo,
           tsIdeInfo,
@@ -528,6 +549,7 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
         && Objects.equals(javaIdeInfo, that.javaIdeInfo)
         && Objects.equals(javaToolchainIdeInfo, that.javaToolchainIdeInfo)
         && Objects.equals(ktToolchainIdeInfo, that.ktToolchainIdeInfo)
+        && Objects.equals(goIdeInfo, that.goIdeInfo)
         && Objects.equals(pyIdeInfo, that.pyIdeInfo)
         && Objects.equals(jsIdeInfo, that.jsIdeInfo)
         && Objects.equals(tsIdeInfo, that.tsIdeInfo)
@@ -550,6 +572,7 @@ public final class TargetIdeInfo implements ProtoWrapper<IntellijIdeInfo.TargetI
         javaIdeInfo,
         javaToolchainIdeInfo,
         ktToolchainIdeInfo,
+        goIdeInfo,
         pyIdeInfo,
         jsIdeInfo,
         tsIdeInfo,

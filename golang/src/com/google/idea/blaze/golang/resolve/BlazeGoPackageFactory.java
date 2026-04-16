@@ -67,7 +67,7 @@ public class BlazeGoPackageFactory implements GoPackageFactory {
 
   private static ConcurrentMap<File, String> buildFileToImportPathMap(
       Project project, BlazeProjectData projectData) {
-    TargetMap targetMap = projectData.getTargetMap();
+    TargetMap targetMap = projectData.targetMap();
     ConcurrentMap<File, String> map = new ConcurrentHashMap<>();
     ImmutableMultimap<Label, File> targetToFile =
         BlazeGoPackage.getTargetToFileMap(project, projectData);
@@ -89,7 +89,7 @@ public class BlazeGoPackageFactory implements GoPackageFactory {
       if (importPath == null) {
         continue;
       }
-      for (File file : targetToFile.get(target.getKey().getLabel())) {
+      for (File file : targetToFile.get(target.getKey().label())) {
         map.putIfAbsent(file, importPath);
       }
     }

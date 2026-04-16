@@ -49,8 +49,7 @@ public abstract class GazelleRunner {
             Collection<WorkspacePath> directories,
             Project project
     ) {
-        BlazeCommand.Builder builder = BlazeCommand.builder(invoker,
-                BlazeCommandName.RUN, project);
+        BlazeCommand.Builder builder = BlazeCommand.builder(invoker, BlazeCommandName.RUN);
         builder.addBlazeFlags(blazeFlags);
         builder.addTargets(gazelleTarget);
         List<String> directoriesToRegenerate =

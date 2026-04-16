@@ -195,13 +195,13 @@ class BlazeDlvPositionConverter implements DlvPositionConverter {
     public CgoTrimmedPathsHandler(Project project, ExecutionRootPathResolver resolver) {
       this.project = project;
       BlazeProjectData projectData = BlazeProjectDataManager.getInstance(project).getBlazeProjectData();
-      boolean hasCgoTargets = projectData != null && projectData.getTargetMap().targets().stream()
+      boolean hasCgoTargets = projectData != null && projectData.targetMap().targets().stream()
               .map(TargetIdeInfo::getGoIdeInfo)
               .filter(Objects::nonNull)
               .anyMatch(GoIdeInfo::getCgo);
 
-      this.cgoSources = hasCgoTargets ? collectCgoSources(projectData.getTargetMap()) : emptySet();
-      this.nonCgoSources = hasCgoTargets ? collectNonCgoSources(projectData.getTargetMap()) : emptySet();
+      this.cgoSources = hasCgoTargets ? collectCgoSources(projectData.targetMap()) : emptySet();
+      this.nonCgoSources = hasCgoTargets ? collectNonCgoSources(projectData.targetMap()) : emptySet();
       this.bazelWorkspaceRelativePath = resolver.getExecutionRoot().getName() + File.separator;
     }
 

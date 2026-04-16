@@ -69,7 +69,7 @@ public class BlazeGoSyncPlugin implements BlazeSyncPlugin {
   @Nullable
   @Override
   public SourceFolderProvider getSourceFolderProvider(BlazeProjectData projectData) {
-    if (!projectData.getWorkspaceLanguageSettings().isWorkspaceType(WorkspaceType.GO)) {
+    if (!projectData.workspaceLanguageSettings().isWorkspaceType(WorkspaceType.GO)) {
       return null;
     }
     return GenericSourceFolderProvider.INSTANCE;
@@ -94,7 +94,7 @@ public class BlazeGoSyncPlugin implements BlazeSyncPlugin {
       ModuleEditor moduleEditor,
       Module workspaceModule,
       ModifiableRootModel workspaceModifiableModel) {
-    if (!blazeProjectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.GO)) {
+    if (!blazeProjectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.GO)) {
       return;
     }
     for (Library lib : getGoLibraries(project)) {
@@ -126,7 +126,7 @@ public class BlazeGoSyncPlugin implements BlazeSyncPlugin {
   @Override
   public LibrarySource getLibrarySource(
       ProjectViewSet projectViewSet, BlazeProjectData blazeProjectData) {
-    if (!blazeProjectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.GO)) {
+    if (!blazeProjectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.GO)) {
       return null;
     }
     return BlazeGoLibrarySource.INSTANCE;

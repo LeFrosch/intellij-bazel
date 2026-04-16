@@ -45,6 +45,17 @@ java_library(
     }),
 )
 
+# Scala-specific compat code - depends on Scala plugin APIs
+java_library(
+    name = "scala",
+    visibility = SDK_COMPAT_VISIBILITY,
+    exports = select_for_version({
+        "2025.2": [],
+        "2025.3": ["//sdkcompat/v253:v253_scala"],
+        "2026.1": ["//sdkcompat/v261:v261_scala"],
+    }),
+)
+
 #api252 needs to be a separate target since radler sources are not always available
 java_library(
     name = "radler",

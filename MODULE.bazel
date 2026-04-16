@@ -196,7 +196,33 @@ intellij_platform.plugin(
     sha256 = "8371876b15d2685708fdcbb40e318dd0ca807c4e89933b6cbafd1032a19e6ddd",
     version = "261.23567.28",
 )
-use_repo(intellij_platform, "clion_2025_2", "clion_2025_3", "clion_2026_1", "idea_2026_1", "python_2025_2", "python_2025_3", "python_2026_1", "clion_plugin_2026_1")
+intellij_platform.plugin(
+    name = "org.jetbrains.plugins.go",
+    alias = "go_2026_1",
+    build_file = "//intellij_platform_sdk:BUILD.go",
+    sha256 = "fd1aebe3193f7dadd7f6ec416de2827a868f6373e194d6cecd6c3aa6d8f33224",
+    version = "261.23567.28",
+)
+intellij_platform.plugin(
+    name = "org.intellij.scala",
+    alias = "scala_2026_1",
+    build_file = "//intellij_platform_sdk:BUILD.scala",
+    sha256 = "1848cf5be1a07c778543599ead5562a83095553d4be46856db5d1b84699278b2",
+    version = "2026.1.16",
+)
+use_repo(
+    intellij_platform,
+    "clion_2025_2",
+    "clion_2025_3",
+    "clion_2026_1",
+    "clion_plugin_2026_1",
+    "go_2026_1",
+    "idea_2026_1",
+    "python_2025_2",
+    "python_2025_3",
+    "python_2026_1",
+    "scala_2026_1",
+)
 
 # build tools deploy jars for the tools required by the plugin
 bazel_build_jars = use_repo_rule("//third_party/bazel/jars:extension.bzl", "bazel_build_jars")

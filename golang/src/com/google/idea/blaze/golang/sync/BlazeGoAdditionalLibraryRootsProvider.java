@@ -49,7 +49,7 @@ public final class BlazeGoAdditionalLibraryRootsProvider extends BlazeExternalLi
 
   static ImmutableList<File> getLibraryFiles(
       Project project, BlazeProjectData projectData, ImportRoots importRoots) {
-    if (!projectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.GO)) {
+    if (!projectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.GO)) {
       return ImmutableList.of();
     }
     WorkspaceRoot workspaceRoot = WorkspaceRoot.fromProjectSafe(project);

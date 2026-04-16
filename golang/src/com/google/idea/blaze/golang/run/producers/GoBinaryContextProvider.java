@@ -89,7 +89,7 @@ class GoBinaryContextProvider implements BinaryContextProvider {
     Collection<TargetKey> rulesForFile =
         SourceToTargetMap.getInstance(project).getRulesForSourceFile(file);
 
-    TargetMap targetMap = projectData.getTargetMap();
+    TargetMap targetMap = projectData.targetMap();
     List<TargetKey> libraryKeys = new ArrayList<>();
     for (TargetKey key : rulesForFile) {
       TargetIdeInfo target = targetMap.get(key);

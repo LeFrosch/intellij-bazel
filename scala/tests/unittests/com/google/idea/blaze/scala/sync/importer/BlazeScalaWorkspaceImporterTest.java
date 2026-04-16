@@ -657,7 +657,7 @@ public class BlazeScalaWorkspaceImporterTest extends BlazeTestCase {
                 library
                     .libraryArtifact
                     .jarForIntellijLibrary()
-                    .getRelativePath()
+                    .relativePath()
                     .endsWith(libraryName + ".jar"));
   }
 
@@ -698,7 +698,7 @@ public class BlazeScalaWorkspaceImporterTest extends BlazeTestCase {
 
   private static ArtifactLocation gen(String relativePath) {
     return ArtifactLocation.builder()
-        .setRootExecutionPathFragment("blaze-out/bin")
+        .setRootPath("blaze-out/bin")
         .setRelativePath(relativePath)
         .setIsSource(false)
         .build();

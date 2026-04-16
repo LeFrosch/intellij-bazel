@@ -1,9 +1,5 @@
 load("@rules_java//java:java_library.bzl", "java_library")
 load(
-    "//:build-visibility.bzl",
-    "PLUGIN_PACKAGES_VISIBILITY",
-)
-load(
     "//build_defs:build_defs.bzl",
     "intellij_plugin",
     "intellij_plugin_library",
@@ -19,7 +15,7 @@ licenses(["notice"])  # Apache 2.0
 java_library(
     name = "gazelle",
     srcs = glob(["src/**/*.java"]),
-    visibility = PLUGIN_PACKAGES_VISIBILITY,
+    visibility = ["//visibility:public"],
     deps = [
         "//base",
         "//common/settings",
@@ -31,7 +27,7 @@ intellij_plugin_library(
     name = "plugin_library",
     optional_plugin_xmls = [],
     plugin_xmls = ["src/META-INF/blaze-gazelle.xml"],
-    visibility = PLUGIN_PACKAGES_VISIBILITY,
+    visibility = ["//visibility:public"],
     deps = [":gazelle"],
 )
 
@@ -55,7 +51,6 @@ intellij_integration_test_suite(
     name = "integration_tests",
     srcs = glob(["tests/integrationtests/**/*.java"]),
     jvm_flags = [
-        # These flags are necessary for jdk17, since it removes `--illegal-access`.
         "--add-opens=java.desktop/java.awt.event=ALL-UNNAMED",
         "--add-opens=java.desktop/sun.awt=ALL-UNNAMED",
         "--add-opens=java.base/java.io=ALL-UNNAMED",

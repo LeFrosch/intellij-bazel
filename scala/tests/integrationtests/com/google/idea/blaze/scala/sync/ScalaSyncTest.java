@@ -102,14 +102,14 @@ public class ScalaSyncTest extends BlazeSyncIntegrationTestCase {
     BlazeProjectData blazeProjectData =
         BlazeProjectDataManager.getInstance(getProject()).getBlazeProjectData();
     assertThat(blazeProjectData).isNotNull();
-    assertThat(blazeProjectData.getTargetMap()).isEqualTo(targetMap);
-    assertThat(blazeProjectData.getWorkspaceLanguageSettings())
+    assertThat(blazeProjectData.targetMap()).isEqualTo(targetMap);
+    assertThat(blazeProjectData.workspaceLanguageSettings())
         .isEqualTo(
             new WorkspaceLanguageSettings(
                 WorkspaceType.JAVA,
                 ImmutableSet.of(LanguageClass.GENERIC, LanguageClass.JAVA, LanguageClass.SCALA)));
 
-    BlazeJavaSyncData javaSyncData = blazeProjectData.getSyncState().get(BlazeJavaSyncData.class);
+    BlazeJavaSyncData javaSyncData = blazeProjectData.syncState().get(BlazeJavaSyncData.class);
     assertThat(javaSyncData).isNotNull();
     List<BlazeContentEntry> contentEntries = javaSyncData.getImportResult().contentEntries;
     assertThat(contentEntries).hasSize(1);
@@ -173,8 +173,8 @@ public class ScalaSyncTest extends BlazeSyncIntegrationTestCase {
     BlazeProjectData blazeProjectData =
         BlazeProjectDataManager.getInstance(getProject()).getBlazeProjectData();
     assertThat(blazeProjectData).isNotNull();
-    assertThat(blazeProjectData.getTargetMap()).isEqualTo(targetMap);
-    assertThat(blazeProjectData.getWorkspaceLanguageSettings())
+    assertThat(blazeProjectData.targetMap()).isEqualTo(targetMap);
+    assertThat(blazeProjectData.workspaceLanguageSettings())
         .isEqualTo(
             new WorkspaceLanguageSettings(
                 WorkspaceType.JAVA,

@@ -100,8 +100,8 @@ public class BlazeGoPackage extends GoPackage {
     this(
         project,
         importPath,
-        replaceProtoLibrary(project, projectData, target.getKey()).getLabel(),
-        getTargetToFileMap(project, projectData).get(target.getKey().getLabel()));
+        replaceProtoLibrary(project, projectData, target.getKey()).label(),
+        getTargetToFileMap(project, projectData).get(target.getKey().label()));
   }
 
   BlazeGoPackage(Project project, String importPath, Label label, Collection<File> files) {
@@ -123,7 +123,7 @@ public class BlazeGoPackage extends GoPackage {
    */
   private static TargetKey replaceProtoLibrary(
       Project project, BlazeProjectData projectData, TargetKey targetKey) {
-    TargetMap targetMap = projectData.getTargetMap();
+    TargetMap targetMap = projectData.targetMap();
     TargetIdeInfo target = targetMap.get(targetKey);
     if (target == null || target.getKind() != GenericBlazeRules.RuleTypes.PROTO_LIBRARY.getKind()) {
       return targetKey;
@@ -153,7 +153,7 @@ public class BlazeGoPackage extends GoPackage {
       Project project, BlazeProjectData projectData) {
     ImmutableMultimap<Label, GoIdeInfo> libraryToTestMap = buildLibraryToTestMap(projectData);
     ImmutableMultimap.Builder<Label, File> builder = ImmutableMultimap.builder();
-    for (TargetIdeInfo target : projectData.getTargetMap().targets()) {
+    for (TargetIdeInfo target : projectData.targetMap().targets()) {
       if (target.getGoIdeInfo() == null) {
         continue;
       }
@@ -162,7 +162,7 @@ public class BlazeGoPackage extends GoPackage {
               .map(BlazeGoPackage::toRealFile)
               .filter(Objects::nonNull)
               .collect(toImmutableSet());
-      builder.putAll(target.getKey().getLabel(), sourceFiles);
+      builder.putAll(target.getKey().label(), sourceFiles);
     }
     return builder.build();
   }
@@ -200,7 +200,7 @@ public class BlazeGoPackage extends GoPackage {
     }
     return Stream.concat(
             Stream.of(target.getGoIdeInfo()),
-            libraryToTestMap.get(target.getKey().getLabel()).stream())
+            libraryToTestMap.get(target.getKey().label()).stream())
         .map(GoIdeInfo::getSources)
         .flatMap(Collection::stream)
         .map(a -> resolveArtifact(project, projectData, a))
@@ -210,7 +210,7 @@ public class BlazeGoPackage extends GoPackage {
 
   private static ImmutableMultimap<Label, GoIdeInfo> buildLibraryToTestMap(
       BlazeProjectData projectData) {
-    TargetMap targetMap = projectData.getTargetMap();
+    TargetMap targetMap = projectData.targetMap();
     ImmutableMultimap.Builder<Label, GoIdeInfo> builder = ImmutableMultimap.builder();
     for (TargetIdeInfo target : targetMap.targets()) {
       if (!target.getKind().hasLanguage(LanguageClass.GO)
@@ -229,7 +229,7 @@ public class BlazeGoPackage extends GoPackage {
   @Nullable
   private static File resolveArtifact(
       Project project, BlazeProjectData data, ArtifactLocation artifact) {
-    return OutputArtifactResolver.resolve(project, data.getArtifactLocationDecoder(), artifact);
+    return OutputArtifactResolver.resolve(project, data.artifactLocationDecoder(), artifact);
   }
 
   private static ImmutableSet<File> getWrapCcGoFiles(
@@ -242,9 +242,9 @@ public class BlazeGoPackage extends GoPackage {
     }
     // older versions of blaze don't expose the .go genfile
     // in that case, look directly in blaze-out
-    String blazePackage = target.getKey().getLabel().blazePackage().relativePath();
-    File directory = new File(projectData.getBlazeInfo().getGenfilesDirectory(), blazePackage);
-    String filename = blazePackage + '/' + target.getKey().getLabel().targetName() + ".go";
+    String blazePackage = target.getKey().label().blazePackage().relativePath();
+    File directory = new File(projectData.blazeInfo().getGenfilesDirectory(), blazePackage);
+    String filename = blazePackage + '/' + target.getKey().label().targetName() + ".go";
     filename = filename.replace("_", "__");
     filename = filename.replace('/', '_');
     return ImmutableSet.of(new File(directory, filename));

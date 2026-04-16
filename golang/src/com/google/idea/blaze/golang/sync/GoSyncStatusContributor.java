@@ -42,7 +42,7 @@ class GoSyncStatusContributor implements LegacySyncStatusContributor {
 
   @Override
   public boolean handlesFile(BlazeProjectData projectData, VirtualFile file) {
-    return projectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.GO)
+    return projectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.GO)
         && file.getName().endsWith(".go");
   }
 }

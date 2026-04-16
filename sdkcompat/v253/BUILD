@@ -43,6 +43,16 @@ kt_jvm_library(
 )
 
 kt_jvm_library(
+    name = "v253_scala",
+    srcs = glob(["com/google/idea/sdkcompat/scala/**"]),
+    visibility = ["//sdkcompat:__pkg__"],
+    deps = [
+        "//intellij_platform_sdk:plugin_api",
+        "//third_party/scala",
+    ],
+)
+
+kt_jvm_library(
     name = "v253_testFramework",
     testonly = 1,
     srcs = glob(["com/google/idea/sdkcompat/testFramework/**"]),  #api252

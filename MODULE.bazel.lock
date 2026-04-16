@@ -308,7 +308,7 @@
     "//intellij_platform_sdk:extension.bzl%intellij_platform": {
       "general": {
         "bzlTransitiveDigest": "y+Kp9vPuSOYOltOnAVPGSyQAOJk0D2+6jsaohd9jzho=",
-        "usagesDigest": "09LRnKrJ+VhV/+aZ6VHCBTA/E0aOO8zeKiePD3FDeCs=",
+        "usagesDigest": "ZxstNdkhyD3SPEdXnHEs6ojoZJ01Gj3nd1RhMF9RUZA=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_tools bazel_tools"
         ],
@@ -379,6 +379,22 @@
               "build_file": "@@//intellij_platform_sdk:BUILD.clion",
               "sha256": "8371876b15d2685708fdcbb40e318dd0ca807c4e89933b6cbafd1032a19e6ddd",
               "url": "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/com.intellij.clion/261.23567.28/com.intellij.clion-261.23567.28.zip"
+            }
+          },
+          "go_2026_1": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "build_file": "@@//intellij_platform_sdk:BUILD.go",
+              "sha256": "fd1aebe3193f7dadd7f6ec416de2827a868f6373e194d6cecd6c3aa6d8f33224",
+              "url": "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/org.jetbrains.plugins.go/261.23567.28/org.jetbrains.plugins.go-261.23567.28.zip"
+            }
+          },
+          "scala_2026_1": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "build_file": "@@//intellij_platform_sdk:BUILD.scala",
+              "sha256": "1848cf5be1a07c778543599ead5562a83095553d4be46856db5d1b84699278b2",
+              "url": "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/org.intellij.scala/2026.1.16/org.intellij.scala-2026.1.16.zip"
             }
           }
         }

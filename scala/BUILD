@@ -1,9 +1,5 @@
 load("@rules_java//java:defs.bzl", "java_library")
 load(
-    "//:build-visibility.bzl",
-    "PLUGIN_PACKAGES_VISIBILITY",
-)
-load(
     "//build_defs:build_defs.bzl",
     "intellij_plugin",
     "intellij_plugin_library",
@@ -28,6 +24,7 @@ java_library(
         "//java",
         "//proto:proto_deps",
         "//sdkcompat",
+        "//sdkcompat:scala",
         "//shared",
         "//third_party/scala",
     ],
@@ -43,7 +40,7 @@ intellij_plugin_library(
     name = "plugin_library",
     optional_plugin_xmls = [":optional_xml"],
     plugin_xmls = ["src/META-INF/blaze-scala.xml"],
-    visibility = PLUGIN_PACKAGES_VISIBILITY,
+    visibility = ["//visibility:public"],
     deps = [":scala"],
 )
 
@@ -58,7 +55,7 @@ intellij_plugin(
     testonly = 1,
     plugin_xml = ":scala_plugin_xml",
     tags = [
-        "incomplete-deps",  # remove this suppression and add any missing deps, see go/java-import-deps-checking-lsc
+        "incomplete-deps",
     ],
     deps = [
         ":plugin_library",

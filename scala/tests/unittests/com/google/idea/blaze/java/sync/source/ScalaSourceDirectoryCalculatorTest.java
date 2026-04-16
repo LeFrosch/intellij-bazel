@@ -63,7 +63,7 @@ public class ScalaSourceDirectoryCalculatorTest extends BlazeTestCase {
       new MockArtifactLocationDecoder() {
         @Override
         public File decode(ArtifactLocation artifactLocation) {
-          return new File("/root", artifactLocation.getRelativePath());
+          return new File("/root", artifactLocation.relativePath());
         }
       };
 

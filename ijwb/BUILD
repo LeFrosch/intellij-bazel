@@ -39,9 +39,12 @@ intellij_plugin(
     deps = [
         ":plugin_library",
         "//base:plugin_library",
+        "//gazelle:plugin_library",
+        "//golang:plugin_library",
         "//java:plugin_library",
         "//kotlin:plugin_library",
         "//python:plugin_library",
+        "//scala:plugin_library",
         "//skylark:plugin_library",
         "//terminal:plugin_library",
     ],

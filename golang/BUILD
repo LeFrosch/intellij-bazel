@@ -1,10 +1,5 @@
 load("@rules_java//java:defs.bzl", "java_library")
 load(
-    "//:build-visibility.bzl",
-    "GOLANG_PACKAGES_VISIBILITY",
-    "PLUGIN_PACKAGES_VISIBILITY",
-)
-load(
     "//build_defs:build_defs.bzl",
     "intellij_plugin",
     "intellij_plugin_library",
@@ -22,7 +17,7 @@ licenses(["notice"])
 java_library(
     name = "golang",
     srcs = glob(["src/**/*.java"]),
-    visibility = GOLANG_PACKAGES_VISIBILITY,
+    visibility = ["//visibility:public"],
     deps = [
         "//base",
         "//base/src/com/google/idea/blaze/base/command/buildresult/bepparser",
@@ -47,7 +42,7 @@ intellij_plugin_library(
     name = "plugin_library",
     optional_plugin_xmls = [":optional_xml"],
     plugin_xmls = ["src/META-INF/blaze-go.xml"],
-    visibility = PLUGIN_PACKAGES_VISIBILITY,
+    visibility = ["//visibility:public"],
     deps = [":golang"],
 )
 
@@ -62,7 +57,7 @@ intellij_plugin(
     testonly = 1,
     plugin_xml = ":golang_plugin_xml",
     tags = [
-        "incomplete-deps",  # remove this suppression and add any missing deps, see go/java-import-deps-checking-lsc
+        "incomplete-deps",
     ],
     deps = [
         ":plugin_library",
@@ -94,10 +89,6 @@ intellij_integration_test_suite(
     name = "integration_tests",
     srcs = glob(["tests/integrationtests/**/*.java"]),
     env = {
-        # Disable runtime checks because GoGenericsLibraryRootsProvider causes them to trigger
-        # genericsStub folder containing builtin.go should be added to source roots, but it's not.
-        # #api212: This affects only 2021.3 version of the platform. Should be fixed in 2022.1 and potentially
-        # in a Go plugin release after 213.6461.48 version.
         "NO_FS_ROOTS_ACCESS_CHECK": "true",
     },
     jvm_flags = [

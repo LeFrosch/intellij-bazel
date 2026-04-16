@@ -87,7 +87,7 @@ class BlazeGoImportResolver implements GoImportResolver {
     if (!goPackageMap.containsKey(importPath) && targetKey == null) {
       return null;
     }
-    TargetIdeInfo target = projectData.getTargetMap().get(targetKey);
+    TargetIdeInfo target = projectData.targetMap().get(targetKey);
     if (target == null) {
       return null;
     }
@@ -115,7 +115,7 @@ class BlazeGoImportResolver implements GoImportResolver {
         .get(
             GO_TARGET_MAP_KEY,
             (p, projectData) -> {
-              TargetMap targetMap = projectData.getTargetMap();
+              TargetMap targetMap = projectData.targetMap();
               return targetMap.targets().stream()
                   .filter(t -> t.getGoIdeInfo() != null && t.getGoIdeInfo().getImportPath() != null)
                   .collect(

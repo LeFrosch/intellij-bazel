@@ -195,12 +195,9 @@ class GenerateDeployableJarTaskProvider
       List<File> outputs;
       try (final var bepStream = buildResultHelper.getBepStream(Optional.empty())) {
         outputs = LocalFileArtifact.getLocalFiles(
-            com.google.idea.blaze.common.Label.of(target.toString()),
             BlazeBuildOutputs.fromParsedBepOutput(
               BuildResultParser.getBuildOutput(bepStream, Interners.STRING))
-                  .getOutputGroupTargetArtifacts(DEFAULT_OUTPUT_GROUP_NAME, String.format("%s_deploy.jar", target)),
-            BlazeContext.create(),
-            env.getProject());
+                  .getOutputGroupTargetArtifacts(DEFAULT_OUTPUT_GROUP_NAME, String.format("%s_deploy.jar", target)));
       }
 
       if (outputs.isEmpty()) {
@@ -257,7 +254,7 @@ class GenerateDeployableJarTaskProvider
 
                 context.output(new StatusOutput(title));
                 BlazeCommand command =
-                    BlazeCommand.builder(binaryPath, BlazeCommandName.BUILD, project)
+                    BlazeCommand.builder(binaryPath, BlazeCommandName.BUILD)
                         .addTargets(target.withTargetName(target.targetName() + "_deploy.jar"))
                         .addBlazeFlags(
                             BlazeFlags.blazeFlags(

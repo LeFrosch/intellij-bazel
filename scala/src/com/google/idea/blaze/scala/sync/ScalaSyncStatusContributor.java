@@ -43,7 +43,7 @@ class ScalaSyncStatusContributor implements LegacySyncStatusContributor {
 
   @Override
   public boolean handlesFile(BlazeProjectData projectData, VirtualFile file) {
-    return projectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.SCALA)
+    return projectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.SCALA)
         && (file.getName().endsWith(".scala") || file.getName().endsWith(".sc"));
   }
 }
