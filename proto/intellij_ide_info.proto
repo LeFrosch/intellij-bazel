@@ -124,6 +124,18 @@ message CToolchainIdeInfo {
   string sysroot = 8;
 }
 
+message JavaToolchainIdeInfo {
+  string source_version = 1;
+  string target_version = 2;
+  repeated ArtifactLocation javac_jars = 4;
+}
+
+message KotlinToolchainIdeInfo {
+  string language_version = 1;
+  repeated string sdk_library_targets = 2;
+  repeated string kotlin_compiler_common_flags = 3;
+}
+
 message TestInfo {
   string size = 1;
 }
@@ -160,6 +172,7 @@ message TargetIdeInfo {
   int64 sync_time_millis = 20;
 
   JavaIdeInfo java_ide_info = 100;
+  JavaToolchainIdeInfo java_toolchain_ide_info = 101;
 
   CIdeInfo c_ide_info = 120;
   CToolchainIdeInfo c_toolchain_ide_info = 121;
@@ -168,4 +181,5 @@ message TargetIdeInfo {
   JsIdeInfo js_ide_info = 150;
   TsIdeInfo ts_ide_info = 160;
   DartIdeInfo dart_ide_info = 170;
+  KotlinToolchainIdeInfo kt_toolchain_ide_info = 180;
 }

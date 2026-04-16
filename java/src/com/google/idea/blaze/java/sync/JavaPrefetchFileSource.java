@@ -43,7 +43,7 @@ public class JavaPrefetchFileSource implements PrefetchFileSource {
       ImportRoots importRoots,
       BlazeProjectData blazeProjectData,
       Set<File> files) {
-    BlazeJavaSyncData syncData = blazeProjectData.getSyncState().get(BlazeJavaSyncData.class);
+    BlazeJavaSyncData syncData = blazeProjectData.syncState().get(BlazeJavaSyncData.class);
     if (syncData == null) {
       return;
     }
@@ -53,7 +53,7 @@ public class JavaPrefetchFileSource implements PrefetchFileSource {
     }
     Collection<BlazeLibrary> libraries =
         BlazeLibraryCollector.getLibraries(projectViewSet, blazeProjectData);
-    ArtifactLocationDecoder decoder = blazeProjectData.getArtifactLocationDecoder();
+    ArtifactLocationDecoder decoder = blazeProjectData.artifactLocationDecoder();
     for (BlazeLibrary library : libraries) {
       if (!(library instanceof BlazeJarLibrary)) {
         continue;

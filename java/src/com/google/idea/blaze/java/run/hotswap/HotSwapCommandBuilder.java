@@ -17,11 +17,11 @@ package com.google.idea.blaze.java.run.hotswap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.idea.blaze.base.command.BlazeCommand;
-import com.google.idea.blaze.base.run.BlazeBeforeRunCommandHelper;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.execution.ParametersListUtil;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /** Builds a hotswap-compatible execution command from a blaze command. */
@@ -42,7 +42,7 @@ public interface HotSwapCommandBuilder {
     }
 
     // Default implementation.
-    Path scriptPath = BlazeBeforeRunCommandHelper.createScriptPathFile();
+    Path scriptPath = Files.createTempFile("blaze-script-", ".sh");
     command.addBlazeFlags("--script_path=" + scriptPath);
     String blaze = ParametersListUtil.join(command.build().toList());
     return ImmutableList.of("/bin/bash", "-c", blaze + " && " + scriptPath);

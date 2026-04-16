@@ -64,15 +64,15 @@ public class DuplicateSourceDetector {
       return;
     }
 
-    duplicates.sort(Comparator.comparing(lhs -> lhs.artifactLocation.getRelativePath()));
+    duplicates.sort(Comparator.comparing(lhs -> lhs.artifactLocation.relativePath()));
 
     context.output(new PerformanceWarning("Duplicate sources detected:"));
     for (Duplicate duplicate : duplicates) {
       ArtifactLocation artifactLocation = duplicate.artifactLocation;
-      context.output(new PerformanceWarning("  Source: " + artifactLocation.getRelativePath()));
+      context.output(new PerformanceWarning("  Source: " + artifactLocation.relativePath()));
       context.output(new PerformanceWarning("  Consumed by rules:"));
       for (TargetKey targetKey : duplicate.targets) {
-        context.output(new PerformanceWarning("    " + targetKey.getLabel()));
+        context.output(new PerformanceWarning("    " + targetKey.label()));
       }
       context.output(new PerformanceWarning("")); // Newline
     }

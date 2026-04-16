@@ -99,7 +99,7 @@ class KotlinBinaryContextProvider implements BinaryContextProvider {
         kotlinBinaryTargets.stream()
             .filter(
                 target ->
-                    startClassFqName.equals(target.getKey().getLabel().targetName().toString()))
+                    startClassFqName.equals(target.getKey().label().targetName().toString()))
             .findFirst()
             .orElse(null);
     if (match != null) {
@@ -121,8 +121,8 @@ class KotlinBinaryContextProvider implements BinaryContextProvider {
   private static FilteredTargetMap computeTargetMap(Project project, BlazeProjectData projectData) {
     return new FilteredTargetMap(
         project,
-        projectData.getArtifactLocationDecoder(),
-        projectData.getTargetMap(),
+        projectData.artifactLocationDecoder(),
+        projectData.targetMap(),
         KotlinBinaryContextProvider::possiblyRelevantTarget);
   }
 

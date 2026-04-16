@@ -27,8 +27,8 @@ import com.google.idea.blaze.java.sync.model.BlazeJavaSyncData;
 public final class LintJarHelper {
   public static ImmutableList<BlazeArtifact> collectLintJarsArtifacts(
       BlazeProjectData blazeProjectData) {
-    BlazeJavaSyncData syncData = blazeProjectData.getSyncState().get(BlazeJavaSyncData.class);
-    ArtifactLocationDecoder artifactLocationDecoder = blazeProjectData.getArtifactLocationDecoder();
+    BlazeJavaSyncData syncData = blazeProjectData.syncState().get(BlazeJavaSyncData.class);
+    ArtifactLocationDecoder artifactLocationDecoder = blazeProjectData.artifactLocationDecoder();
 
     if (syncData == null) {
       return ImmutableList.of();

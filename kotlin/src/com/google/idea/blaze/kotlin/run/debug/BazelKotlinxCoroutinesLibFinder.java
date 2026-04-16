@@ -22,7 +22,7 @@ import com.google.idea.blaze.base.ideinfo.JavaIdeInfo;
 import com.google.idea.blaze.base.ideinfo.TargetIdeInfo;
 import com.google.idea.blaze.base.settings.Blaze;
 import com.google.idea.blaze.base.settings.BuildSystemName;
-import com.google.idea.blaze.common.Label;
+import com.google.idea.blaze.base.model.primitives.Label;
 import com.intellij.openapi.project.Project;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -67,7 +67,7 @@ public class BazelKotlinxCoroutinesLibFinder implements KotlinxCoroutinesLibFind
 
   private static boolean isKotlinxCoroutinesLib(@Nullable ArtifactLocation jarPath) {
     if (jarPath != null) {
-      Matcher m = LIB_PATTERN.matcher(jarPath.getRelativePath());
+      Matcher m = LIB_PATTERN.matcher(jarPath.relativePath());
       if (m.find() && m.groupCount() >= 3) {
         String version = m.group(3);
         return isValidVersion(version);

@@ -50,7 +50,7 @@ class JavaOutputsProvider implements OutputsProvider {
     }
     JavaIdeInfo javaInfo = target.getJavaIdeInfo();
     ImmutableList.Builder<ArtifactLocation> list = ImmutableList.builder();
-    javaInfo.getSources().forEach(s -> addArtifact(list, s));
+    target.getSources().forEach(s -> addArtifact(list, s));
     javaInfo.getJars().forEach(l -> addLibrary(list, l));
     javaInfo.getGeneratedJars().forEach(l -> addLibrary(list, l));
     javaInfo.getPluginProcessorJars().forEach(l -> addLibrary(list, l));

@@ -122,7 +122,7 @@ public class JavaBinaryContextProvider implements BinaryContextProvider {
 
     match =
         javaBinaryTargets.stream()
-            .filter(target -> className.equals(target.getKey().getLabel().targetName().toString()))
+            .filter(target -> className.equals(target.getKey().label().targetName().toString()))
             .findFirst()
             .orElse(null);
     if (match != null) {
@@ -143,8 +143,8 @@ public class JavaBinaryContextProvider implements BinaryContextProvider {
   private static FilteredTargetMap computeTargetMap(Project project, BlazeProjectData projectData) {
     return new FilteredTargetMap(
         project,
-        projectData.getArtifactLocationDecoder(),
-        projectData.getTargetMap(),
+        projectData.artifactLocationDecoder(),
+        projectData.targetMap(),
         target ->
             target.isPlainTarget()
                 && target.getKind().hasLanguage(LanguageClass.JAVA)

@@ -285,7 +285,7 @@ public class JarCache {
             .map(library -> ((BlazeJarLibrary) library).libraryArtifact)
             .collect(Collectors.toList());
 
-    ArtifactLocationDecoder decoder = projectData.getArtifactLocationDecoder();
+    ArtifactLocationDecoder decoder = projectData.artifactLocationDecoder();
     Map<String, BlazeArtifact> newOutputs = new HashMap<>();
     for (LibraryArtifact lib : jarLibraries) {
       BlazeArtifact jar = decoder.resolveOutput(lib.jarForIntellijLibrary());
@@ -614,7 +614,7 @@ public class JarCache {
       ProjectViewSet viewSet = ProjectViewManager.getInstance(project).getProjectViewSet();
       BlazeProjectData projectData =
           BlazeProjectDataManager.getInstance(project).getBlazeProjectData();
-      if (viewSet == null || projectData == null || !projectData.getRemoteOutputs().isEmpty()) {
+      if (viewSet == null || projectData == null || !projectData.remoteOutputs().isEmpty()) {
         // if we have remote artifacts, only refresh during sync
         return;
       }
@@ -623,7 +623,7 @@ public class JarCache {
               context,
               viewSet,
               projectData,
-              projectData.getRemoteOutputs(),
+              projectData.remoteOutputs(),
               /* removeMissingFiles= */ false);
     }
 

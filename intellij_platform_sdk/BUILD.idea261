@@ -120,8 +120,8 @@ java_import(
 java_import(
     name = "textmate",
     jars = glob([
-        "plugins/textmate/lib/*.jar",
-        "plugins/textmate/lib/modules/*.jar",
+        "plugins/textmate-plugin/lib/*.jar",
+        "plugins/textmate-plugin/lib/modules/*.jar",
     ]),
 )
 

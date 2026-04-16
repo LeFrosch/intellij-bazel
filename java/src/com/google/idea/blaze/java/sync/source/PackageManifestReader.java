@@ -207,9 +207,9 @@ public class PackageManifestReader {
 
   private static ArtifactLocation fromProto(Common.ArtifactLocation location) {
     String relativePath = location.getRelativePath();
-    String rootExecutionPathFragment = location.getRootExecutionPathFragment();
+    String rootExecutionPathFragment = location.getRootPath();
     return ArtifactLocation.builder()
-        .setRootExecutionPathFragment(rootExecutionPathFragment)
+        .setRootPath(rootExecutionPathFragment)
         .setRelativePath(relativePath)
         .setIsSource(location.getIsSource())
         .setIsExternal(location.getIsExternal())

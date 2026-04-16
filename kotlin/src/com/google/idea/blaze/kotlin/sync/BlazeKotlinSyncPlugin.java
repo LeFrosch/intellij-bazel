@@ -113,7 +113,7 @@ public class BlazeKotlinSyncPlugin implements BlazeSyncPlugin {
       ProjectViewSet projectViewSet,
       BlazeVersionData blazeVersionData,
       BlazeProjectData blazeProjectData) {
-    if (!blazeProjectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.KOTLIN)) {
+    if (!blazeProjectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.KOTLIN)) {
       return;
     }
     updateProjectSettings(project, blazeProjectData);
@@ -125,7 +125,7 @@ public class BlazeKotlinSyncPlugin implements BlazeSyncPlugin {
    * should catch incorrect usage.
    */
   private static void updateProjectSettings(Project project, BlazeProjectData blazeProjectData) {
-    KotlinToolchainIdeInfo kotlinToolchainIdeInfo = findToolchain(blazeProjectData.getTargetMap());
+    KotlinToolchainIdeInfo kotlinToolchainIdeInfo = findToolchain(blazeProjectData.targetMap());
     if (kotlinToolchainIdeInfo == null) {
       return;
     }
@@ -173,7 +173,7 @@ public class BlazeKotlinSyncPlugin implements BlazeSyncPlugin {
   @Override
   public LibrarySource getLibrarySource(
       ProjectViewSet projectViewSet, final BlazeProjectData blazeProjectData) {
-    if (!blazeProjectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.KOTLIN)) {
+    if (!blazeProjectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.KOTLIN)) {
       return null;
     }
     return new KotlinLibrarySource(blazeProjectData);
@@ -228,7 +228,7 @@ public class BlazeKotlinSyncPlugin implements BlazeSyncPlugin {
       ModuleEditor moduleEditor,
       Module workspaceModule,
       ModifiableRootModel workspaceModifiableModel) {
-    if (!blazeProjectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.KOTLIN)) {
+    if (!blazeProjectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.KOTLIN)) {
       return;
     }
 
@@ -238,7 +238,7 @@ public class BlazeKotlinSyncPlugin implements BlazeSyncPlugin {
         Arrays.stream(KotlinPluginOptionsProvider.EP_NAME.getExtensions())
             .map(
                 provider ->
-                    provider.collectKotlinPluginOptions(blazeProjectData.getTargetMap().targets()))
+                    provider.collectKotlinPluginOptions(blazeProjectData.targetMap().targets()))
             .flatMap(Collection::stream)
             .collect(Collectors.toList()));
     setJavaLanguageLevel(
@@ -316,7 +316,7 @@ public class BlazeKotlinSyncPlugin implements BlazeSyncPlugin {
           BlazeProjectDataManager.getInstance(project).getBlazeProjectData();
       if (blazeProjectData == null
           || !blazeProjectData
-              .getWorkspaceLanguageSettings()
+              .workspaceLanguageSettings()
               .isLanguageActive(LanguageClass.KOTLIN)) {
         return;
       }

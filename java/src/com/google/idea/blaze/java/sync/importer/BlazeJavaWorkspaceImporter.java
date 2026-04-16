@@ -31,6 +31,7 @@ import com.google.idea.blaze.base.bazel.BuildSystemProvider;
 import com.google.idea.blaze.base.ideinfo.ArtifactLocation;
 import com.google.idea.blaze.base.ideinfo.Dependency;
 import com.google.idea.blaze.base.ideinfo.JavaIdeInfo;
+import com.google.idea.blaze.base.ideinfo.JavaToolchainIdeInfo;
 import com.google.idea.blaze.base.ideinfo.LibraryArtifact;
 import com.google.idea.blaze.base.ideinfo.TargetIdeInfo;
 import com.google.idea.blaze.base.ideinfo.TargetKey;
@@ -63,6 +64,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -195,10 +197,10 @@ public final class BlazeJavaWorkspaceImporter {
     for (String jdepsPath : workspaceBuilder.jdeps) {
       ArtifactLocation artifact =
           ExecutionPathHelper.parse(workspaceRoot, buildSystemProvider, jdepsPath);
-      if (sourceFilter.jdepsPathsForExcludedJars.contains(artifact.getRelativePath())) {
+      if (sourceFilter.jdepsPathsForExcludedJars.contains(artifact.relativePath())) {
         continue;
       }
-      BlazeJarLibrary library = jdepsPathToLibrary.get(artifact.getRelativePath());
+      BlazeJarLibrary library = jdepsPathToLibrary.get(artifact.relativePath());
       if (library == null) {
         // It's in the target's jdeps, but our aspect never attached to the target building it.
         // Perhaps it's an implicit dependency, or not referenced in an attribute we propagate
@@ -235,11 +237,11 @@ public final class BlazeJavaWorkspaceImporter {
     LibraryArtifact libraryArtifact = library.libraryArtifact;
     ArtifactLocation interfaceJar = libraryArtifact.getInterfaceJar();
     if (interfaceJar != null) {
-      jdepsPathToLibrary.put(interfaceJar.getRelativePath(), library);
+      jdepsPathToLibrary.put(interfaceJar.relativePath(), library);
     }
     ArtifactLocation classJar = libraryArtifact.getClassJar();
     if (classJar != null) {
-      jdepsPathToLibrary.put(classJar.getRelativePath(), library);
+      jdepsPathToLibrary.put(classJar.relativePath(), library);
     }
   }
 
@@ -359,7 +361,7 @@ public final class BlazeJavaWorkspaceImporter {
    */
   @Nullable
   private static ArtifactLocation guessSrcJarLocation(ArtifactLocation outputJar) {
-    String srcJarRelPath = guessSrcJarRelativePath(outputJar.getRelativePath());
+    String srcJarRelPath = guessSrcJarRelativePath(outputJar.relativePath());
     if (srcJarRelPath == null) {
       return null;
     }

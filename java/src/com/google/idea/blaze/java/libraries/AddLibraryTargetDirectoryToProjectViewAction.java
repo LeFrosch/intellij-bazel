@@ -33,7 +33,6 @@ import com.google.idea.blaze.base.projectview.ProjectViewSet;
 import com.google.idea.blaze.base.projectview.section.ListSection;
 import com.google.idea.blaze.base.projectview.section.sections.DirectoryEntry;
 import com.google.idea.blaze.base.projectview.section.sections.DirectorySection;
-import com.google.idea.blaze.base.settings.BlazeUserSettings;
 import com.google.idea.blaze.base.sync.BlazeSyncManager;
 import com.google.idea.blaze.base.sync.BlazeSyncParams;
 import com.google.idea.blaze.base.sync.SyncMode;
@@ -97,7 +96,7 @@ class AddLibraryTargetDirectoryToProjectViewAction extends BlazeProjectAction {
     if (originatingTarget == null) {
       return null;
     }
-    TargetIdeInfo target = blazeProjectData.getTargetMap().get(originatingTarget);
+    TargetIdeInfo target = blazeProjectData.targetMap().get(originatingTarget);
     if (target == null) {
       return null;
     }
@@ -109,7 +108,7 @@ class AddLibraryTargetDirectoryToProjectViewAction extends BlazeProjectAction {
     if (target.getBuildFile() == null) {
       return null;
     }
-    File buildFile = new File(target.getBuildFile().getRelativePath());
+    File buildFile = new File(target.getBuildFile().relativePath());
     WorkspacePath workspacePath = new WorkspacePath(Strings.nullToEmpty(buildFile.getParent()));
     ProjectViewSet projectViewSet = ProjectViewManager.getInstance(project).getProjectViewSet();
     if (projectViewSet == null) {
@@ -133,7 +132,7 @@ class AddLibraryTargetDirectoryToProjectViewAction extends BlazeProjectAction {
   @Nullable
   private static TargetKey findOriginatingTargetForLibrary(
       BlazeProjectData blazeProjectData, BlazeJarLibrary library) {
-    for (TargetIdeInfo target : blazeProjectData.getTargetMap().targets()) {
+    for (TargetIdeInfo target : blazeProjectData.targetMap().targets()) {
       JavaIdeInfo javaIdeInfo = target.getJavaIdeInfo();
       if (javaIdeInfo == null) {
         continue;
@@ -180,7 +179,6 @@ class AddLibraryTargetDirectoryToProjectViewAction extends BlazeProjectAction {
                 .setSyncMode(SyncMode.INCREMENTAL)
                 .setSyncOrigin("AddLibraryTargetDirectoryToProjectViewAction")
                 .setAddProjectViewTargets(true)
-                .setAddWorkingSet(BlazeUserSettings.getInstance().getExpandSyncToWorkingSet())
                 .build());
   }
 }

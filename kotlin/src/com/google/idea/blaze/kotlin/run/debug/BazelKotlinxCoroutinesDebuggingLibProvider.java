@@ -45,11 +45,11 @@ public class BazelKotlinxCoroutinesDebuggingLibProvider
     File libFile =
         JarCache.getInstance(project)
             .getCachedSourceJar(
-                blazeProjectData.getArtifactLocationDecoder(), coroutinesLibArtifact);
+                blazeProjectData.artifactLocationDecoder(), coroutinesLibArtifact);
     if (libFile == null) {
       notify(
           "Cannot view coroutines debugging panel: %s jar file cannot be found.",
-          coroutinesLibArtifact.getRelativePath());
+          coroutinesLibArtifact.relativePath());
       return Optional.empty();
     }
 

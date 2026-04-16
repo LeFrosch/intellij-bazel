@@ -71,7 +71,7 @@ public final class LibraryActionHelper {
       return null;
     }
     LibraryKey libraryKey = LibraryKey.fromIntelliJLibraryName(libName);
-    BlazeJavaSyncData syncData = blazeProjectData.getSyncState().get(BlazeJavaSyncData.class);
+    BlazeJavaSyncData syncData = blazeProjectData.syncState().get(BlazeJavaSyncData.class);
     if (syncData == null) {
       Messages.showErrorDialog(project, "Project isn't synced. Please resync project.", "Error");
       return null;

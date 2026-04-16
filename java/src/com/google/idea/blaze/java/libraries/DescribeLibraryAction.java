@@ -66,7 +66,7 @@ class DescribeLibraryAction extends BlazeProjectAction {
             () ->
                 Messages.showInfoMessage(
                     project,
-                    library.libraryArtifact.jarForIntellijLibrary().getRelativePath(),
+                    library.libraryArtifact.jarForIntellijLibrary().relativePath(),
                     "Original path to library jar"));
   }
 

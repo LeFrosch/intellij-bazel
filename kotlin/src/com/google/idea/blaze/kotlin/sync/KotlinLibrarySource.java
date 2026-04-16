@@ -121,14 +121,14 @@ public final class KotlinLibrarySource extends LibrarySource.Adapter {
    */
   private static ImmutableList<BlazeJarLibrary> findKotlinSdkLibraries(
       BlazeProjectData blazeProjectData) {
-    KotlinToolchainIdeInfo toolchain = findToolchain(blazeProjectData.getTargetMap());
+    KotlinToolchainIdeInfo toolchain = findToolchain(blazeProjectData.targetMap());
     if (toolchain == null) {
       return ImmutableList.of();
     }
 
     ImmutableList.Builder<BlazeJarLibrary> libraries = ImmutableList.builder();
     for (Label label : toolchain.getSdkTargets()) {
-      TargetIdeInfo target = blazeProjectData.getTargetMap().get(TargetKey.forPlainTarget(label));
+      TargetIdeInfo target = blazeProjectData.targetMap().get(TargetKey.forPlainTarget(label));
       if (target == null || target.getJavaIdeInfo() == null) {
         continue;
       }

@@ -59,7 +59,7 @@ public final class KotlinProjectTraversingService {
             (label, coroutinesLibFinder) ->
                 coroutinesLibFinder.dependsOnKotlinxCoroutines(
                     configuration.getProject(),
-                    com.google.idea.blaze.common.Label.of(label.toString())))
+                    label))
         .orElse(false);
   }
 
@@ -84,7 +84,7 @@ public final class KotlinProjectTraversingService {
                 findKotlinxCoroutinesTransitiveDep(
                     coroutinesLibFinder,
                     TargetKey.forPlainTarget(label),
-                    blazeProjectData.getTargetMap()))
+                    blazeProjectData.targetMap()))
         .orElse(Optional.empty());
   }
 
@@ -123,7 +123,7 @@ public final class KotlinProjectTraversingService {
       Set<Label> seenDeps =
           deps.stream()
               .map(Dependency::getTargetKey)
-              .map(TargetKey::getLabel)
+              .map(TargetKey::label)
               .collect(toCollection(HashSet::new));
 
       while (!deps.isEmpty()) {
@@ -135,7 +135,7 @@ public final class KotlinProjectTraversingService {
             return libPath;
           }
           for (Dependency d : depInfo.getDependencies()) {
-            if (seenDeps.add(d.getTargetKey().getLabel())) {
+            if (seenDeps.add(d.getTargetKey().label())) {
               deps.add(d);
             }
           }

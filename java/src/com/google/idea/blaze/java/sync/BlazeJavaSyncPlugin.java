@@ -177,7 +177,7 @@ public class BlazeJavaSyncPlugin implements BlazeSyncPlugin {
       ProjectViewSet projectViewSet,
       BlazeVersionData blazeVersionData,
       BlazeProjectData blazeProjectData) {
-    if (!blazeProjectData.getWorkspaceLanguageSettings().isWorkspaceType(WorkspaceType.JAVA)) {
+    if (!blazeProjectData.workspaceLanguageSettings().isWorkspaceType(WorkspaceType.JAVA)) {
       return;
     }
     updateJdk(project, context, projectViewSet, blazeProjectData);
@@ -186,10 +186,10 @@ public class BlazeJavaSyncPlugin implements BlazeSyncPlugin {
   @Nullable
   @Override
   public SourceFolderProvider getSourceFolderProvider(BlazeProjectData projectData) {
-    if (!projectData.getWorkspaceLanguageSettings().isWorkspaceType(WorkspaceType.JAVA)) {
+    if (!projectData.workspaceLanguageSettings().isWorkspaceType(WorkspaceType.JAVA)) {
       return null;
     }
-    return new JavaSourceFolderProvider(projectData.getSyncState().get(BlazeJavaSyncData.class));
+    return new JavaSourceFolderProvider(projectData.syncState().get(BlazeJavaSyncData.class));
   }
 
   private static void updateJdk(
@@ -235,7 +235,7 @@ public class BlazeJavaSyncPlugin implements BlazeSyncPlugin {
   @Override
   public boolean validate(
       Project project, BlazeContext context, BlazeProjectData blazeProjectData) {
-    BlazeJavaSyncData syncData = blazeProjectData.getSyncState().get(BlazeJavaSyncData.class);
+    BlazeJavaSyncData syncData = blazeProjectData.syncState().get(BlazeJavaSyncData.class);
     if (syncData == null) {
       return true;
     }
@@ -255,7 +255,7 @@ public class BlazeJavaSyncPlugin implements BlazeSyncPlugin {
   @Override
   public LibrarySource getLibrarySource(
       ProjectViewSet projectViewSet, BlazeProjectData blazeProjectData) {
-    if (!blazeProjectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.JAVA)) {
+    if (!blazeProjectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.JAVA)) {
       return null;
     }
     return new BlazeJavaLibrarySource(blazeProjectData);
@@ -277,9 +277,9 @@ public class BlazeJavaSyncPlugin implements BlazeSyncPlugin {
       if (artifactLocation.isExternal()) {
         return;
       }
-      if (artifactLocation.getRelativePath().endsWith("deploy.jar")
-          || artifactLocation.getRelativePath().endsWith("deploy-ijar.jar")
-          || artifactLocation.getRelativePath().endsWith("deploy-hjar.jar")) {
+      if (artifactLocation.relativePath().endsWith("deploy.jar")
+          || artifactLocation.relativePath().endsWith("deploy-ijar.jar")
+          || artifactLocation.relativePath().endsWith("deploy-hjar.jar")) {
         String warningMessage =
             "Performance warning: You have added a deploy jar as a library. "
                 + "This can lead to poor indexing performance, and the debugger may "
@@ -287,7 +287,7 @@ public class BlazeJavaSyncPlugin implements BlazeSyncPlugin {
                 + "Consider redoing the rule to not use deploy jars, exclude the target "
                 + "from your .blazeproject, or exclude the library.\n"
                 + "Library path: "
-                + artifactLocation.getRelativePath();
+                + artifactLocation.relativePath();
         logger.warn(warningMessage);
         context.output(new PerformanceWarning(warningMessage));
       }

@@ -65,14 +65,14 @@ final class ExecutionPathHelper {
     int thirdSep = executionRootRelativePath.indexOf('/', secondSep + 1);
     if (secondSep < 0 || thirdSep < 0) {
       return ArtifactLocation.builder()
-          .setRootExecutionPathFragment(executionRootRelativePath)
+          .setRootPath(executionRootRelativePath)
           .setRelativePath("")
           .build();
     }
     return ArtifactLocation.builder()
         .setIsSource(false)
         .setIsExternal(false)
-        .setRootExecutionPathFragment(executionRootRelativePath.substring(0, thirdSep))
+        .setRootPath(executionRootRelativePath.substring(0, thirdSep))
         .setRelativePath(executionRootRelativePath.substring(thirdSep + 1))
         .build();
   }

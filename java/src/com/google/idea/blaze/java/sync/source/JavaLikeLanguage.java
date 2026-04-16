@@ -44,7 +44,7 @@ public interface JavaLikeLanguage {
     final Set<String> fileExtensions = getAllFileExtension();
     return artifactLocation ->
         fileExtensions.stream()
-            .anyMatch(extension -> artifactLocation.getRelativePath().endsWith(extension));
+            .anyMatch(extension -> artifactLocation.relativePath().endsWith(extension));
   }
 
   static Set<String> getAllFileExtension() {

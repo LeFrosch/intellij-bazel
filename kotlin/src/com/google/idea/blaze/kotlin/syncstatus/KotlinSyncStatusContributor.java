@@ -31,7 +31,7 @@ class KotlinSyncStatusContributor implements LegacySyncStatusContributor {
   @Nullable
   @Override
   public PsiFileAndName toPsiFileAndName(BlazeProjectData projectData, ProjectViewNode<?> node) {
-    if (!projectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.KOTLIN)) {
+    if (!projectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.KOTLIN)) {
       return null;
     }
     return toPsiFileAndName(node);
@@ -53,7 +53,7 @@ class KotlinSyncStatusContributor implements LegacySyncStatusContributor {
 
   @Override
   public boolean handlesFile(BlazeProjectData projectData, VirtualFile file) {
-    return projectData.getWorkspaceLanguageSettings().isLanguageActive(LanguageClass.KOTLIN)
+    return projectData.workspaceLanguageSettings().isLanguageActive(LanguageClass.KOTLIN)
         && file.getName().endsWith(".kt");
   }
 }

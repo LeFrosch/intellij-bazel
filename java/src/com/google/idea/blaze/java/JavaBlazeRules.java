@@ -82,7 +82,7 @@ public final class JavaBlazeRules implements Kind.Provider {
   public Function<TargetIdeInfo, Kind> getTargetKindHeuristics() {
     return proto ->
         proto.hasJavaIdeInfo() || proto.hasJavaToolchainIdeInfo()
-            ? Kind.Provider.create(proto.getKindString(), LanguageClass.JAVA, RuleType.UNKNOWN)
+            ? Kind.Provider.create(proto.getKind(), LanguageClass.JAVA, RuleType.UNKNOWN)
             : null;
   }
 }

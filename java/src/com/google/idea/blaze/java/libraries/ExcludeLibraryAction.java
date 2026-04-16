@@ -59,7 +59,7 @@ class ExcludeLibraryAction extends BlazeProjectAction {
     }
 
     final LibraryArtifact libraryArtifact = blazeLibrary.libraryArtifact;
-    final String path = libraryArtifact.jarForIntellijLibrary().getRelativePath();
+    final String path = libraryArtifact.jarForIntellijLibrary().relativePath();
 
     ProjectViewEdit edit =
         ProjectViewEdit.editLocalProjectView(

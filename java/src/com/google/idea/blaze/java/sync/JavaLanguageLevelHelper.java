@@ -44,7 +44,7 @@ public class JavaLanguageLevelHelper {
     if (projectData == null) {
       return null;
     }
-    BlazeJavaSyncData javaSyncData = projectData.getSyncState().get(BlazeJavaSyncData.class);
+    BlazeJavaSyncData javaSyncData = projectData.syncState().get(BlazeJavaSyncData.class);
     if (javaSyncData == null) {
       return null;
     }

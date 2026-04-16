@@ -15,12 +15,13 @@
  */
 package com.google.idea.blaze.java.libraries;
 
-import com.google.idea.blaze.base.project.startup.ProjectActivityJavaShim;
 import com.google.idea.blaze.base.settings.Blaze;
 import com.google.idea.blaze.base.settings.BlazeImportSettings.ProjectType;
 import com.google.idea.common.experiments.BoolExperiment;
 import com.intellij.codeInsight.daemon.impl.LibrarySourceNotificationProvider;
+import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.startup.StartupActivity;
 import com.intellij.ui.EditorNotificationProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,7 +30,7 @@ import org.jetbrains.annotations.NotNull;
  * expected for blaze projects, since we're attaching header jars to the project to improve
  * performance.
  */
-final class DisableLibraryBytecodeNotification extends ProjectActivityJavaShim {
+final class DisableLibraryBytecodeNotification implements StartupActivity, DumbAware {
 
   private static final BoolExperiment enabled =
       new BoolExperiment("disable.bytecode.notification", true);

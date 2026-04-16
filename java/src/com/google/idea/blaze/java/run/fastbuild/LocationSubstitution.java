@@ -48,7 +48,7 @@ final class LocationSubstitution {
       matcher.appendReplacement(
           result,
           artifacts.stream()
-              .map(ArtifactLocation::getRelativePath)
+              .map(ArtifactLocation::relativePath)
               .collect(Collectors.joining(" ")));
     }
     matcher.appendTail(result);

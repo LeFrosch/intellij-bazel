@@ -67,7 +67,7 @@ public class JavaWorkingSet {
   public boolean isTargetInWorkingSet(TargetIdeInfo target) {
     ArtifactLocation buildFile = target.getBuildFile();
     if (buildFile != null) {
-      if (modifiedBuildFileRelativePaths.contains(buildFile.getRelativePath())) {
+      if (modifiedBuildFileRelativePaths.contains(buildFile.relativePath())) {
         return true;
       }
     }
@@ -81,7 +81,7 @@ public class JavaWorkingSet {
   }
 
   public boolean isInWorkingSet(ArtifactLocation artifactLocation) {
-    return isInWorkingSet(artifactLocation.getRelativePath());
+    return isInWorkingSet(artifactLocation.relativePath());
   }
 
   boolean isInWorkingSet(String relativePath) {

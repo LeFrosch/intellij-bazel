@@ -102,8 +102,8 @@ public class BlazeCompilerManager extends CompilerManagerImpl {
             Blaze.getBuildSystemName(project),
             WorkspaceRoot.fromProject(project),
             ProjectViewManager.getInstance(project).getProjectViewSet());
-    ArtifactLocationDecoder decoder = projectData.getArtifactLocationDecoder();
-    return projectData.getTargetMap().targets().stream()
+    ArtifactLocationDecoder decoder = projectData.artifactLocationDecoder();
+    return projectData.targetMap().targets().stream()
         .filter(target -> target.getJavaIdeInfo() != null)
         .filter(target -> JavaSourceFilter.importAsSource(importFilter, target))
         .map(TargetIdeInfo::getJavaIdeInfo)

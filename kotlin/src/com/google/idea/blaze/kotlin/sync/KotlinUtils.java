@@ -48,7 +48,7 @@ class KotlinUtils {
   @Nullable
   static KotlinToolchainIdeInfo findToolchain(TargetMap targets) {
     return targets.targets().stream()
-        .map(TargetIdeInfo::getKotlinToolchainIdeInfo)
+        .map(TargetIdeInfo::getKtToolchainIdeInfo)
         .filter(Objects::nonNull)
         .findFirst()
         .orElse(null);

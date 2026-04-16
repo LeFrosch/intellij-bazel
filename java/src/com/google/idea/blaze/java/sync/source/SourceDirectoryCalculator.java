@@ -146,7 +146,7 @@ public final class SourceDirectoryCalculator {
     Multimap<WorkspacePath, SourceArtifact> result = ArrayListMultimap.create();
 
     for (SourceArtifact sourceArtifact : sources) {
-      String sourcePath = sourceArtifact.artifactLocation.getRelativePath();
+      String sourcePath = sourceArtifact.artifactLocation.relativePath();
       if (importRoots.excludeDirectories().stream()
           .anyMatch(excluded -> isUnderRootDirectory(excluded, sourcePath))) {
         continue;
@@ -450,7 +450,7 @@ public final class SourceDirectoryCalculator {
                   + sourceArtifact.artifactLocation));
       return null;
     }
-    String parentPath = new File(sourceArtifact.artifactLocation.getRelativePath()).getParent();
+    String parentPath = new File(sourceArtifact.artifactLocation.relativePath()).getParent();
     return new SourceRoot(new WorkspacePath(Strings.nullToEmpty(parentPath)), declaredPackage);
   }
 

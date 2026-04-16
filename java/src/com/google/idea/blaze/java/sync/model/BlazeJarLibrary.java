@@ -122,7 +122,7 @@ public final class BlazeJarLibrary extends BlazeLibrary {
     public ImmutableList<File> getClassFiles(BlazeProjectData blazeProjectData) {
       File classJar =
           JarCache.getInstance(project)
-              .getCachedJar(blazeProjectData.getArtifactLocationDecoder(), BlazeJarLibrary.this);
+              .getCachedJar(blazeProjectData.artifactLocationDecoder(), BlazeJarLibrary.this);
       if (classJar == null) {
         logger.warn("No local file found for " + libraryArtifact);
         return ImmutableList.of();
@@ -146,7 +146,7 @@ public final class BlazeJarLibrary extends BlazeLibrary {
           .map(
               srcJar ->
                   jarCache.getCachedSourceJar(
-                      blazeProjectData.getArtifactLocationDecoder(), srcJar))
+                      blazeProjectData.artifactLocationDecoder(), srcJar))
           .filter(Objects::nonNull)
           .collect(toImmutableList());
     }

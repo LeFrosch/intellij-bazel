@@ -154,7 +154,7 @@ public class JavaSourceFilter {
 
   private void addRelativePath(List<String> paths, @Nullable ArtifactLocation artifact) {
     if (artifact != null) {
-      paths.add(artifact.getRelativePath());
+      paths.add(artifact.relativePath());
     }
   }
 }

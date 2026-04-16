@@ -53,7 +53,7 @@ public class BlazeCoverageRunner extends CoverageRunner {
       return null;
     }
     try (FileInputStream stream = new FileInputStream(sessionDataFile)) {
-      return parseCoverage(blazeProjectData.getWorkspacePathResolver(), stream);
+      return parseCoverage(blazeProjectData.workspacePathResolver(), stream);
     } catch (IOException e) {
       logger.warn(e);
     }

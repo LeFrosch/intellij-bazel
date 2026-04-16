@@ -254,18 +254,13 @@ public final class BlazeJavaRunProfileState extends BlazeJavaDebuggableRunProfil
       Preconditions.checkNotNull(ProjectViewManager.getInstance(project).getProjectViewSet());
     BlazeJavaRunConfigState handlerState = getState(configuration);
 
-    String binaryPath =
-      handlerState.getBlazeBinaryState().getBlazeBinary() != null
-      ? handlerState.getBlazeBinaryState().getBlazeBinary()
-      : Blaze.getBuildSystemProvider(project).getBinaryPath(project);
-
     BlazeCommandName blazeCommand =
       Preconditions.checkNotNull(handlerState.getCommandState().getCommand());
     if (executorType == ExecutorType.COVERAGE) {
       blazeCommand = BlazeCommandName.COVERAGE;
     }
     BlazeCommand.Builder command =
-      BlazeCommand.builder(binaryPath, blazeCommand, project)
+      BlazeCommand.builder(blazeCommand)
         .addTargets(configuration.getTargets())
         .addBlazeFlags(
           BlazeFlags.blazeFlags(
