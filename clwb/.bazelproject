@@ -1,0 +1,23 @@
+directories:
+  .
+  -ijwb
+  -plugin_dev
+  -examples
+  -java
+  -golang
+  -clwb/tests/projects
+  -testing/test_deps/projects
+
+targets:
+  //:clwb_tests
+  //clwb:all
+  //clwb:clwb_bazel_dev
+  //aspect/testing/...
+
+build_flags:
+  # Choose one target ij product:
+  # --define=ij_product=clion-oss-latest-stable
+  # --define=ij_product=clion-oss-under-dev
+
+  # Setup disk cache, can improve build times:
+  # --disk_cache=/tmp/bazel_cache
