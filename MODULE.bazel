@@ -162,6 +162,12 @@ intellij_platform.sdk(
     sha256 = "05b6b37c87740e532c4211d8d359ab08de9588f1a59b1ba749d09517c95ee53b",
     version = "2026.1",
 )
+intellij_platform.sdk(
+    name = "idea",
+    build_file = "//intellij_platform_sdk:BUILD.idea261",
+    sha256 = "33f9c1c316f8fe5eaa1dd965bb929d1fcd15d757ad3d4b25028ceb5c4fbcb8fd",
+    version = "2026.1",
+)
 intellij_platform.plugin(
     name = "PythonCore",
     alias = "python_2025_2",
@@ -183,7 +189,14 @@ intellij_platform.plugin(
     sha256 = "c49b45439cd07b8c1ef91bbed4bcec32b1485c653078a30dbc91c3463716b595",
     version = "261.23567.28",
 )
-use_repo(intellij_platform, "clion_2025_2", "clion_2025_3", "clion_2026_1", "python_2025_2", "python_2025_3", "python_2026_1")
+intellij_platform.plugin(
+    name = "com.intellij.clion",
+    alias = "clion_plugin_2026_1",
+    build_file = "//intellij_platform_sdk:BUILD.clion",
+    sha256 = "8371876b15d2685708fdcbb40e318dd0ca807c4e89933b6cbafd1032a19e6ddd",
+    version = "261.23567.28",
+)
+use_repo(intellij_platform, "clion_2025_2", "clion_2025_3", "clion_2026_1", "idea_2026_1", "python_2025_2", "python_2025_3", "python_2026_1", "clion_plugin_2026_1")
 
 # build tools deploy jars for the tools required by the plugin
 bazel_build_jars = use_repo_rule("//third_party/bazel/jars:extension.bzl", "bazel_build_jars")

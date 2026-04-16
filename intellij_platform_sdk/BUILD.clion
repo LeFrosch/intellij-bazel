@@ -1,0 +1,10 @@
+load("@rules_java//java:defs.bzl", "java_import")
+
+java_import(
+    name = "clion",
+    jars = glob([
+	    "clion/lib/*.jar", 
+		"clion/lib/modules/*.jar",
+	]),
+    visibility = ["//visibility:public"],
+)
