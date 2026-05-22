@@ -21,7 +21,7 @@ import java.io.IOException
 import java.nio.file.Path
 import kotlin.jvm.Throws
 
-class AspectWriterImpl : AspectWriter {
+class AspectWriterImpl : LegacyAspectWriter() {
 
   override fun name(): String {
     return "Default Aspects"

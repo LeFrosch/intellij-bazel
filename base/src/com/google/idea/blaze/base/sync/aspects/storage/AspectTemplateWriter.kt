@@ -35,7 +35,7 @@ private const val REALIZED_CODE_GENERATOR = "code_generator_info.bzl"
 private const val TEMPLATE_INTELLIJ_INFO = "intellij_info.template.bzl"
 private const val REALIZED_INTELLIJ_INFO = "intellij_info_bundled.bzl"
 
-class AspectTemplateWriter : AspectWriter {
+class AspectTemplateWriter : LegacyAspectWriter() {
 
   override fun name(): String = "Aspect Templates"
 

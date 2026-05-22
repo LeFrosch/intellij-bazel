@@ -32,18 +32,13 @@ public class AspectStrategyBazel extends AspectStrategy {
 
   static final class Provider implements AspectStrategyProvider {
     @Override
-    @Nullable
-    public AspectStrategy getStrategy(BlazeVersionData versionData) {
-      return versionData.buildSystem() == BuildSystemName.Bazel
-          ? new AspectStrategyBazel(versionData)
-          : null;
+    public AspectStrategy getStrategy() {
+      return new AspectStrategyBazel();
     }
   }
 
   @VisibleForTesting
-  public AspectStrategyBazel(BlazeVersionData versionData) {
-    super(/* aspectSupportsDirectDepsTrimming= */ true);
-  }
+  public AspectStrategyBazel() {}
 
   @Override
   @VisibleForTesting

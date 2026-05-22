@@ -32,7 +32,7 @@ import java.nio.file.StandardOpenOption
 interface AspectWriter {
 
   companion object {
-    val EP_NAME = ExtensionPointName.Companion.create<AspectWriter>("com.google.idea.blaze.AspectWriter");
+    val EP_NAME = ExtensionPointName.create<AspectWriter>("com.google.idea.blaze.AspectWriter");
 
     @JvmStatic
     @Throws(IOException::class)
@@ -50,6 +50,19 @@ interface AspectWriter {
    * Name of the aspects to copy, used for debugging and logging.
    */
   fun name(): String
+
+  /**
+   * Whether the aspect writer is enabled or not.
+   */
+  fun enabled(): Boolean
+
+  /**
+   * The prefix to use for all aspect files.
+   *
+   * Prepended to `dst` pefore calling the write functions, thus has to be a
+   * relative path.
+   */
+  fun prefix(): Path
 
   /**
    * Implement this function if the [AspectWriter] does not require any data from the sync.

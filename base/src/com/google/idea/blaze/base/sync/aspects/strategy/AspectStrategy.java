@@ -28,7 +28,6 @@ import com.google.idea.blaze.base.command.BlazeCommand;
 import com.google.idea.blaze.base.model.BlazeVersionData;
 import com.google.idea.blaze.base.model.primitives.LanguageClass;
 import com.google.idea.blaze.common.artifact.BlazeArtifact;
-import com.google.idea.common.experiments.BoolExperiment;
 import com.google.protobuf.TextFormat;
 import com.intellij.openapi.project.Project;
 import java.io.IOException;
@@ -65,27 +64,13 @@ public abstract class AspectStrategy {
   public static AspectStrategy getInstance(BlazeVersionData versionData) {
     AspectStrategy strategy =
         AspectStrategyProvider.EP_NAME
-            .extensions()
-            .map(p -> p.getStrategy(versionData))
+            .getExtensionList()
+            .stream()
+            .map(AspectStrategyProvider::getStrategy)
             .filter(Objects::nonNull)
             .findFirst()
             .orElse(null);
     return Preconditions.checkNotNull(strategy);
-  }
-
-  /**
-   * Whether output groups containing a trimmed build graph can be requested, when relevant.
-   *
-   * <p>Per-language switching is hard-coded for now.
-   */
-  private static final BoolExperiment directDepsTrimmingEnabled =
-      new BoolExperiment("sync.allow.requesting.direct.deps", true);
-
-  /** True if the aspect available to the plugin supports direct deps trimming. */
-  private final boolean aspectSupportsDirectDepsTrimming;
-
-  protected AspectStrategy(boolean aspectSupportsDirectDepsTrimming) {
-    this.aspectSupportsDirectDepsTrimming = aspectSupportsDirectDepsTrimming;
   }
 
   public abstract String getName();
@@ -93,39 +78,41 @@ public abstract class AspectStrategy {
   protected abstract Optional<String> getAspectFlag(Project project);
 
   /**
+   * Language-aware variant of {@link #getAspectFlag(Project)}. Strategies that produce
+   * different aspect labels depending on the active languages should override this method.
+   * The default delegates to the language-ignorant overload.
+   */
+  protected Optional<String> getAspectFlag(Project project, Set<LanguageClass> activeLanguages) {
+    return getAspectFlag(project);
+  }
+
+  /**
    * Add the aspect to the build and request the given {@code OutputGroup}s. This method should only
    * be called once.
-   *
-   * @param directDepsOnly when supported for a language, the build outputs will be trimmed to
-   *     direct deps of the top-level targets.
    */
   public final void addAspectAndOutputGroups(
       Project project,
       BlazeCommand.Builder builder,
       Collection<OutputGroup> outputGroups,
-      Set<LanguageClass> activeLanguages,
-      boolean directDepsOnly) {
+      Set<LanguageClass> activeLanguages) {
     List<String> groups =
         outputGroups.stream()
-            .flatMap(g -> getOutputGroups(g, activeLanguages, directDepsOnly).stream())
+            .flatMap(g -> getOutputGroups(g, activeLanguages).stream())
             .collect(toImmutableList());
     builder
-        .addBlazeFlags(getAspectFlag(project).map(List::of).orElse(List.of()))
+        .addBlazeFlags(getAspectFlag(project, activeLanguages).map(List::of).orElse(List.of()))
         .addBlazeFlags("--output_groups=" + Joiner.on(',').join(groups));
   }
 
   /**
    * Collects the names of output groups created by the aspect and by registered {@link
    * OutputGroupsProvider} extensions for the given {@link OutputGroup} and languages.
-   *
-   * <p>Delegates to {@link #getBaseOutputGroups(OutputGroup, Set, boolean)}, and {@link
-   * #getAdditionalOutputGroups(OutputGroup, Set)}
    */
   private ImmutableList<String> getOutputGroups(
-      OutputGroup outputGroup, Set<LanguageClass> activeLanguages, boolean directDepsOnly) {
+      OutputGroup outputGroup, Set<LanguageClass> activeLanguages) {
     TreeSet<String> outputGroups = new TreeSet<>();
 
-    outputGroups.addAll(getBaseOutputGroups(outputGroup, activeLanguages, directDepsOnly));
+    outputGroups.addAll(getBaseOutputGroups(outputGroup, activeLanguages));
     outputGroups.addAll(getAdditionalOutputGroups(outputGroup, activeLanguages));
 
     return ImmutableList.copyOf(outputGroups);
@@ -137,13 +124,13 @@ public abstract class AspectStrategy {
    */
   @VisibleForTesting
   public final ImmutableList<String> getBaseOutputGroups(
-      OutputGroup outputGroup, Set<LanguageClass> activeLanguages, boolean directDepsOnly) {
+      OutputGroup outputGroup, Set<LanguageClass> activeLanguages) {
     ImmutableList.Builder<String> outputGroupsBuilder = ImmutableList.builder();
     if (outputGroup.equals(OutputGroup.INFO)) {
       outputGroupsBuilder.add(outputGroup.prefix + "generic");
     }
     activeLanguages.stream()
-        .map(l -> getOutputGroupForLanguage(outputGroup, l, directDepsOnly))
+        .map(l -> getOutputGroupForLanguage(outputGroup, l))
         .filter(Objects::nonNull)
         .forEach(outputGroupsBuilder::add);
     return outputGroupsBuilder.build();
@@ -173,29 +160,8 @@ public abstract class AspectStrategy {
   }
 
   @Nullable
-  private String getOutputGroupForLanguage(
-      OutputGroup group, LanguageClass language, boolean directDepsOnly) {
-    String langSuffix = getLanguageSuffix(language);
-    if (langSuffix == null) {
-      return null;
-    }
-    directDepsOnly = directDepsOnly && allowDirectDepsTrimming(language);
-    if (!directDepsOnly) {
-      return group.prefix + langSuffix;
-    }
-    return group.prefix + langSuffix + "-direct-deps";
-  }
-
-  @Nullable
-  private static String getLanguageSuffix(LanguageClass language) {
-    LanguageOutputGroup group = LanguageOutputGroup.forLanguage(language);
-    return group != null ? group.suffix : null;
-  }
-
-  private boolean allowDirectDepsTrimming(LanguageClass language) {
-    return aspectSupportsDirectDepsTrimming
-        && directDepsTrimmingEnabled.getValue()
-        && language != LanguageClass.C
-        && language != LanguageClass.GO;
+  private static String getOutputGroupForLanguage(OutputGroup group, LanguageClass language) {
+    LanguageOutputGroup langGroup = LanguageOutputGroup.forLanguage(language);
+    return langGroup != null ? group.prefix + langGroup.suffix : null;
   }
 }

@@ -52,7 +52,7 @@ private const val BAZEL_IGNORE_FILE = ".bazelignore"
 private val LOG = logger<AspectStorageService>()
 
 @Service(Service.Level.PROJECT)
-class AspectStorageService(private val project: Project, private val scope: CoroutineScope) {
+class AspectStorageService(private val project: Project) {
 
   companion object {
     @JvmStatic
@@ -95,13 +95,13 @@ class AspectStorageService(private val project: Project, private val scope: Coro
         throw SyncFailedException("Could not create aspect directory", e)
       }
 
-      for (writer in AspectWriter.EP_NAME.extensionList) {
+      for (writer in AspectWriter.EP_NAME.extensionList.filter { it.enabled() }) {
         try {
           if (state == null) {
-            writer.writeDumb(directory, project)
+            writer.writeDumb(directory.resolve(writer.prefix()), project)
             ctx.println("Aspects written (dumb): ${writer.name()}")
           } else {
-            writer.write(directory, project, state)
+            writer.write(directory.resolve(writer.prefix()), project, state)
             ctx.println("Aspects written: ${writer.name()}")
           }
         } catch (e: SyncFailedException) {
@@ -111,27 +111,9 @@ class AspectStorageService(private val project: Project, private val scope: Coro
     }
   }
 
-  /**
-   * Convince wrapper that derives an appropriate [SyncProjectState] for [prepare].
-   */
-  @Throws(SyncFailedException::class)
-  fun prepare(parentCtx: BlazeContext?, projectData: BlazeProjectData, versionData: BlazeVersionData) {
-    val state = SyncProjectState.builder()
-      .setProjectViewSet(ProjectViewSet.EMPTY) // not used by any AspectWriter
-      .setLanguageSettings(projectData.workspaceLanguageSettings())
-      .setExternalWorkspaceData(projectData.externalWorkspaceData())
-      .setWorkspacePathResolver(projectData.workspacePathResolver())
-      .setWorkingSet(null)
-      .setBlazeVersionData(versionData)
-      .setBlazeInfo(projectData.blazeInfo())
-      .build()
-
-    prepare(parentCtx, state)
-  }
-
-  fun resolve(file: String): Optional<Label> {
+  fun resolve(file: String, prefix: Path): Optional<Label> {
     val settings = BlazeImportSettingsManager.getInstance(project).importSettings ?: return Optional.empty()
-    val directory = aspectDirectory(settings) ?: return Optional.empty()
+    val directory = aspectDirectory(settings)?.resolve(prefix) ?: return Optional.empty()
 
     val relativePath = directory.resolve(file)
     if (!Files.exists(relativePath)) return Optional.empty()
@@ -152,7 +134,7 @@ class AspectStorageService(private val project: Project, private val scope: Coro
       return projectPath.resolve(ASPECT_DIRECTORY)
     }
 
-    // if this is not the case, fallback to .ijwb_aspects or .clwb_aspects
+    // if this is not the case, fall back to .ijwb_aspects or .clwb_aspects
     return workspacePath.resolve(BlazeDataStorage.PROJECT_DATA_SUBDIRECTORY + "_aspects")
   }
 

@@ -66,6 +66,7 @@ intellij_plugin_library(
     deps = [
         ":base",
         "//base/src/com/google/idea/blaze/base/execlog",
+        "//base/src/com/google/idea/blaze/base/sync/aspect2",
     ],
 )
 

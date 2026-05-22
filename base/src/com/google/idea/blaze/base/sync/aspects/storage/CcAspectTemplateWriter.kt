@@ -25,7 +25,7 @@ import java.nio.file.Path
 private const val TEMPLATE_CC_INFO = "cc_info.template.bzl"
 private const val REALIZED_CC_INFO = "cc_info.bzl"
 
-class CcAspectTemplateWriter : AspectWriter {
+class CcAspectTemplateWriter : LegacyAspectWriter() {
 
   override fun name(): String = "CC Aspect Templates"
 

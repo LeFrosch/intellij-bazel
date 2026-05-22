@@ -62,7 +62,6 @@ import com.google.idea.blaze.base.prefetch.PrefetchFileSource;
 import com.google.idea.blaze.base.prefetch.PrefetchService;
 import com.google.idea.blaze.base.prefetch.RemoteArtifactPrefetcher;
 import com.google.idea.blaze.base.projectview.ProjectViewSet;
-import com.google.idea.blaze.base.projectview.section.sections.AutomaticallyDeriveTargetsSection;
 import com.google.idea.blaze.base.projectview.section.sections.SyncFlagsSection;
 import com.google.idea.blaze.base.scope.BlazeContext;
 import com.google.idea.blaze.base.scope.Result;
@@ -762,9 +761,6 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
       List<String> additionalBlazeFlags)
       throws BuildException {
 
-    boolean onlyDirectDeps =
-        viewSet.getScalarValue(AutomaticallyDeriveTargetsSection.KEY).orElse(false);
-
     Path targetPatternFile = prepareTargetPatternFile(project, targets);
     BlazeCommand.Builder builder = BlazeCommand.builder(invoker, BlazeCommandName.BUILD);
     builder
@@ -779,7 +775,7 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
       builder.addBlazeFlags("--nofake_stamp_data");
     }
 
-    aspectStrategy.addAspectAndOutputGroups(project, builder, outputGroups, activeLanguages, onlyDirectDeps);
+    aspectStrategy.addAspectAndOutputGroups(project, builder, outputGroups, activeLanguages);
     try {
       return BazelExecService.of(project).build(context, builder);
     } catch (com.intellij.execution.ExecutionException e) {

@@ -19,5 +19,4 @@ object AspectRepositoryProvider {
 
   const val ASPECT_DIRECTORY: String = "aspect/default"
   const val ASPECT_TEMPLATE_DIRECTORY: String = "aspect/template"
-  const val ASPECT_MODULE_DIRECTORY: String = "aspect/modules"
 }
