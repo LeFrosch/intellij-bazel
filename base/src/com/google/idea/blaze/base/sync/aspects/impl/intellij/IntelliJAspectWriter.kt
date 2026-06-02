@@ -13,31 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.idea.blaze.base.sync.aspect2
+package com.google.idea.blaze.base.sync.aspects.impl.intellij
 
-import com.google.idea.blaze.base.settings.BlazeImportSettingsManager
 import com.google.idea.blaze.base.sync.SyncProjectState
 import com.google.idea.blaze.base.sync.SyncScope.SyncFailedException
 import com.google.idea.blaze.base.sync.aspects.storage.AspectWriter
 import com.intellij.aspect.lib.AspectConfig
 import com.intellij.aspect.lib.deployAspectZip
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.registry.Registry
 import java.io.IOException
 import java.nio.file.Path
 
 /**
- * Materializes the intellij_aspect_sdk archive into <workspaceRoot>/<PROJECT_DATA_SUBDIRECTORY>/aspect2/.
- * Ignores the `dst` passed by AspectStorageService, we deploy to our own location based on the
- * workspace root rather than the project data directory.
+ * Materializes the intellij_aspect_sdk archive into the aspect directory's `intellij` prefix
+ * (i.e. `dst`, supplied by [com.google.idea.blaze.base.sync.aspects.storage.AspectStorageService]).
+ * The deploy location matches what [IntelliJAspectStrategy] resolves its `--aspects` labels against.
  */
-class Aspect2Writer : AspectWriter {
+class IntelliJAspectWriter : AspectWriter {
 
   override fun name(): String = "IntelliJ Aspect (materialized)"
-
-  override fun prefix(): Path = Path.of("intellij")
-
-  override fun enabled(): Boolean = Registry.`is`("bazel.use.intellij.aspect")
 
   override fun write(dst: Path, project: Project, state: SyncProjectState) {
     val normalized = dst.toAbsolutePath().normalize()

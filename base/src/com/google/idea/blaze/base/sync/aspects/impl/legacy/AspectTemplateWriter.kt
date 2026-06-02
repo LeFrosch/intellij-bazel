@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.idea.blaze.base.sync.aspects.storage
+package com.google.idea.blaze.base.sync.aspects.impl.legacy
 
 import com.google.common.collect.ImmutableMap
 import com.google.idea.blaze.base.model.primitives.LanguageClass
@@ -21,7 +21,8 @@ import com.google.idea.blaze.base.projectview.ProjectViewManager
 import com.google.idea.blaze.base.projectview.ProjectViewSet
 import com.google.idea.blaze.base.sync.SyncProjectState
 import com.google.idea.blaze.base.sync.SyncScope.SyncFailedException
-import com.google.idea.blaze.base.sync.aspects.storage.AspectRepositoryProvider.ASPECT_TEMPLATE_DIRECTORY
+import com.google.idea.blaze.base.sync.aspects.impl.legacy.AspectRepositoryProvider.ASPECT_TEMPLATE_DIRECTORY
+import com.google.idea.blaze.base.sync.aspects.storage.AspectWriter
 import com.google.idea.blaze.base.sync.codegenerator.CodeGeneratorRuleNameHelper
 import com.google.idea.blaze.base.util.TemplateWriter
 import com.intellij.openapi.project.Project
@@ -35,7 +36,7 @@ private const val REALIZED_CODE_GENERATOR = "code_generator_info.bzl"
 private const val TEMPLATE_INTELLIJ_INFO = "intellij_info.template.bzl"
 private const val REALIZED_INTELLIJ_INFO = "intellij_info_bundled.bzl"
 
-class AspectTemplateWriter : LegacyAspectWriter() {
+class AspectTemplateWriter : AspectWriter {
 
   override fun name(): String = "Aspect Templates"
 

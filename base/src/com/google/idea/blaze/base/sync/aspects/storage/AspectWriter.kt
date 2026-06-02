@@ -18,7 +18,6 @@ package com.google.idea.blaze.base.sync.aspects.storage
 import com.google.common.io.ByteSource
 import com.google.idea.blaze.base.sync.SyncProjectState
 import com.google.idea.blaze.base.sync.SyncScope
-import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import java.io.IOException
 import java.io.InputStream
@@ -27,13 +26,15 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 
 /**
- * Extension point for writing aspect files to the workspace.
+ * Writes aspect files into a destination directory.
+ *
+ * Writers are owned by an [com.google.idea.blaze.base.sync.aspects.strategy.AspectStrategy] (see
+ * its `writers()`); the selected strategy decides which writers run and supplies the destination
+ * directory (`dir.resolve(strategy.prefix())`).
  */
 interface AspectWriter {
 
   companion object {
-    val EP_NAME = ExtensionPointName.create<AspectWriter>("com.google.idea.blaze.AspectWriter");
-
     @JvmStatic
     @Throws(IOException::class)
     fun copyAspects(ctx: Class<*>, dst: Path, src: String) = copyAspectsImpl(ctx, dst, src)
@@ -50,19 +51,6 @@ interface AspectWriter {
    * Name of the aspects to copy, used for debugging and logging.
    */
   fun name(): String
-
-  /**
-   * Whether the aspect writer is enabled or not.
-   */
-  fun enabled(): Boolean
-
-  /**
-   * The prefix to use for all aspect files.
-   *
-   * Prepended to `dst` pefore calling the write functions, thus has to be a
-   * relative path.
-   */
-  fun prefix(): Path
 
   /**
    * Implement this function if the [AspectWriter] does not require any data from the sync.

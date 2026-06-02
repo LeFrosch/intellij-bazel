@@ -53,6 +53,7 @@ kt_jvm_library(
         "//third_party/java/auto_value",
         "@error_prone_annotations//jar",
         "@gson//jar",
+        "@intellij_aspect_sdk//sdk",
     ],
 )
 
@@ -66,7 +67,6 @@ intellij_plugin_library(
     deps = [
         ":base",
         "//base/src/com/google/idea/blaze/base/execlog",
-        "//base/src/com/google/idea/blaze/base/sync/aspect2",
     ],
 )
 

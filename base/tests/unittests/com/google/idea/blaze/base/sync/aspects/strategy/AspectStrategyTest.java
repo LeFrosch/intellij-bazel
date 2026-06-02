@@ -22,9 +22,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.idea.blaze.base.BlazeTestCase;
 import com.google.idea.blaze.base.command.BlazeCommand;
 import com.google.idea.blaze.base.command.BlazeCommandName;
+import com.google.idea.blaze.base.model.primitives.Label;
 import com.google.idea.blaze.base.model.primitives.LanguageClass;
+import com.google.idea.blaze.base.sync.aspects.storage.AspectWriter;
 import com.google.idea.blaze.base.sync.aspects.strategy.AspectStrategy.OutputGroup;
 import com.intellij.openapi.project.Project;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -158,6 +161,21 @@ public class AspectStrategyTest extends BlazeTestCase {
     @Override
     public String getName() {
       return "MockAspectStrategy";
+    }
+
+    @Override
+    public Path prefix() {
+      return Path.of("mock");
+    }
+
+    @Override
+    public List<AspectWriter> writers() {
+      return List.of();
+    }
+
+    @Override
+    public Optional<Label> resolve(Project project, String relativePath) {
+      return Optional.empty();
     }
 
     @Override

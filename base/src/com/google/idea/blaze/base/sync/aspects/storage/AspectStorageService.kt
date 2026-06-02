@@ -27,6 +27,7 @@ import com.google.idea.blaze.base.settings.BlazeImportSettings
 import com.google.idea.blaze.base.settings.BlazeImportSettingsManager
 import com.google.idea.blaze.base.sync.SyncProjectState
 import com.google.idea.blaze.base.sync.SyncScope.SyncFailedException
+import com.google.idea.blaze.base.sync.aspects.strategy.AspectStrategy
 import com.google.idea.blaze.base.sync.data.BlazeDataStorage
 import com.google.idea.blaze.base.sync.data.BlazeProjectDataManager
 import com.google.idea.blaze.base.toolwindow.Task
@@ -63,7 +64,8 @@ class AspectStorageService(private val project: Project) {
    * Copies all bundled aspects to a workspace relative directory.
    * This should be called as one of the first steps in the sync workflow.
    *
-   * Register a [AspectWriter] to provide aspect files.
+   * The selected [AspectStrategy] provides both the deploy [AspectStrategy.prefix] and the set of
+   * [AspectWriter]s ([AspectStrategy.writers]) that materialize the aspect files.
    */
   @Throws(SyncFailedException::class)
   fun prepare(parentCtx: BlazeContext?, state: SyncProjectState?) {
@@ -95,13 +97,16 @@ class AspectStorageService(private val project: Project) {
         throw SyncFailedException("Could not create aspect directory", e)
       }
 
-      for (writer in AspectWriter.EP_NAME.extensionList.filter { it.enabled() }) {
+      val strategy = AspectStrategy.getInstance()
+      val base = directory.resolve(strategy.prefix())
+
+      for (writer in strategy.writers()) {
         try {
           if (state == null) {
-            writer.writeDumb(directory.resolve(writer.prefix()), project)
+            writer.writeDumb(base, project)
             ctx.println("Aspects written (dumb): ${writer.name()}")
           } else {
-            writer.write(directory.resolve(writer.prefix()), project, state)
+            writer.write(base, project, state)
             ctx.println("Aspects written: ${writer.name()}")
           }
         } catch (e: SyncFailedException) {
@@ -111,6 +116,16 @@ class AspectStorageService(private val project: Project) {
     }
   }
 
+  /**
+   * Resolves a file produced by the currently selected [AspectStrategy] (relative to its deploy
+   * prefix directory) into a [Label]. Delegates to [AspectStrategy.resolve].
+   */
+  fun resolve(file: String): Optional<Label> = AspectStrategy.getInstance().resolve(project, file)
+
+  /**
+   * Resolves [file], located under the aspect directory's [prefix] subdirectory, into a workspace
+   * relative [Label], or empty if the file does not exist.
+   */
   fun resolve(file: String, prefix: Path): Optional<Label> {
     val settings = BlazeImportSettingsManager.getInstance(project).importSettings ?: return Optional.empty()
     val directory = aspectDirectory(settings)?.resolve(prefix) ?: return Optional.empty()

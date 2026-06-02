@@ -25,14 +25,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.devtools.intellij.ideinfo.IntellijIdeInfo;
 import com.google.idea.blaze.base.command.BlazeCommand;
-import com.google.idea.blaze.base.model.BlazeVersionData;
+import com.google.idea.blaze.base.model.primitives.Label;
 import com.google.idea.blaze.base.model.primitives.LanguageClass;
+import com.google.idea.blaze.base.sync.aspects.storage.AspectWriter;
 import com.google.idea.blaze.common.artifact.BlazeArtifact;
 import com.google.protobuf.TextFormat;
 import com.intellij.openapi.project.Project;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -61,7 +63,12 @@ public abstract class AspectStrategy {
     }
   }
 
-  public static AspectStrategy getInstance(BlazeVersionData versionData) {
+  /**
+   * Returns the single {@link AspectStrategy} selected by the registered {@link
+   * AspectStrategyProvider} extensions. The providers are mutually exclusive (see {@code
+   * bazel.sync.use.intellij.aspect}), so exactly one returns a non-null strategy.
+   */
+  public static AspectStrategy getInstance() {
     AspectStrategy strategy =
         AspectStrategyProvider.EP_NAME
             .getExtensionList()
@@ -74,6 +81,20 @@ public abstract class AspectStrategy {
   }
 
   public abstract String getName();
+
+  /** Relative path, under the aspect directory, where this strategy deploys its files. */
+  public abstract Path prefix();
+
+  /**
+   * The writers that materialize this strategy's aspect files into {@code dir.resolve(prefix())}.
+   */
+  public abstract List<AspectWriter> writers();
+
+  /**
+   * Resolves a file produced by this strategy (relative to its deployed {@link #prefix()}
+   * directory) into a Bazel {@link Label}, or empty if the file does not exist.
+   */
+  public abstract Optional<Label> resolve(Project project, String relativePath);
 
   protected abstract Optional<String> getAspectFlag(Project project);
 

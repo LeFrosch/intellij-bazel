@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.idea.blaze.base.sync.aspects.storage
+package com.google.idea.blaze.base.sync.aspects.impl.legacy
 
 import com.google.idea.blaze.base.sync.SyncScope.SyncFailedException
+import com.google.idea.blaze.base.sync.aspects.storage.AspectWriter
 import com.intellij.openapi.project.Project
 import java.io.IOException
 import java.nio.file.Path
 import kotlin.jvm.Throws
 
-class AspectWriterImpl : LegacyAspectWriter() {
+class AspectWriterImpl : AspectWriter {
 
   override fun name(): String {
     return "Default Aspects"

@@ -320,7 +320,7 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
       ImportRoots importRoots,
       boolean mergeWithOldState,
       @Nullable TargetMap oldTargetMap) {
-    AspectStrategy aspectStrategy = AspectStrategy.getInstance(versionData);
+    AspectStrategy aspectStrategy = AspectStrategy.getInstance();
     Result<TargetMapAndInterfaceState> result =
         Scope.push(
             parentContext,
@@ -594,7 +594,7 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
       ImmutableSet<OutputGroup> outputGroups,
       BlazeInvocationContext blazeInvocationContext,
       boolean invokeParallel) {
-    AspectStrategy aspectStrategy = AspectStrategy.getInstance(blazeVersion);
+    AspectStrategy aspectStrategy = AspectStrategy.getInstance();
 
     final Ref<BlazeBuildOutputs> combinedResult = new Ref<>();
 
