@@ -102,10 +102,9 @@ public final class BlazeConfigurationToolchainResolver {
 
   private static ImmutableMap<TargetIdeInfo, List<TargetKey>> buildToolchainDepsTable(
       ImmutableCollection<TargetIdeInfo> targets, Map<TargetKey, CToolchainIdeInfo> toolchains) {
-    ImmutableMap.Builder<TargetIdeInfo, List<TargetKey>> toolchainDepsTable =
-        ImmutableMap.builder();
-    for (TargetIdeInfo target : targets) {
-      if (!target.getKind().hasLanguage(LanguageClass.C) || target.getcToolchainIdeInfo() != null) {
+    final var toolchainDepsTable = ImmutableMap.<TargetIdeInfo, List<TargetKey>>builder();
+    for (final var target : targets) {
+      if (target.getcIdeInfo() == null || target.getcToolchainIdeInfo() != null) {
         continue;
       }
       ImmutableList<TargetKey> toolchainDeps =

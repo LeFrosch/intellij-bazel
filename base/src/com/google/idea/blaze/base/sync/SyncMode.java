@@ -27,7 +27,15 @@ public enum SyncMode {
   /** This is the standard incremental sync */
   INCREMENTAL(/* involvesBlazeBuild= */ true, /* mayAttachExternalLibraries= */ true),
   /** Full sync, can invalidate/redo work that an incremental sync does not */
-  FULL(/* involvesBlazeBuild= */ true, /* mayAttachExternalLibraries= */ true);
+  FULL(/* involvesBlazeBuild= */ true, /* mayAttachExternalLibraries= */ true),
+  /**
+   * Reactive update from build outputs produced by an external build (e.g. an agent's `bazel
+   * build`). Like {@link #NO_BUILD} it runs no blaze build of its own, but unlike NO_BUILD it
+   * consumes externally-parsed build outputs (see {@code BlazeSyncParams#externalBuildOutputs}) to
+   * patch the project model. Appended at the end on purpose: the ordinal is used to merge sync
+   * modes (see {@code BlazeSyncParams#combine}).
+   */
+  REACTIVE(/* involvesBlazeBuild= */ false, /* mayAttachExternalLibraries= */ true);
 
   private final boolean involvesBlazeBuild;
   private final boolean mayAttachExternalLibraries;

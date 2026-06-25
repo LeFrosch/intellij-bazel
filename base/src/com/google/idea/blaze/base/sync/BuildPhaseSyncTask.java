@@ -392,6 +392,11 @@ public final class BuildPhaseSyncTask {
       BuildInvoker invoker,
       boolean invokeParallel
   ) {
+    // a reactive sync contains all outputs that were produced by an external build and already
+    if (syncParams.externalBuildOutputs() != null) {
+      return syncParams.externalBuildOutputs();
+    }
+
     if (!syncParams.syncMode().involvesBlazeBuild()) {
       return BlazeBuildOutputs.noOutputs(BuildResult.SUCCESS);
     }

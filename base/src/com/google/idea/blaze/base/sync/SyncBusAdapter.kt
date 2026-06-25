@@ -29,6 +29,30 @@ import com.intellij.openapi.project.Project
  */
 class SyncBusAdapter : SyncListener {
 
+  override fun beforeSyncStart(
+    project: Project,
+    context: BlazeContext,
+    syncMode: SyncMode,
+  ) {
+    project.messageBus.syncPublisher(SyncListener.TOPIC).beforeSyncStart(
+      project,
+      context,
+      syncMode,
+    )
+  }
+
+  override fun afterSyncFinish(
+    project: Project,
+    context: BlazeContext,
+    syncMode: SyncMode,
+  ) {
+    project.messageBus.syncPublisher(SyncListener.TOPIC).afterSyncFinish(
+      project,
+      context,
+      syncMode,
+    )
+  }
+
   override fun onSyncStart(
     project: Project,
     context: BlazeContext,

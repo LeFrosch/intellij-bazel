@@ -96,6 +96,11 @@
         text="Sync Directories"
         icon="AllIcons.Nodes.Folder">
     </action>
+    <action id="Blaze.InstallReactiveSyncFlags"
+        class="com.google.idea.blaze.base.sync.reactive.InstallReactiveSyncFlagsAction"
+        text="Enable Reactive Sync"
+        description="Configure .bazelrc so external builds reactively update the project model">
+    </action>
     <action id="Blaze.ExportRunConfigurations"
       class="com.google.idea.blaze.base.run.exporter.ExportRunConfigurationAction"
       text="Export Run Configurations"
@@ -198,6 +203,7 @@
     <postStartupActivity implementation="com.google.idea.blaze.base.prefetch.PrefetchProjectInitializer" />
     <postStartupActivity implementation="com.google.idea.blaze.base.project.OpenProjectViewStartupActivity"/>
     <postStartupActivity implementation="com.google.idea.blaze.base.run.state.LegacyBlazeFlagsMigrationNotifier"/>
+    <postStartupActivity implementation="com.google.idea.blaze.base.sync.reactive.ReactiveSyncStartupActivity"/>
     <moduleRendererFactory implementation="com.google.idea.blaze.base.ui.BlazeModuleRendererFactory" order="first"/>
 
     <toolWindow id="Blaze"
@@ -573,6 +579,7 @@
     <SyncListener implementation="com.google.idea.blaze.base.lang.buildfile.language.semantics.BuildLanguageSpecProviderImpl$Listener"/>
     <SyncListener implementation="com.google.idea.blaze.base.command.info.BlazeInfoProvider$Invalidator"/>
     <SyncListener implementation="com.google.idea.blaze.base.model.ExternalWorkspaceDataProvider$Invalidator"/>
+    <SyncListener implementation="com.google.idea.blaze.base.sync.reactive.ReactiveSyncService$Listener"/>
     <SyncPlugin implementation="com.google.idea.blaze.base.lang.buildfile.sync.BuildLangSyncPlugin"/>
     <SyncPlugin implementation="com.google.idea.blaze.base.sync.libraries.ExternalLibraryManager$SyncPlugin"/>
     <BuildFlagsProvider implementation="com.google.idea.blaze.base.command.BuildFlagsProviderImpl"/>

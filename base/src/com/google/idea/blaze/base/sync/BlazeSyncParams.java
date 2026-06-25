@@ -20,8 +20,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.idea.blaze.base.model.primitives.TargetExpression;
 import com.google.idea.blaze.base.model.primitives.WorkspacePath;
+import com.google.idea.blaze.base.sync.aspects.BlazeBuildOutputs;
+import com.intellij.util.ObjectUtils;
 import java.util.Collection;
 import java.util.Locale;
+import javax.annotation.Nullable;
 
 /** Parameters that control the sync. */
 @AutoValue
@@ -46,6 +49,14 @@ public abstract class BlazeSyncParams {
    */
   public abstract ImmutableSet<WorkspacePath> sourceFilesToSync();
 
+  /**
+   * Pre-parsed build outputs from an external build, used by {@link SyncMode#REACTIVE} to update the
+   * project model without running a blaze build. When non-null, {@code BuildPhaseSyncTask} returns
+   * these instead of issuing a build. Null for all normal syncs.
+   */
+  @Nullable
+  public abstract BlazeBuildOutputs externalBuildOutputs();
+
   public abstract Builder toBuilder();
 
   public static Builder builder() {
@@ -63,6 +74,8 @@ public abstract class BlazeSyncParams {
     public abstract Builder setSyncMode(SyncMode value);
 
     public abstract Builder setSyncOrigin(String syncOrigin);
+
+    public abstract Builder setExternalBuildOutputs(@Nullable BlazeBuildOutputs value);
 
     public abstract Builder setBackgroundSync(boolean value);
 
@@ -109,6 +122,7 @@ public abstract class BlazeSyncParams {
         .addSourceFilesToSync(first.sourceFilesToSync())
         .addSourceFilesToSync(second.sourceFilesToSync())
         .setAddProjectViewTargets(first.addProjectViewTargets() || second.addProjectViewTargets())
+        .setExternalBuildOutputs(ObjectUtils.coalesce(first.externalBuildOutputs(), second.externalBuildOutputs()))
         .build();
   }
 

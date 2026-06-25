@@ -29,7 +29,6 @@ import org.jetbrains.annotations.TestOnly
  * @property workspaceStatus URI of the source that the build consumed, if available. The format will be VCS specific.
  * @property fileSets A map from file set ID to file set, with the same ordering as the BEP stream
  * @property buildResult The build exit code
- * @property bepBytesConsumed Number of bytes consumed from BEP stream
  * @property targetsWithErrors The set of build targets that had an error
  * @property configurations Map from configuration ID to configuration details from BEP
  */
@@ -39,7 +38,6 @@ data class ParsedBepOutput(
   val fileSets: ImmutableMap<String, FileSet>,
   val syncStartTimeMillis: Long,
   val buildResult: Int,
-  val bepBytesConsumed: Long,
   val targetsWithErrors: ImmutableSet<String>,
   val configurations: ImmutableMap<String, BuildEventStreamProtos.Configuration>
 ) {

@@ -133,6 +133,13 @@ public class BlazeSyncManager {
                                                 BlazeUserSettings.getInstance()
                                                     .getShowProblemsViewOnSync()));
 
+                                  // Notify listeners exactly once per sync request, before any
+                                  // blaze invocation (including the force-full-sync probe below).
+                                  for (final var listener : SyncListener.EP_NAME.getExtensions()) {
+                                    listener.beforeSyncStart(project, context, syncParams.syncMode());
+                                  }
+
+                                  try {
                                     if (!runInitialDirectoryOnlySync(syncParams)) {
                                       executeTask(project, syncParams, context);
                                       return;
@@ -183,6 +190,11 @@ public class BlazeSyncManager {
                                     if (!context.isCancelled()) {
                                       executeTask(project, updatedSyncParams, context);
                                     }
+                                  } finally {
+                                    for (final var listener : SyncListener.EP_NAME.getExtensions()) {
+                                      listener.afterSyncFinish(project, context, syncParams.syncMode());
+                                    }
+                                  }
                                   }));
             });
   }
@@ -268,6 +280,7 @@ public class BlazeSyncManager {
     switch (syncParams.syncMode()) {
       case NO_BUILD:
       case STARTUP:
+      case REACTIVE:
         return false;
       case FULL:
         return true;

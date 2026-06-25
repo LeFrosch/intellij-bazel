@@ -32,6 +32,7 @@ import com.google.idea.blaze.base.command.info.BlazeInfoRunner;
 import com.google.idea.blaze.base.model.ExternalWorkspaceDataProvider;
 import com.google.idea.blaze.base.execution.ExecutionDeniedException;
 import com.google.idea.blaze.base.io.FileOperationProvider;
+import com.google.idea.blaze.base.model.BlazeProjectData;
 import com.google.idea.blaze.base.model.BlazeVersionData;
 import com.google.idea.blaze.base.model.ExternalWorkspaceData;
 import com.google.idea.blaze.base.model.primitives.WorkspaceRoot;
@@ -51,6 +52,7 @@ import com.google.idea.blaze.base.settings.BlazeImportSettingsManager;
 import com.google.idea.blaze.base.settings.BlazeUserSettings;
 import com.google.idea.blaze.base.sync.SyncScope.SyncCanceledException;
 import com.google.idea.blaze.base.sync.SyncScope.SyncFailedException;
+import com.google.idea.blaze.base.sync.data.BlazeProjectDataManager;
 import com.google.idea.blaze.base.sync.projectview.LanguageSupport;
 import com.google.idea.blaze.base.sync.projectview.WorkspaceLanguageSettings;
 import com.google.idea.blaze.base.sync.workspace.WorkingSet;
@@ -89,6 +91,17 @@ final class ProjectStateSyncTask {
 
   private SyncProjectState getProjectState(BlazeContext context, BlazeSyncParams params)
       throws SyncFailedException, SyncCanceledException {
+    // A reactive update is triggered by an external build, which cannot change the bazel version or
+    // the project view. Reuse the last successful sync's state instead of re-running `bazel info`,
+    // version checks, VCS update, external-workspace-data fetch and project-view verification.
+    if (params.syncMode() == SyncMode.REACTIVE) {
+      SyncProjectState reused = reuseProjectStateForReactive();
+      if (reused != null) {
+        return reused;
+      }
+      // No cached state available; fall through to a full collection.
+    }
+
     if (!FileOperationProvider.getInstance().exists(workspaceRoot.directory())) {
       String message = String.format("Workspace '%s' doesn't exist.", workspaceRoot.directory());
       IssueOutput.error(message).submit(context);
@@ -198,6 +211,32 @@ final class ProjectStateSyncTask {
                .setWorkspacePathResolver(workspacePathResolver)
                .setExternalWorkspaceData(externalWorkspaceData)
                .build();
+  }
+
+  /**
+   * Builds a {@link SyncProjectState} from the last successful sync's {@link BlazeProjectData} and
+   * the already-loaded project view, without running any blaze invocations. Returns {@code null} if
+   * the project has not been synced yet (no cached data), in which case the caller should fall back
+   * to a full state collection.
+   */
+  @Nullable
+  private SyncProjectState reuseProjectStateForReactive() {
+    BlazeProjectData oldProjectData =
+        BlazeProjectDataManager.getInstance(project).getBlazeProjectData();
+    ProjectViewSet projectViewSet = ProjectViewManager.getInstance(project).getProjectViewSet();
+    if (oldProjectData == null || projectViewSet == null) {
+      return null;
+    }
+    return SyncProjectState.builder()
+        .setProjectViewSet(projectViewSet)
+        .setLanguageSettings(oldProjectData.workspaceLanguageSettings())
+        .setBlazeVersionData(oldProjectData.blazeVersionData())
+        .setBlazeInfo(oldProjectData.blazeInfo())
+        // The normal collection path also leaves the working set null (see getProjectState).
+        .setWorkingSet(null)
+        .setWorkspacePathResolver(oldProjectData.workspacePathResolver())
+        .setExternalWorkspaceData(oldProjectData.externalWorkspaceData())
+        .build();
   }
 
   private ListenableFuture<BlazeInfo> createBazelInfoFuture(

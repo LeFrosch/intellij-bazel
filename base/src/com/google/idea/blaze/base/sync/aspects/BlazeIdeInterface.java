@@ -56,6 +56,16 @@ public interface BlazeIdeInterface {
       @Nullable BlazeProjectData oldProjectData);
 
   /**
+   * Returns true if applying {@code buildOutputs} would add or change any aspect IDE-info file
+   * relative to {@code oldProjectData}'s recorded state.
+   *
+   * <p>Used to skip no-op reactive updates: an external build that did not change any
+   * {@code .intellij-info.txt} cannot change the target map, so there is nothing to sync. Fails open
+   * (returns true) if the diff cannot be computed, so an update is never silently dropped.
+   */
+  boolean hasUpdatedIdeInfo(BlazeProjectData oldProjectData, BlazeBuildOutputs buildOutputs);
+
+  /**
    * Invokes a blaze build for the given output groups.
    *
    * @param outputGroups Set of {@link OutputGroup} to be generated in the build.

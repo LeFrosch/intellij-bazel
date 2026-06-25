@@ -54,6 +54,11 @@ class IssueOutput(
     fun warn(title: String): Builder {
       return Builder(MessageEvent.Kind.WARNING, title)
     }
+
+    @JvmStatic
+    fun info(title: String): Builder {
+      return Builder(MessageEvent.Kind.INFO, title)
+    }
   }
 
   @Deprecated("used only for backwards compatibility")

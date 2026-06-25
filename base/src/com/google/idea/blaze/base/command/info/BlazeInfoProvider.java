@@ -114,6 +114,11 @@ public class BlazeInfoProvider {
             if(!isEnabled()) {
                 return;
             }
+            // A reactive update never changes `bazel info` (the exec root / output base are stable),
+            // so keep the cache warm rather than forcing the next real sync to re-run `bazel info`.
+            if (syncMode == SyncMode.REACTIVE) {
+                return;
+            }
             BlazeInfoProvider provider = BlazeInfoProvider.getInstance(project);
             if(provider != null) {
                 provider.invalidate();

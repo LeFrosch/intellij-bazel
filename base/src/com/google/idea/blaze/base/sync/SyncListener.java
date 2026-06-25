@@ -34,7 +34,32 @@ public interface SyncListener {
 
   Topic<SyncListener> TOPIC = Topic.create("Bazel sync events", SyncListener.class);
 
-  /** Called after open documents have been saved, prior to starting the blaze sync. */
+  /**
+   * Called once at the very start of a sync request, before any blaze invocation -- including the
+   * force-full-sync language probe that precedes the initial directory update. Paired with {@link
+   * #afterSyncFinish}. Unlike the per-pass {@link #onSyncStart}, this fires exactly once per sync
+   * request.
+   */
+  default void beforeSyncStart(Project project, BlazeContext context, SyncMode syncMode) {}
+
+  /**
+   * Called exactly once per sync request, after the whole operation completes -- including all
+   * internal passes -- regardless of success, failure, or cancellation. Paired with {@link
+   * #beforeSyncStart}. Unlike the per-pass {@link #afterSync}, this fires exactly once per sync
+   * request, so it is the right place to undo state established in {@link #beforeSyncStart}.
+   */
+  default void afterSyncFinish(Project project, BlazeContext context, SyncMode syncMode) {}
+
+  /**
+   * Called after open documents have been saved, prior to starting the blaze sync.
+   *
+   * <p><b>May be invoked more than once per user-triggered sync, by design.</b> A foreground sync
+   * runs as two internal passes -- a {@link SyncMode#NO_BUILD} "initial directory update" followed
+   * by the real build-based sync -- and this hook is dispatched once per pass, because each pass
+   * runs blaze and guards it with its own {@code onSyncStart}. Implementations must therefore be
+   * idempotent. For a hook guaranteed to run exactly once per sync request (before any blaze
+   * invocation), use {@link #beforeSyncStart}.
+   */
   default void onSyncStart(Project project, BlazeContext context, SyncMode syncMode)
       throws SyncFailedException, SyncCanceledException {}
 
@@ -62,7 +87,11 @@ public interface SyncListener {
       SyncMode syncMode,
       SyncResult syncResult) {}
 
-  /** Guaranteed to be called once per sync, regardless of whether it successfully completed */
+  /**
+   * Called once per internal sync pass, regardless of whether that pass completed successfully --
+   * so it may fire more than once per user-triggered sync (see {@link #onSyncStart}). For a hook
+   * guaranteed to run exactly once per sync request, use {@link #afterSyncFinish}.
+   */
   default void afterSync(
       Project project,
       BlazeContext context,

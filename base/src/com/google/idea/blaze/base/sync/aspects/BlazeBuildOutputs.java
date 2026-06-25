@@ -46,7 +46,6 @@ public class BlazeBuildOutputs {
     // Maps build id to the build result of individual shards
     private final ImmutableMap<String, BuildResult> buildShardResults;
     private final ImmutableSet<String> targetsWithErrors;
-    public final long bepBytesConsumed;
 
     /**
      * {@link BepArtifactData} by {@link OutputArtifact#getBazelOutRelativePath()} for all artifacts from a
@@ -69,13 +68,11 @@ public class BlazeBuildOutputs {
       Map<String, BepArtifactData> artifacts,
       ImmutableMap<String, BuildResult> buildShardResults,
       ImmutableSet<String> targetsWithErrors,
-      long bepBytesConsumed,
       ImmutableMap<String, BuildEventStreamProtos.Configuration> configurations) {
       this.buildResult = buildResult;
       this.artifacts = ImmutableMap.copyOf(artifacts);
       this.buildShardResults = buildShardResults;
       this.targetsWithErrors = targetsWithErrors;
-      this.bepBytesConsumed = bepBytesConsumed;
       this.configurations = configurations;
 
       ImmutableSetMultimap.Builder<String, OutputArtifact> perTarget = ImmutableSetMultimap.builder();
@@ -84,7 +81,7 @@ public class BlazeBuildOutputs {
     }
 
     public static BlazeBuildOutputs noOutputs(BuildResult buildResult) {
-      return new BlazeBuildOutputs(buildResult, ImmutableMap.of(), ImmutableMap.of(), ImmutableSet.of(), 0L, ImmutableMap.of());
+      return new BlazeBuildOutputs(buildResult, ImmutableMap.of(), ImmutableMap.of(), ImmutableSet.of(), ImmutableMap.of());
     }
 
     @VisibleForTesting
@@ -94,7 +91,6 @@ public class BlazeBuildOutputs {
         ImmutableMap.of(),
         ImmutableMap.of(buildId, buildResult),
         ImmutableSet.of(),
-        0L,
         ImmutableMap.of()
       );
     }
@@ -112,7 +108,6 @@ public class BlazeBuildOutputs {
         : parsedOutput.getFullArtifactData(),
         buildIdWithResult,
         parsedOutput.getTargetsWithErrors(),
-        parsedOutput.getBepBytesConsumed(),
         parsedOutput.getConfigurations()
       );
     }
@@ -220,7 +215,6 @@ public class BlazeBuildOutputs {
             // On duplicate buildIds, preserve most recent result
             toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1)),
         Sets.union(targetsWithErrors, nextOutputs.targetsWithErrors()).immutableCopy(),
-        bepBytesConsumed + nextOutputs.bepBytesConsumed(),
         ImmutableMap.<String, BuildEventStreamProtos.Configuration>builder()
             .putAll(configurations)
             .putAll(nextOutputs.configurations())
@@ -228,10 +222,6 @@ public class BlazeBuildOutputs {
     }
     public ImmutableList<String> getBuildIds() {
       return buildShardResults.keySet().asList();
-    }
-
-    public long bepBytesConsumed() {
-      return bepBytesConsumed;
     }
 
     /**

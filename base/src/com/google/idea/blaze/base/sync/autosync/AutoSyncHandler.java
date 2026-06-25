@@ -237,6 +237,8 @@ public class AutoSyncHandler implements ProjectComponent {
         return 3;
       case STARTUP:
         return 4;
+      case REACTIVE:
+        return 5;
     }
     throw new IllegalArgumentException("Unhandled sync mode: " + mode);
   }

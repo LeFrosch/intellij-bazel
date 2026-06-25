@@ -25,6 +25,7 @@ import com.google.idea.blaze.base.command.BlazeCommandName
 import com.google.idea.blaze.base.command.buildresult.BuildResult
 import com.google.idea.blaze.base.command.buildresult.BuildResultHelperBep
 import com.google.idea.blaze.base.command.buildresult.BuildResultParser
+import com.google.idea.blaze.base.command.buildresult.bepparser.streamBepEvents
 import com.google.idea.blaze.base.execution.BazelGuard
 import com.google.idea.blaze.base.execution.ExecutionDeniedException
 import com.google.idea.blaze.base.model.primitives.WorkspaceRoot
@@ -180,38 +181,6 @@ class BazelExecServiceImpl(private val project: Project, private val scope: Coro
     return exitCode
   }
 
-  private suspend fun parseEvent(ctx: BlazeContext, stream: BufferedInputStream) {
-    // make sure that there are at least four bytes already available
-    while (stream.available() < 4) {
-      delay(10.milliseconds)
-    }
-
-    // protobuf messages are delimited by size (encoded as varint32),
-    // read size manually to ensure the entire message is already available
-    val size = CodedInputStream.readRawVarint32(stream.read(), stream)
-
-    while (stream.available() < size) {
-      delay(10.milliseconds)
-    }
-
-    val eventStream = LimitedInputStream(stream, size)
-    val event = try {
-      BuildEvent.parseFrom(eventStream)
-    } catch (e: Exception) {
-      LOG.error("could not parse event", e)
-
-      // if the message could not be parsed, make sure to skip it
-      if (eventStream.bytesRead < size) {
-        stream.skip(size.toLong() - eventStream.bytesRead)
-      }
-
-      return
-    }
-
-    val issueReportingMode = BuildViewScope.of(ctx)?.issueReportingMode ?: IssueReportingMode.SYNC
-    BuildEventParser.parse(event, issueReportingMode)?.let(ctx::output)
-  }
-
   private suspend fun parseEvents(ctx: BlazeContext, helper: BuildResultHelperBep) {
     // wait for bazel to create the output file
     while (!helper.outputFile.exists()) {
@@ -219,12 +188,9 @@ class BazelExecServiceImpl(private val project: Project, private val scope: Coro
     }
 
     withContext(Dispatchers.IO) {
-      FileInputStream(helper.outputFile).buffered().use { stream ->
-        // keep reading events while the coroutine is active, i.e. bazel is still running,
-        // or while the stream has data available (to ensure that all events are processed)
-        while (isActive || stream.available() > 0) {
-          parseEvent(ctx, stream)
-        }
+      streamBepEvents(helper.outputFile.toPath()).collect { event ->
+        val issueReportingMode = BuildViewScope.of(ctx)?.issueReportingMode ?: IssueReportingMode.SYNC
+        BuildEventParser.parse(event, issueReportingMode)?.let(ctx::output)
       }
     }
   }

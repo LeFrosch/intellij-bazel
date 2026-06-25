@@ -173,6 +173,37 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
     return new ProjectTargetData(state.targetMap, state.state, newRemoteOutputs);
   }
 
+  @Override
+  public boolean hasUpdatedIdeInfo(BlazeProjectData oldProjectData, BlazeBuildOutputs buildOutputs) {
+    final var prevState = oldProjectData.targetData().ideInterfaceState;
+    final var files = getIdeInfoArtifacts(buildOutputs);
+
+    try {
+      final var diff = ArtifactsDiff.diffArtifacts(prevState != null ? prevState.ideInfoFileState : null, files);
+
+      // Removed outputs are intentionally ignored: reactive runs in merge mode, where removals never
+      // alter the target map (see updateState).
+      return !diff.getUpdatedOutputs().isEmpty() || !diff.getNewState().isEmpty();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return true; // fail open: never silently drop a potential update
+    } catch (ExecutionException e) {
+      logger.warn("Failed to diff aspect output files for reactive update", e);
+      return true; // fail open: never silently drop a potential update
+    }
+  }
+
+  /** Returns the {@code .intellij-info.txt} aspect outputs from the INFO output group. */
+  private static Collection<OutputArtifact> getIdeInfoArtifacts(BlazeBuildOutputs buildOutputs) {
+    Predicate<String> ideInfoPredicate = AspectStrategy.ASPECT_OUTPUT_FILE_PREDICATE;
+    return buildOutputs
+        .getOutputGroupArtifactsLegacySyncOnly(group -> group.startsWith(OutputGroup.INFO.prefix))
+        .stream()
+        .filter(f -> ideInfoPredicate.test(f.getBazelOutRelativePath()))
+        .distinct()
+        .collect(toImmutableList());
+  }
+
   /** Returns the {@link OutputArtifact}s we want to track between syncs. */
   private static ImmutableSet<OutputArtifact> getTrackedOutputs(
       BlazeBuildOutputs buildOutput) {
@@ -204,15 +235,7 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
     BlazeIdeInterfaceState prevState =
         oldProjectData != null ? oldProjectData.targetData().ideInterfaceState : null;
 
-    Predicate<String> ideInfoPredicate = AspectStrategy.ASPECT_OUTPUT_FILE_PREDICATE;
-    Collection<OutputArtifact> files =
-        buildResult
-            .getBuildResult()
-            .getOutputGroupArtifactsLegacySyncOnly(group -> group.startsWith(OutputGroup.INFO.prefix))
-            .stream()
-            .filter(f -> ideInfoPredicate.test(f.getBazelOutRelativePath()))
-            .distinct()
-            .collect(toImmutableList());
+    Collection<OutputArtifact> files = getIdeInfoArtifacts(buildResult.getBuildResult());
 
     ArtifactsDiff diff;
     try {
@@ -514,18 +537,11 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
     List<LanguageClass> sorted = new ArrayList<>(ignoredLangs);
     sorted.sort(Ordering.usingToString());
 
-    String msg =
-        "Some project targets were ignored because the corresponding language support "
-            + "isn't enabled. Click here to enable support for: "
-            + Joiner.on(", ").join(sorted);
-    IssueOutput.warn(msg)
-        .withNavigatable(
-            new NavigatableAdapter() {
-              @Override
-              public void navigate(boolean requestFocus) {
-                LegacyAdditionalLanguagesHelper.enableLanguageSupport(project, sorted);
-              }
-            })
+    final var languages = sorted.stream().map((it) -> " - " + it).collect(Collectors.joining("\n"));
+
+    IssueOutput.info("Some project targets were ignored")
+        .withDescription("The corresponding language support isn't enabled. You can enable support for:\n" + languages)
+        .withOnClick((project) -> LegacyAdditionalLanguagesHelper.enableLanguageSupport(project, sorted))
         .submit(context);
   }
 

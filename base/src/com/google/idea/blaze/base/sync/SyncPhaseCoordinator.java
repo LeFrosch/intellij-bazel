@@ -222,9 +222,10 @@ public final class SyncPhaseCoordinator {
   }
 
   private boolean useRemoteExecutor(BlazeSyncParams syncParams) {
-    if (syncParams.syncMode() == SyncMode.NO_BUILD) {
+    if (syncParams.syncMode() == SyncMode.NO_BUILD || syncParams.syncMode() == SyncMode.REACTIVE) {
       return false;
     }
+
     SyncStrategy strategy = buildSystem.getSyncStrategy(project);
     switch (strategy) {
       case DECIDE_AUTOMATICALLY:
@@ -317,7 +318,12 @@ public final class SyncPhaseCoordinator {
 
   private BlazeSyncParams finalizeSyncParams(BlazeSyncParams params, BlazeContext context) {
     BlazeProjectData oldProjectData = getOldProjectData(context, params.syncMode());
-    if (oldProjectData == null && params.syncMode() != SyncMode.NO_BUILD) {
+    // REACTIVE is exempt: it must never escalate to a full build (that would compete with the
+    // external build that triggered it). A reactive update without prior project data is a no-op;
+    // ReactiveSyncManager bails before requesting a sync in that case.
+    if (oldProjectData == null
+        && params.syncMode() != SyncMode.NO_BUILD
+        && params.syncMode() != SyncMode.REACTIVE) {
       params = params.toBuilder().setSyncMode(SyncMode.FULL).setAddProjectViewTargets(true).build();
     }
     return params;

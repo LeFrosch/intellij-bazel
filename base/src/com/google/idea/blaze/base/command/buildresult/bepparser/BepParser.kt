@@ -19,34 +19,15 @@ package com.google.idea.blaze.base.command.buildresult.bepparser
 
 import com.google.common.base.Preconditions
 import com.google.common.base.Strings
-import com.google.common.collect.ImmutableMap
-import com.google.common.collect.ImmutableSet
-import com.google.common.collect.Interner
-import com.google.common.collect.Interners
-import com.google.common.collect.Queues
+import com.google.common.collect.*
 import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos
-import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEventId.IdCase.ACTION_COMPLETED
-import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEventId.IdCase.BUILD_FINISHED
-import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEventId.IdCase.CONFIGURATION
-import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEventId.IdCase.NAMED_SET
-import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEventId.IdCase.STARTED
-import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEventId.IdCase.TARGET_COMPLETED
-import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEventId.IdCase.WORKSPACE_STATUS
+import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEvent
+import com.google.devtools.build.lib.buildeventstream.BuildEventStreamProtos.BuildEventId.IdCase.*
 import com.google.errorprone.annotations.CanIgnoreReturnValue
 import com.google.idea.blaze.common.artifact.OutputArtifact
-import com.google.idea.common.experiments.BoolExperiment
-import com.google.idea.common.experiments.IntExperiment
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
-import com.intellij.util.application
-import java.util.concurrent.Semaphore
-
-
-private val parallelBepPoolingEnabled: BoolExperiment = BoolExperiment("bep.parsing.pooling.enabled", true)
-
-// Maximum number of concurrent BEP parsing operations to allow.
-// For large projects, BEP parsing of a single shard can consume several hundred Mb of memory
-private val maxThreads: IntExperiment = IntExperiment("bep.parsing.concurrency.limit", 5)
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.runBlocking
 
 /**
  * Parses BEP events into {@link ParsedBepOutput}. String references in {@link BuildEventStreamProtos.NamedSetOfFiles}
@@ -56,25 +37,25 @@ private val maxThreads: IntExperiment = IntExperiment("bep.parsing.concurrency.l
  * shards running in parallel, so a {@link Interner} is used to share references.
  */
 @Throws(BuildEventStreamProvider.BuildEventStreamException::class)
-fun parseBepArtifacts(stream: BuildEventStreamProvider, nullableInterner: Interner<String>?): ParsedBepOutput {
-  val semaphore = application.service<BepParserSemaphore>()
-  semaphore.start()
-  try {
-    val state = parseBep(stream, nullableInterner)
-    val fileSetMap: ImmutableMap<String, ParsedBepOutput.FileSet> =
-      fillInTransitiveFileSetData(state.fileSets, state.outputs, state.startTimeMillis)
-    return ParsedBepOutput(
-      state.buildId,
-      state.workspaceStatus,
-      fileSetMap,
-      state.startTimeMillis,
-      state.buildResult,
-      stream.getBytesConsumed(),
-      ImmutableSet.copyOf(state.targetsWithErrors),
-      ImmutableMap.copyOf(state.configurations))
-  }
-  finally {
-    semaphore.end()
+suspend fun parseBepArtifacts(flow: Flow<BuildEvent>, interner: Interner<String>? = null): ParsedBepOutput {
+  val state = parseBep(flow, interner)
+  val fileSetMap = fillInTransitiveFileSetData(state.fileSets, state.outputs, state.startTimeMillis)
+
+  return ParsedBepOutput(
+    state.buildId,
+    state.workspaceStatus,
+    fileSetMap,
+    state.startTimeMillis,
+    state.buildResult,
+    ImmutableSet.copyOf(state.targetsWithErrors),
+    ImmutableMap.copyOf(state.configurations)
+  )
+}
+
+@Throws(BuildEventStreamProvider.BuildEventStreamException::class)
+fun parseBepArtifacts(stream: BuildEventStreamProvider, interner: Interner<String>? = null): ParsedBepOutput {
+  return runBlocking {
+    parseBepArtifacts(generateSequence { stream.next }.asFlow(), interner)
   }
 }
 
@@ -94,21 +75,35 @@ private data class OutputGroupTargetConfigFileSets(
  * config but different aspects. While retrieving, a flatmap for the given config is returned.
  */
 private class OutputGroupTargetConfigFileSetMap {
-  private val data: MutableMap<String, MutableMap<String, MutableMap<String, MutableMap<String, List<String>>>>> = mutableMapOf()
+  private val data: MutableMap<String, MutableMap<String, MutableMap<String, MutableMap<String, List<String>>>>> =
+    mutableMapOf()
 
   private fun getOutputGroup(outputGroup: String): MutableMap<String, MutableMap<String, MutableMap<String, List<String>>>> {
     return data.computeIfAbsent(outputGroup) { mutableMapOf() }
   }
 
-  private fun getOutputGroupTarget(outputGroup: String, target: String): MutableMap<String, MutableMap<String, List<String>>> {
+  private fun getOutputGroupTarget(
+    outputGroup: String,
+    target: String
+  ): MutableMap<String, MutableMap<String, List<String>>> {
     return getOutputGroup(outputGroup).computeIfAbsent(target) { mutableMapOf() }
   }
 
-  private fun getOutputGroupTargetConfig(outputGroup: String, target: String, config: String): MutableMap<String, List<String>> {
-    return getOutputGroupTarget(outputGroup, target).computeIfAbsent(config){mutableMapOf()}
+  private fun getOutputGroupTargetConfig(
+    outputGroup: String,
+    target: String,
+    config: String
+  ): MutableMap<String, List<String>> {
+    return getOutputGroupTarget(outputGroup, target).computeIfAbsent(config) { mutableMapOf() }
   }
 
-  fun setOutputGroupTargetConfigAspect(outputGroup: String, target: String, config: String, aspect: String, fileSetNames: List<String>) {
+  fun setOutputGroupTargetConfigAspect(
+    outputGroup: String,
+    target: String,
+    config: String,
+    aspect: String,
+    fileSetNames: List<String>
+  ) {
     val previous = getOutputGroupTargetConfig(outputGroup, target, config).put(aspect, fileSetNames.toList())
     if (previous != null) {
       error("$outputGroup:$target:$config already present")
@@ -119,8 +114,9 @@ private class OutputGroupTargetConfigFileSetMap {
     return data.entries.asSequence().flatMap { outputGroup ->
       outputGroup.value.entries.asSequence().flatMap { target ->
         target.value.entries.asSequence().map { config ->
-          OutputGroupTargetConfigFileSets(outputGroup.key, target.key,
-                                          config.key, config.value.entries.flatMap { it.value })
+          OutputGroupTargetConfigFileSets(
+            outputGroup.key, target.key,
+            config.key, config.value.entries.flatMap { it.value })
         }
       }
     }
@@ -130,8 +126,9 @@ private class OutputGroupTargetConfigFileSetMap {
     val outputGroupData = data[outputGroup] ?: return emptySequence()
     return outputGroupData.entries.asSequence().flatMap { target ->
       target.value.entries.asSequence().map { config ->
-        OutputGroupTargetConfigFileSets(outputGroup, target.key,
-                                        config.key, config.value.entries.flatMap { it.value })
+        OutputGroupTargetConfigFileSets(
+          outputGroup, target.key,
+          config.key, config.value.entries.flatMap { it.value })
       }
     }
   }
@@ -140,8 +137,9 @@ private class OutputGroupTargetConfigFileSetMap {
     val outputGroupData = data[outputGroup] ?: return emptySequence()
     val outputGroupTargetData = outputGroupData[target] ?: return emptySequence()
     return outputGroupTargetData.entries.asSequence().map { config ->
-      OutputGroupTargetConfigFileSets(outputGroup, target,
-                                      config.key, config.value.entries.flatMap { it.value })
+      OutputGroupTargetConfigFileSets(
+        outputGroup, target,
+        config.key, config.value.entries.flatMap { it.value })
     }
   }
 }
@@ -198,7 +196,11 @@ private class BepParserState {
   }
 }
 
-private data class NamedFileSet(val id: String, val startTimeMillis: Long, val fileSet: BuildEventStreamProtos.NamedSetOfFiles)
+private data class NamedFileSet(
+  val id: String,
+  val startTimeMillis: Long,
+  val fileSet: BuildEventStreamProtos.NamedSetOfFiles
+)
 
 private fun Sequence<NamedFileSet>.toDistinctOutputArtifacts(): Sequence<OutputArtifact> {
   val emitted = HashSet<String>()
@@ -207,27 +209,6 @@ private fun Sequence<NamedFileSet>.toDistinctOutputArtifacts(): Sequence<OutputA
     artifacts.mapNotNull { artifact ->
       if (emitted.add(artifact.getArtifactPath().toString())) artifact else null
     }
-  }
-}
-
-@Service(Service.Level.APP)
-class BepParserSemaphore {
-
-  val parallelParsingSemaphore: Semaphore? = if (parallelBepPoolingEnabled.getValue()) Semaphore(maxThreads.getValue()) else null
-
-  @Throws(BuildEventStreamProvider.BuildEventStreamException::class)
-  fun start() {
-    try {
-      parallelParsingSemaphore?.acquire()
-    }
-    catch (e: InterruptedException) {
-      Thread.currentThread().interrupt()
-      throw BuildEventStreamProvider.BuildEventStreamException("Failed to acquire a parser semphore permit", e)
-    }
-  }
-
-  fun end() {
-    parallelParsingSemaphore?.release()
   }
 }
 
@@ -256,11 +237,12 @@ private class FileSetBuilder {
 
 
 @Throws(BuildEventStreamProvider.BuildEventStreamException::class)
-private fun parseBep(stream: BuildEventStreamProvider, nullableInterner: Interner<String>?): BepParserState {
+private suspend fun parseBep(stream: Flow<BuildEvent>, nullableInterner: Interner<String>?): BepParserState {
   val interner = nullableInterner ?: Interners.newStrongInterner()
   val state = BepParserState()
   var emptyBuildEventStream = true
-  for (event in generateSequence { stream.next }) {
+
+  stream.collect { event ->
     emptyBuildEventStream = false
     when (event.id.idCase) {
       WORKSPACE_STATUS -> {
@@ -293,7 +275,8 @@ private fun parseBep(stream: BuildEventStreamProvider, nullableInterner: Interne
             interner.intern(label),
             interner.intern(configId),
             interner.intern(aspect),
-            fileSetNames)
+            fileSetNames
+          )
         }
       }
 
@@ -316,11 +299,13 @@ private fun parseBep(stream: BuildEventStreamProvider, nullableInterner: Interne
       else -> Unit
     }
   }
+
   // If stream is empty, it means that service failed to retrieve any blaze build event from build
   // event stream. This should not happen if a build start correctly.
   if (emptyBuildEventStream) {
     throw BuildEventStreamProvider.BuildEventStreamException("No build events found")
   }
+
   return state
 }
 
@@ -393,7 +378,10 @@ private fun internNamedSet(
 }
 
 
-private fun parseFiles(namedSet: BuildEventStreamProtos.NamedSetOfFiles, startTimeMillis: Long): Sequence<OutputArtifact> {
+private fun parseFiles(
+  namedSet: BuildEventStreamProtos.NamedSetOfFiles,
+  startTimeMillis: Long
+): Sequence<OutputArtifact> {
   return namedSet.filesList.asSequence()
     .mapNotNull { OutputArtifactParser.parseArtifact(it, startTimeMillis) }
 }
