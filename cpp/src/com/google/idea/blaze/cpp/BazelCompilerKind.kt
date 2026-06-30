@@ -16,9 +16,13 @@
 package com.google.idea.blaze.cpp
 
 import com.intellij.openapi.project.Project
+import com.jetbrains.cidr.lang.OCLanguageKind
+import com.jetbrains.cidr.lang.toolchains.CidrCompilerSwitches
+import com.jetbrains.cidr.lang.toolchains.CidrSwitchBuilder
 import com.jetbrains.cidr.lang.toolchains.CidrToolEnvironment
 import com.jetbrains.cidr.lang.workspace.compiler.BasicCompilerCommandLineShortener
 import com.jetbrains.cidr.lang.workspace.compiler.ClangCompilerKind
+import com.jetbrains.cidr.lang.workspace.compiler.CompilerInfo
 import com.jetbrains.cidr.lang.workspace.compiler.GCCCompiler
 import com.jetbrains.cidr.lang.workspace.compiler.GCCCompilerKind
 import com.jetbrains.cidr.lang.workspace.compiler.OCCompiler
@@ -73,6 +77,14 @@ private class BazelGCCCompiler(
 ) : GCCCompiler(compilerExecutable, compilerWorkingDirectory, environment, tempFilesPool) {
 
   override fun getCommandLineShortener(): OCCompilerCommandLineShortener = BasicCompilerCommandLineShortener()
+
+  override fun collectInfo(languageKind: OCLanguageKind, originalSwitches: CidrCompilerSwitches): CompilerInfo {
+    val newSwitches = CidrSwitchBuilder().addAll(originalSwitches)
+      .addSingleRaw("-Wp,-v")
+      .build()
+
+    return super.collectInfo(languageKind, newSwitches)
+  }
 }
 
 /** Bazel-specific GCC compiler kind that disables response files. */
