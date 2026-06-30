@@ -41,7 +41,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Units tests for {@link ExecutionRootPathResolver}. */
+/**
+ * Units tests for {@link ExecutionRootPathResolver}.
+ */
 @RunWith(JUnit4.class)
 public class ExecutionRootPathResolverTest extends BlazeTestCase {
 
@@ -56,7 +58,8 @@ public class ExecutionRootPathResolverTest extends BlazeTestCase {
   private static final TargetName SIMPLE_TARGET_TRAILING_SLASH = TargetName.create("simple_target_trailing_slash");
   private static final TargetName ADVANCED_TARGET = TargetName.create("advanced_target");
   private static final TargetName TARGET_WITH_INCLUDE_PREFIX = TargetName.create("include_prefix");
-  private static final List<TargetName> TARGET_NAMES = List.of(SIMPLE_TARGET, SIMPLE_TARGET_TRAILING_SLASH, ADVANCED_TARGET);
+  private static final List<TargetName> TARGET_NAMES = List.of(SIMPLE_TARGET, SIMPLE_TARGET_TRAILING_SLASH,
+      ADVANCED_TARGET);
   private static final String INCLUDE_PREFIX = "generated-include-prefix";
 
   private static final TargetName TARGET_WITH_ABSOLUTE_STRIP_PREFIX = TargetName.create("absolute_strip_prefix");
@@ -89,8 +92,7 @@ public class ExecutionRootPathResolverTest extends BlazeTestCase {
       return simpleStripPrefix;
     } else if (targetName.equals(TARGET_WITH_ABSOLUTE_STRIP_PREFIX)) {
       return ABSOLUTE_STRIP_PREFIX;
-    }
-    else {
+    } else {
       throw new IllegalArgumentException("Unexpected targetName");
     }
   }
@@ -283,6 +285,27 @@ public class ExecutionRootPathResolverTest extends BlazeTestCase {
         new File(EXECUTION_ROOT, fileToBeResolved.toString()));
   }
 
+
+  @Test
+  public void testProcSelfCwdResolvesLikeExecRootRelativePath() {
+    final var execRootPath = ExecutionRootPath.create("/proc/self/cwd/bazel-out/crosstool/genfiles/res/normal");
+    assertThat(pathResolver.resolveToIncludeDirectories(execRootPath))
+        .containsExactly(new File(EXECUTION_ROOT, "bazel-out/crosstool/genfiles/res/normal"));
+
+    final var outputBasePath = ExecutionRootPath.create("/proc/self/cwd/external/guava/src");
+    assertThat(pathResolver.resolveToIncludeDirectories(outputBasePath))
+        .containsExactly(new File(OUTPUT_BASE, "external/guava/src"));
+
+    final var workspacePath = ExecutionRootPath.create("/proc/self/cwd/tools/fast");
+    assertThat(pathResolver.resolveToIncludeDirectories(workspacePath))
+        .containsExactly(WORKSPACE_ROOT.fileForPath(new WorkspacePath("tools/fast")));
+  }
+
+  @Test
+  public void testProcSelfCwdResolveExecutionRootPath() {
+    assertThat(pathResolver.resolveExecutionRootPath(ExecutionRootPath.create("/proc/self/cwd/bazel-out/genfiles/foo")))
+        .isEqualTo(new File(EXECUTION_ROOT, "bazel-out/genfiles/foo"));
+  }
 
   @Test
   public void testExternalWorkspaceSymlinkToProject() throws IOException {

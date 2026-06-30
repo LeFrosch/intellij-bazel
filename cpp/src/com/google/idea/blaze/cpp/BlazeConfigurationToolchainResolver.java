@@ -44,6 +44,7 @@ import com.google.idea.blaze.base.scope.scopes.TimingScope.EventType;
 import com.google.idea.blaze.base.sync.BlazeSyncManager;
 import com.google.idea.blaze.base.sync.workspace.ExecutionRootPathResolver;
 import com.google.idea.blaze.cpp.CompilerVersionChecker.VersionCheckException;
+import com.google.idea.blaze.cpp.environment.EnvironmentProcessor;
 import com.google.idea.blaze.cpp.XcodeCompilerSettingsProvider.XcodeCompilerSettingsException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.SystemInfo;
@@ -275,12 +276,17 @@ public final class BlazeConfigurationToolchainResolver {
           return null;
         }
 
+        // Rewrite the toolchain's /proc/self/cwd-relative paths to absolute so they resolve both when
+        // probing the compiler and in the header search paths the IDE persists from that probe.
+        final var cEnvironment = EnvironmentProcessor.apply(toolchain.cEnvironment(), executionRootPathResolver);
+        final var cppEnvironment = EnvironmentProcessor.apply(toolchain.cppEnvironment(), executionRootPathResolver);
+
         final var cCompilerVersion = getCompilerVersion(
             project,
             context,
             executionRootPathResolver,
             xcodeCompilerSettings,
-            toolchain.cEnvironment(),
+            cEnvironment,
             cCompiler
         );
         final var cppCompilerVersion = getCompilerVersion(
@@ -288,7 +294,7 @@ public final class BlazeConfigurationToolchainResolver {
             context,
             executionRootPathResolver,
             xcodeCompilerSettings,
-            toolchain.cppEnvironment(),
+            cppEnvironment,
             cppCompiler
         );
 
@@ -307,8 +313,8 @@ public final class BlazeConfigurationToolchainResolver {
             .asEnvironmentVariables(xcodeCompilerSettings);
         final var environment = mergeEnvironments(
             xcodeEnvironment,
-            toolchain.cEnvironment(),
-            toolchain.cppEnvironment()
+            cEnvironment,
+            cppEnvironment
         );
 
         final var settings = BlazeCompilerSettings.builder()
