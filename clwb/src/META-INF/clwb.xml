@@ -67,7 +67,7 @@
   </extensions>
 
   <extensions defaultExtensionNs="cidr.debugger">
-    <debugProfilesEnabler implementation="com.google.idea.blaze.clwb.run.BazelProfileEnabler"/>
-    <debugProfileType implementation="com.google.idea.blaze.clwb.run.BazelGdbServerDebugProfileType"/>
+    <debugProfilesEnabler implementation="com.google.idea.blaze.clwb.run.profile.BazelProfileEnabler"/>
+    <debugProfileType implementation="com.google.idea.blaze.clwb.run.profile.BazelGdbServerDebugProfileType"/>
   </extensions>
 </idea-plugin>

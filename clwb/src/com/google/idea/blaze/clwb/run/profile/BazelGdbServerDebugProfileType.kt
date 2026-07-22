@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-package com.google.idea.blaze.clwb.run
+package com.google.idea.blaze.clwb.run.profile
 
 import com.intellij.cidr.debugger.profiles.CidrDebugProfile
 import com.intellij.cidr.debugger.profiles.CidrDebugProfileType
@@ -13,7 +13,6 @@ import com.intellij.ui.dsl.builder.Panel
 import com.intellij.ui.dsl.builder.bindIntText
 import com.jetbrains.cidr.cpp.CLionExecutionBundle
 import com.jetbrains.cidr.cpp.execution.debugger.backend.CLionGDBDriverConfiguration
-import com.jetbrains.cidr.cpp.execution.debugger.backend.CLionGdbProfileDriverConfiguration
 import com.jetbrains.cidr.cpp.toolchains.CPPEnvironment
 import com.jetbrains.cidr.execution.debugger.backend.DebuggerDriverConfiguration
 import com.jetbrains.cidr.lang.toolchains.CidrToolEnvironment
@@ -36,7 +35,8 @@ class BazelGdbServerDebugProfileState : BaseState() {
  *
  * Selecting this profile is how a user opts into gdbserver-based debugging; its single [port]
  * option is the authoritative source of the gdbserver port. The launcher wiring that actually
- * spawns gdbserver and connects the remote debug process using this port is a follow-up.
+ * spawns gdbserver and connects the remote debug process using this port lives in the profile-aware
+ * launcher.
  *
  * Note: [CidrDebugProfileType] is marked `@ApiStatus.Internal` and gated behind the
  * `cidr.debugger.enableDebugProfiles` registry key; treat it as unstable across CLion releases.

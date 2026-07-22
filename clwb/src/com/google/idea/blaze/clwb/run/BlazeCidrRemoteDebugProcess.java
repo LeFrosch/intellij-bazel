@@ -44,7 +44,7 @@ public class BlazeCidrRemoteDebugProcess extends CidrDebugProcess {
   private final ProcessHandler targetProcess;
   private final CidrRemoteDebugParameters remoteDebugParameters;
 
-  BlazeCidrRemoteDebugProcess(
+  public BlazeCidrRemoteDebugProcess(
       ProcessHandler targetProcess,
       DebuggerDriverConfiguration debuggerDriverConfiguration,
       CidrRemoteDebugParameters remoteDebugParameters,

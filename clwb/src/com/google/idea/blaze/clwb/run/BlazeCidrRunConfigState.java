@@ -23,7 +23,7 @@ import com.google.idea.blaze.base.run.state.RunConfigurationState;
 import com.google.idea.blaze.base.settings.BuildSystemName;
 
 /** A version of the common state allowing environment variables to be set when debugging. */
-final class BlazeCidrRunConfigState extends BlazeCommandRunConfigurationCommonState {
+public final class BlazeCidrRunConfigState extends BlazeCommandRunConfigurationCommonState {
   private static final int DEFAULT_DEBUG_PORT = 5006;
 
   private final EnvironmentVariablesState envVars = new EnvironmentVariablesState();
@@ -38,7 +38,7 @@ final class BlazeCidrRunConfigState extends BlazeCommandRunConfigurationCommonSt
     return ImmutableList.of(command, testFilter, exeFlags, envVars, debugPortState);
   }
 
-  EnvironmentVariablesState getEnvVarsState() {
+  public EnvironmentVariablesState getEnvVarsState() {
     return envVars;
   }
 
