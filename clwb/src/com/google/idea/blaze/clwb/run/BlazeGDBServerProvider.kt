@@ -42,21 +42,9 @@ object BlazeGDBServerProvider {
    */
   private val GDBSERVER_WRAPPER: Path by Datafiles.resolveLazy("gdb/gdbserver")
 
+  // TODO: inline this into BlazeCidrLauncher once it is converted to Kotlin, no reason to keep this extra object around
   @JvmStatic
   fun getFlagsForDebugging(state: RunConfigurationState?, configuration: BlazeCommandRunConfiguration): ImmutableList<String> {
-    if (state !is BlazeCidrRunConfigState) {
-      return ImmutableList.of()
-    }
-
-    return getFlagsForDebugging(state, configuration, state.getDebugPortState().port)
-  }
-
-  @JvmStatic
-  fun getFlagsForDebugging(
-    state: RunConfigurationState?,
-    configuration: BlazeCommandRunConfiguration,
-    port: Int,
-  ): ImmutableList<String> {
     LOG.assertTrue(RunConfigurationUtils.getDebuggerKind(configuration) == BlazeDebuggerKind.GDB_SERVER)
 
     if (state !is BlazeCidrRunConfigState) {
@@ -78,7 +66,7 @@ object BlazeGDBServerProvider {
 
     // if gdbserver could not be found, fall back to trying PATH
     val gdbServerPath = getGDBServerPath(ToolchainUtils.getToolchain()) ?: "gdbserver"
-    builder.withRunUnderGDBServer(gdbServerPath, port, GDBSERVER_WRAPPER.toString())
+    builder.withRunUnderGDBServer(gdbServerPath, state.getDebugPortState().port, GDBSERVER_WRAPPER.toString())
 
     return builder.build()
   }

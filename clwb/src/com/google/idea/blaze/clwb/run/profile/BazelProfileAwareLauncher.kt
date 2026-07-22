@@ -18,7 +18,6 @@
 package com.google.idea.blaze.clwb.run.profile
 
 import com.google.idea.blaze.base.run.BlazeCommandRunConfiguration
-import com.google.idea.blaze.clwb.run.BlazeGDBServerProvider
 import com.intellij.cidr.debugger.profiles.CidrDebugProfileManager
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.configurations.CommandLineState
@@ -55,7 +54,7 @@ class BazelProfileAwareLauncher(
     return with(resolveLauncherContext(configuration, environment)) {
       if (profile.type.getId() == BazelGdbServerDebugProfileType.ID) {
         val port = (profile.state as BazelGdbServerDebugProfileState).port
-        val targetProcess = createTargetProcess(state, BlazeGDBServerProvider.getFlagsForDebugging(configState, configuration, port))
+        val targetProcess = createTargetProcess(state, getGdbServerFlags(port))
         CidrLauncher.configProcessHandler(targetProcess, false, true, getProject())
 
         createRemoteDebugProcess(state, session, targetProcess, port)
