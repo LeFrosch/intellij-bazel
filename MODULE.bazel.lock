@@ -268,7 +268,8 @@
     "https://bcr.bazel.build/modules/rules_java/9.1.0/MODULE.bazel": "ee63f27e36a3fada80342869361182f120a9819c74320e8e65b1e04ba0cd7a9d",
     "https://bcr.bazel.build/modules/rules_java/9.3.0/MODULE.bazel": "f657c72d65ac449caae9abf2e68e66c0d36f9416848c4c4903d0b3234229e7f2",
     "https://bcr.bazel.build/modules/rules_java/9.6.1/MODULE.bazel": "6b0b7172ce598e37e31d1e24f2a492a5249b88304bd25b02b465ee22e3aa3752",
-    "https://bcr.bazel.build/modules/rules_java/9.6.1/source.json": "d577c30fe3005821ac39c6ed43eb5accc77ff67c7b80f4043101aef4b027a903",
+    "https://bcr.bazel.build/modules/rules_java/9.7.0/MODULE.bazel": "3ce6bd55fdd4fcb3323197736b7d976e0eedcc0eea78ca6186d20d314ba12e12",
+    "https://bcr.bazel.build/modules/rules_java/9.7.0/source.json": "23b356565156e0fbc71e5dad7cf8e1b951466b7ae3fd731cb1d2c95ca82b1d70",
     "https://bcr.bazel.build/modules/rules_jvm_external/4.4.2/MODULE.bazel": "a56b85e418c83eb1839819f0b515c431010160383306d13ec21959ac412d2fe7",
     "https://bcr.bazel.build/modules/rules_jvm_external/5.1/MODULE.bazel": "33f6f999e03183f7d088c9be518a63467dfd0be94a11d0055fe2d210f89aa909",
     "https://bcr.bazel.build/modules/rules_jvm_external/5.2/MODULE.bazel": "d9351ba35217ad0de03816ef3ed63f89d411349353077348a45348b096615036",
@@ -384,7 +385,7 @@
     "//intellij_platform_sdk:extension.bzl%intellij_platform": {
       "general": {
         "bzlTransitiveDigest": "WgE6i3N349thGakuJK1nxa5LEJrLt9Pwd3CNbmP2PZc=",
-        "usagesDigest": "xvnDoG0Rfk5PIwgt6SMpjKaIvk9eSi3myxikhwCxZag=",
+        "usagesDigest": "u2kTrX4oun49h1tS95HbqJ7xSUK+vrdCwmE31M3Ft2M=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_tools bazel_tools"
         ],
@@ -436,8 +437,8 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
             "attributes": {
               "build_file": "@@//intellij_platform_sdk:BUILD.python",
-              "sha256": "d6009c06e42825cb1b0c6554bf3205282f6695c797dea8c672e00565f9be2900",
-              "url": "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/PythonCore/262.8665.176/PythonCore-262.8665.176.zip"
+              "sha256": "44fca95b2104c40e2609bf7724be3816a62a4727a0090278a3330b0025dbe1f0",
+              "url": "https://plugins.jetbrains.com/maven/com/jetbrains/plugins/PythonCore/262.8665.258/PythonCore-262.8665.258.zip"
             }
           },
           "jbr_25_0_3": {

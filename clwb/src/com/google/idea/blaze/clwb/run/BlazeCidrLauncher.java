@@ -59,6 +59,7 @@ import com.intellij.execution.process.ProcessListener;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Ref;
 import com.intellij.xdebugger.XDebugSession;
 import com.jetbrains.cidr.execution.CidrConsoleBuilder;
 import com.jetbrains.cidr.execution.CidrCoroutineHelper;
@@ -86,21 +87,16 @@ public final class BlazeCidrLauncher extends CidrLauncher {
   /**
    * This environment variable used by Bazel to pass the content of the --test_filter flag to the test framework.
    */
-  private static final String TEST_FILTER_ENV_VARIABLE = "TESTBRIDGE_TEST_ONLY";
+  static final String TEST_FILTER_ENV_VARIABLE = "TESTBRIDGE_TEST_ONLY";
 
   private final Project project;
   private final BlazeCommandRunConfiguration configuration;
   private final BlazeCidrRunConfigState handlerState;
-  private final BlazeCidrRunConfigurationRunner runner;
   private final ExecutionEnvironment env;
 
-  BlazeCidrLauncher(
-      BlazeCommandRunConfiguration configuration,
-      BlazeCidrRunConfigurationRunner runner,
-      ExecutionEnvironment env) {
+  BlazeCidrLauncher(BlazeCommandRunConfiguration configuration, ExecutionEnvironment env) {
     this.configuration = configuration;
     this.handlerState = (BlazeCidrRunConfigState) configuration.getHandler().getState();
-    this.runner = runner;
     this.env = env;
     this.project = configuration.getProject();
   }
@@ -231,7 +227,8 @@ public final class BlazeCidrLauncher extends CidrLauncher {
     if (target == null) {
       throw new ExecutionException("Cannot parse run configuration target.");
     }
-    if (runner.executable == null) {
+    final var executable = BlazeCidrRunConfigurationRunner.getDebugExecutable(env);
+    if (executable == null) {
       throw new ExecutionException("No debug binary found.");
     }
     EventLoggingService.getInstance().logEvent(getClass(), "debugging-cpp");
@@ -243,14 +240,14 @@ public final class BlazeCidrLauncher extends CidrLauncher {
     if (debuggerKind != BlazeDebuggerKind.GDB_SERVER) {
 
       File workingDir =
-          new File(runner.executable + ".runfiles", workspaceRootDirectory.getName());
+          new File(executable + ".runfiles", workspaceRootDirectory.getName());
 
       if (!workingDir.exists()) {
         workingDir = workspaceRootDirectory;
       }
 
       GeneralCommandLine commandLine =
-          new GeneralCommandLine(runner.executable.toString()).withWorkDirectory(workingDir);
+          new GeneralCommandLine(executable.toString()).withWorkDirectory(workingDir);
 
       commandLine.addParameters(getTargetArguments(target));
       commandLine.addParameters(handlerState.getExeFlagsState().getFlagsForExternalProcesses());
@@ -299,7 +296,7 @@ public final class BlazeCidrLauncher extends CidrLauncher {
     CidrRemoteDebugParameters parameters =
         new CidrRemoteDebugParameters(
             "tcp:localhost:" + handlerState.getDebugPortState().port,
-            runner.executable.toString(),
+            executable.toString(),
             "target:",
             ImmutableList.of(
                 new CidrRemotePathMapping("/proc/self/cwd", workspaceRootDirectory.getParent())));
@@ -348,10 +345,10 @@ public final class BlazeCidrLauncher extends CidrLauncher {
     return BlazeCommandName.TEST.equals(handlerState.getCommandState().getCommand());
   }
 
-  private final class GoogleTestConsoleBuilder extends CidrConsoleBuilder {
+  public final class GoogleTestConsoleBuilder extends CidrConsoleBuilder {
     @Nullable private final BlazeTestUiSession testUiSession;
 
-    private GoogleTestConsoleBuilder(Project project, @Nullable BlazeTestUiSession testUiSession) {
+    public GoogleTestConsoleBuilder(Project project, @Nullable BlazeTestUiSession testUiSession) {
       super(project, null, null);
       this.testUiSession = testUiSession;
       addFilter(new BlazeCidrTestOutputFilter(project));

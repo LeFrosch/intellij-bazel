@@ -201,8 +201,8 @@ intellij_platform.plugin(
     name = "PythonCore",
     alias = "python_2026_2",
     build_file = "//intellij_platform_sdk:BUILD.python",
-    sha256 = "d6009c06e42825cb1b0c6554bf3205282f6695c797dea8c672e00565f9be2900",
-    version = "262.8665.176",
+    sha256 = "44fca95b2104c40e2609bf7724be3816a62a4727a0090278a3330b0025dbe1f0",
+    version = "262.8665.258",
 )
 use_repo(intellij_platform, "clion_2025_3", "clion_2026_1", "clion_2026_2", "jbr_21_0_11", "jbr_25_0_3", "python_2025_3", "python_2026_1", "python_2026_2")
 

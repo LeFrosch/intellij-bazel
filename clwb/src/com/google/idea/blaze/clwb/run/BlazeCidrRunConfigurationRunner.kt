@@ -28,6 +28,7 @@ import com.google.idea.blaze.base.run.ExecutorType
 import com.google.idea.blaze.base.run.confighandler.BlazeCommandRunConfigurationRunner
 import com.google.idea.blaze.base.util.SaveUtil
 import com.google.idea.blaze.clwb.sync.shouldInjectDebugFlags
+import com.google.idea.sdkcompat.clion.OSTypeCompat
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.RunCanceledByUserException
@@ -35,31 +36,39 @@ import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ExecutionUtil
+import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.Ref
+import com.jetbrains.cidr.cpp.toolchains.CPPToolchains
 import com.jetbrains.cidr.execution.CidrCommandLineState
 import java.nio.file.Path
 import kotlin.coroutines.cancellation.CancellationException
 
 /** CLion-specific handler for [BlazeCommandRunConfiguration]s. */
-class BlazeCidrRunConfigurationRunner(private val configuration: BlazeCommandRunConfiguration) :
-  BlazeCommandRunConfigurationRunner {
+class BlazeCidrRunConfigurationRunner(
+  private val configuration: BlazeCommandRunConfiguration,
+) : BlazeCommandRunConfigurationRunner {
 
-  /** Calculated during the before-run task. */
-  @JvmField
-  var executable: Path? = null
+  companion object {
+    private val DEBUG_EXECUTABLE_KEY: Key<Ref<Path>> = Key.create("blaze.clwb.debug.executable")
+
+    @JvmStatic
+    fun getDebugExecutable(env: ExecutionEnvironment): Path? {
+      return env.getCopyableUserData(DEBUG_EXECUTABLE_KEY)?.get()
+    }
+  }
 
   override fun getRunProfileState(executor: Executor, env: ExecutionEnvironment): RunProfileState {
-    return CidrCommandLineState(env, BlazeCidrLauncher(configuration, this, env))
+    env.putCopyableUserData(DEBUG_EXECUTABLE_KEY, Ref())
+    return CidrCommandLineState(env, BazelProfileAwareLauncher(configuration, env))
   }
 
   override fun executeBeforeRunTask(env: ExecutionEnvironment): Boolean {
-    executable = null
-
-    try {
-      executable = getExecutableToDebug(env)
-      return true
+    return try {
+      env.getCopyableUserData(DEBUG_EXECUTABLE_KEY)?.set(getExecutableToDebug(env))
+      true
     } catch (e: ExecutionException) {
       ExecutionUtil.handleExecutionError(env.project, env.executor.toolWindowId, env.runProfile, e)
-      return false
+      false
     }
   }
 

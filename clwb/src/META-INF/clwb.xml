@@ -65,4 +65,9 @@
     <notifications.editorNotificationWarningProvider implementation="com.google.idea.blaze.clwb.BazelEditorNotificationProvider"/>
     <widget.widgetStatusProvider implementation="com.google.idea.blaze.clwb.BazelWidgetStatusProvider"/>
   </extensions>
+
+  <extensions defaultExtensionNs="cidr.debugger">
+    <debugProfilesEnabler implementation="com.google.idea.blaze.clwb.run.BazelProfileEnabler"/>
+    <debugProfileType implementation="com.google.idea.blaze.clwb.run.BazelGdbServerDebugProfileType"/>
+  </extensions>
 </idea-plugin>
