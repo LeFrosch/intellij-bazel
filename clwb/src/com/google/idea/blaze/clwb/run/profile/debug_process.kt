@@ -65,8 +65,16 @@ fun createLocalDebugProcess(
 
   // external paths must be mapped before the workspace root, since one is a prefix of the other
   val sourceMappings = linkedMapOf(
+    // /proc/self/cwd mappings used on linux
     PROC_CWD.resolve("external") to ctx.executionRoot.resolve("external"),
     PROC_CWD to ctx.workspaceRoot,
+
+    // execution root mappings used on Windows
+    ctx.executionRoot.resolve("external") to ctx.executionRoot.resolve("external"),
+    ctx.executionRoot to ctx.workspaceRoot,
+
+    // relative mappings used on macOS
+    Path.of("external") to ctx.executionRoot.resolve("external"),
   )
 
   val parameters = TrivialRunParameters(
