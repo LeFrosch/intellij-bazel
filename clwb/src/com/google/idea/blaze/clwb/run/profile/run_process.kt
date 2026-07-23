@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Bazel Authors. All rights reserved.
+ * Copyright 2026 The Bazel Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.idea.blaze.clwb.run.profile
 
 import com.google.common.collect.ImmutableList
@@ -32,7 +33,6 @@ import com.google.idea.blaze.base.run.smrunner.BlazeTestUiSession
 import com.google.idea.blaze.base.run.testlogs.LocalBuildEventProtocolTestFinderStrategy
 import com.google.idea.blaze.base.scope.BlazeContext
 import com.google.idea.blaze.base.scope.scopes.ProblemsViewScope
-import com.google.idea.blaze.base.settings.Blaze
 import com.google.idea.blaze.base.settings.BlazeUserSettings
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.configurations.CommandLineState
@@ -43,31 +43,32 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessListener
 import com.jetbrains.cidr.execution.CidrConsoleBuilder
 
-context(ctx: BazelDefaultLauncherContext)
 @Throws(ExecutionException::class)
+context(ctx: BazelDefaultLauncherContext)
 fun createTargetProcess(state: CommandLineState, extraFlags: List<String>): ProcessHandler {
   val blazeContext = BlazeContext.create()
+
   val testUiSession = createTestUiSession()
   val command = ctx.configState.commandState.command
 
+  val projectViewFlag = BlazeFlags.blazeFlags(
+    ctx.project,
+    ctx.projectView,
+    command,
+    blazeContext,
+    BlazeInvocationContext.runConfigContext(
+      ExecutorType.fromExecutor(ctx.environment.executor),
+      ctx.configuration.type,
+      false,
+    ),
+  )
+
   val builder = BlazeCommand
-    .builder(Blaze.getBuildSystemProvider(ctx.project).getBinaryPath(ctx.project), command)
+    .builder(command)
     .addTargets(ctx.configuration.targets)
     .addBlazeFlags(extraFlags)
-    .addBlazeFlags(
-      BlazeFlags.blazeFlags(
-        ctx.project,
-        ctx.projectView,
-        command,
-        blazeContext,
-        BlazeInvocationContext.runConfigContext(
-          ExecutorType.fromExecutor(ctx.environment.executor),
-          ctx.configuration.type,
-          false,
-        ),
-      )
-    )
-    .addBlazeFlags(testUiSession?.blazeFlags ?: ImmutableList.of<String>())
+    .addBlazeFlags(projectViewFlag)
+    .addBlazeFlags(testUiSession?.blazeFlags ?: ImmutableList.of())
 
   val testFilterFlag = ctx.configState.testFilterFlag
   if (testFilterFlag != null && ctx.isTest) {
@@ -77,32 +78,36 @@ fun createTargetProcess(state: CommandLineState, extraFlags: List<String>): Proc
   builder.addExeFlags(ctx.configState.exeFlagsState.getFlagsForExternalProcesses())
 
   state.consoleBuilder = createConsoleBuilder(testUiSession)
-  state.addConsoleFilters(*getConsoleFilters().toTypedArray())
+  state.addConsoleFilters(*getConsoleFilters())
 
   val commandLine = GeneralCommandLine(builder.build().toList())
   applyEnvironment(commandLine)
+
+
+  val processHandler = object : ScopedBlazeProcessHandler.ScopedProcessHandlerDelegate {
+    override fun onBlazeContextStart(context: BlazeContext) {
+      context.push(ProblemsViewScope(ctx.project, BlazeUserSettings.getInstance().showProblemsViewOnRun))
+    }
+
+    override fun createProcessListeners(context: BlazeContext): ImmutableList<ProcessListener> {
+      val outputStream = LineProcessingOutputStream.of(
+        BlazeConsoleLineProcessorProvider.getAllStderrLineProcessors(context)
+      )
+
+      return ImmutableList.of(LineProcessingProcessAdapter(outputStream))
+    }
+  }
 
   return ScopedBlazeProcessHandler(
     ctx.project,
     commandLine,
     WorkspaceRoot.fromProject(ctx.project),
-    object : ScopedBlazeProcessHandler.ScopedProcessHandlerDelegate {
-      override fun onBlazeContextStart(context: BlazeContext) {
-        context.push(ProblemsViewScope(ctx.project, BlazeUserSettings.getInstance().showProblemsViewOnRun))
-      }
-
-      override fun createProcessListeners(context: BlazeContext): ImmutableList<ProcessListener> {
-        val outputStream = LineProcessingOutputStream.of(
-          BlazeConsoleLineProcessorProvider.getAllStderrLineProcessors(context)
-        )
-        return ImmutableList.of<ProcessListener>(LineProcessingProcessAdapter(outputStream))
-      }
-    },
+    processHandler,
   )
 }
 
 context(ctx: BazelDefaultLauncherContext)
-fun createTestUiSession(): BlazeTestUiSession? {
+private fun createTestUiSession(): BlazeTestUiSession? {
   if (!ctx.isTest) {
     return null
   }
@@ -114,6 +119,7 @@ fun createTestUiSession(): BlazeTestUiSession? {
   return BuildResultHelperBep().use { helper ->
     BlazeTestUiSession.create(
       ImmutableList.builder<String>()
+        // we actually have users complaining about these hardcoded flags
         .add("--runs_per_test=1")
         .add("--flaky_test_attempts=1")
         .addAll(helper.buildFlags)
@@ -133,8 +139,8 @@ fun createConsoleBuilder(testUiSession: BlazeTestUiSession?): CidrConsoleBuilder
 }
 
 context(ctx: BazelDefaultLauncherContext)
-fun getConsoleFilters(): ImmutableList<Filter> {
-  return ImmutableList.of<Filter>(
+fun getConsoleFilters(): Array<Filter> {
+  return arrayOf(
     UrlFilter(),
     ToolWindowTaskIssueOutputFilter.createWithDefaultParsers(
       ctx.project,
@@ -154,5 +160,6 @@ fun applyEnvironment(commandLine: GeneralCommandLine) {
       GeneralCommandLine.ParentEnvironmentType.NONE
     }
   )
+
   commandLine.environment.putAll(environmentData.envs)
 }

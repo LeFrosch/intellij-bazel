@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Bazel Authors. All rights reserved.
+ * Copyright 2026 The Bazel Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,26 +55,20 @@ fun getGdbServerFlags(port: Int): ImmutableList<String> {
   }
 
   // if gdbserver could not be found, fall back to trying PATH
-  val gdbServerPath = resolveGdbServerPath(ToolchainUtils.getToolchain()) ?: "gdbserver"
+  val gdbServerPath = resolveGdbServerPath()
   builder.withRunUnderGDBServer(gdbServerPath, port, GDBSERVER_WRAPPER.toString())
 
   return builder.build()
 }
 
-private fun resolveGdbServerPath(toolchain: CPPToolchains.Toolchain): String? {
-  val gdbPath = when (toolchain.debuggerKind) {
-    CPPDebugger.Kind.CUSTOM_GDB -> toolchain.customGDBExecutablePath
-    CPPDebugger.Kind.BUNDLED_GDB -> CidrDebuggerPathManager.getBundledGDBBinary().path
-    else -> {
-      LOG.error("Trying to resolve gdbserver executable for ${toolchain.debuggerKind}")
-      return null
-    }
-  }
+private fun resolveGdbServerPath(): String {
+  val gdbBinaryPath = CidrDebuggerPathManager.bundledGDBBinary.path
 
   // there is no dedicated toolchain setting for gdbserver, so try appending "server" to the gdb path
-  val gdbServer = Path.of(gdbPath + "server")
+  val gdbServer = Path.of(gdbBinaryPath + "server")
   if (!Files.exists(gdbServer)) {
-    return null
+    LOG.warn("Could not find gdbserver at $gdbServer, falling back to PATH")
+    return "gdbserver"
   }
 
   return gdbServer.absolutePathString()

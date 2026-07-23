@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Bazel Authors. All rights reserved.
+ * Copyright 2026 The Bazel Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 @file:Suppress("UnstableApiUsage")
 
 package com.google.idea.blaze.clwb.run.profile
@@ -48,24 +49,38 @@ private val PROC_CWD: Path = Path.of("/proc", "self", "cwd")
 
 private const val TEST_FILTER_ENV_VARIABLE = "TESTBRIDGE_TEST_ONLY"
 
-context(ctx: BazelDefaultLauncherContext)
 @Throws(ExecutionException::class)
+context(ctx: BazelDefaultLauncherContext)
 fun createLocalDebugProcess(
   state: CommandLineState,
   session: XDebugSession,
   profile: CidrDebugProfile<*>,
 ): XDebugProcess {
+  val debugDriver = profile.createDriverConfiguration(
+    project = ctx.project,
+    isElevated = false,
+    isEmulateTerminal = false,
+    environment = CPPEnvironment(ToolchainUtils.getToolchain()),
+  )
+
+  // external paths must be mapped before the workspace root, since one is a prefix of the other
+  val sourceMappings = linkedMapOf(
+    PROC_CWD.resolve("external") to ctx.executionRoot.resolve("external"),
+    PROC_CWD to ctx.workspaceRoot,
+  )
+
   val parameters = TrivialRunParameters(
-    createDebugDriverConfiguration(profile),
+    debugDriver,
     TrivialInstaller(buildLocalDebugCommandLine(getDebugExecutable())),
   )
 
   state.consoleBuilder = createConsoleBuilder(null)
-  state.addConsoleFilters(*getConsoleFilters().toTypedArray())
+  state.addConsoleFilters(*getConsoleFilters())
 
-  val process = runOnEDT { CidrLocalDebugProcess(parameters, session, state.consoleBuilder) }
+  val process = runOnEDT {
+    CidrLocalDebugProcess(parameters, session, state.consoleBuilder)
+  }
 
-  val sourceMappings = createDebugPathMapping()
   process.postCommand { driver ->
     when (profile.type.getId()) {
       CLionLldbDebugProfileType.ID -> configureLldbDriver(driver, sourceMappings)
@@ -76,8 +91,8 @@ fun createLocalDebugProcess(
   return process
 }
 
-context(ctx: BazelDefaultLauncherContext)
 @Throws(ExecutionException::class)
+context(ctx: BazelDefaultLauncherContext)
 fun createRemoteDebugProcess(
   state: CommandLineState,
   session: XDebugSession,
@@ -99,15 +114,15 @@ fun createRemoteDebugProcess(
   }
 }
 
-context(ctx: BazelDefaultLauncherContext)
 @Throws(ExecutionException::class)
-fun getDebugExecutable(): Path {
+context(ctx: BazelDefaultLauncherContext)
+private fun getDebugExecutable(): Path {
   return BlazeCidrRunConfigurationRunner.getDebugExecutable(ctx.environment)
     ?: throw ExecutionException("No debug binary found.")
 }
 
 context(ctx: BazelDefaultLauncherContext)
-fun buildLocalDebugCommandLine(executable: Path): GeneralCommandLine {
+private fun buildLocalDebugCommandLine(executable: Path): GeneralCommandLine {
   val commandLine = GeneralCommandLine(executable.toString()).withWorkingDirectory(ctx.executionRoot)
 
   commandLine.addParameters(getTargetArguments())
@@ -123,7 +138,7 @@ fun buildLocalDebugCommandLine(executable: Path): GeneralCommandLine {
 }
 
 context(ctx: BazelDefaultLauncherContext)
-fun getTargetArguments(): List<String> {
+private fun getTargetArguments(): List<String> {
   val target = ctx.configuration.singleTarget as? Label ?: return emptyList()
 
   return ctx.projectData.targetMap().get(target)
@@ -131,25 +146,6 @@ fun getTargetArguments(): List<String> {
     .mapNotNull(TargetIdeInfo::getcIdeInfo)
     .flatMap { it.ruleContext().args() }
     .toList()
-}
-
-context(ctx: BazelDefaultLauncherContext)
-fun createDebugDriverConfiguration(profile: CidrDebugProfile<*>): DebuggerDriverConfiguration {
-  return profile.createDriverConfiguration(
-    ctx.project,
-    false,
-    false,
-    CPPEnvironment(ToolchainUtils.getToolchain()),
-  )
-}
-
-context(ctx: BazelDefaultLauncherContext)
-fun createDebugPathMapping(): Map<Path, Path> {
-  // external paths must be mapped before the workspace root, since one is a prefix of the other.
-  return linkedMapOf(
-    PROC_CWD.resolve("external") to ctx.executionRoot.resolve("external"),
-    PROC_CWD to ctx.workspaceRoot,
-  )
 }
 
 private fun configureGdbDriver(driver: DebuggerDriver, sourceMappings: Map<Path, Path>) {

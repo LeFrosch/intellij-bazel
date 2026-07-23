@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Bazel Authors. All rights reserved.
+ * Copyright 2026 The Bazel Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.idea.blaze.clwb.run.profile
 
 import com.google.idea.blaze.base.run.BlazeCommandRunConfiguration
@@ -40,7 +41,7 @@ class BazelTestConsoleBuilder(
       return SmRunnerUtils.getConsoleView(configuration.project, configuration, environment.executor, it)
     }
 
-    // when launching the debugger directly the blaze test runners aren't involved
+    // when launching the debugger directly, the blaze test runners aren't involved
     val consoleProperties = CidrGoogleTestConsoleProperties(configuration, environment.executor, environment.executionTarget)
     return createConsole(configuration.type, consoleProperties)
   }
