@@ -21,7 +21,9 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.idea.blaze.base.bazel.BazelVersion;
 import com.google.idea.testing.headless.HeadlessTestCase;
 import com.google.idea.testing.headless.ProjectViewBuilder;
+import com.google.idea.testing.headless.SandboxErrorProcessor;
 import com.intellij.codeInsight.CodeInsightSettings;
+import com.intellij.openapi.application.AccessToken;
 import com.intellij.openapi.application.ApplicationInfo;
 import com.intellij.testFramework.HeavyPlatformTestCase;
 import com.jetbrains.cidr.lang.CLanguageKind;
@@ -32,6 +34,16 @@ import com.jetbrains.cidr.lang.workspace.OCWorkspace;
 import java.util.ArrayList;
 
 public abstract class ClwbHeadlessTestCase extends HeadlessTestCase {
+
+  private AccessToken sandboxErrorProcessorToken;
+
+  @Override
+  protected void setUp() throws Exception {
+    // has to be installed before the project is opened, because the radler backend is started during project open
+    sandboxErrorProcessorToken = SandboxErrorProcessor.install();
+
+    super.setUp();
+  }
 
   @Override
   protected void setUpProject() throws Exception {
@@ -44,13 +56,21 @@ public abstract class ClwbHeadlessTestCase extends HeadlessTestCase {
 
   @Override
   protected void tearDown() throws Exception {
-    final var roots = new ArrayList<AllowedVfsRoot>();
-    addAllowedVfsRoots(roots);
+    try {
+      final var roots = new ArrayList<AllowedVfsRoot>();
+      addAllowedVfsRoots(roots);
 
-    Assertions.assertVfsLoads(myBazelInfo.executionRoot(), roots);
-    HeavyPlatformTestCase.cleanupApplicationCaches(myProject);
+      Assertions.assertVfsLoads(myBazelInfo.executionRoot(), roots);
+      HeavyPlatformTestCase.cleanupApplicationCaches(myProject);
 
-    super.tearDown();
+      super.tearDown();
+    } finally {
+      if (sandboxErrorProcessorToken != null) {
+        sandboxErrorProcessorToken.finish();
+        sandboxErrorProcessorToken = null;
+      }
+    }
+
   }
 
   protected void addAllowedVfsRoots(ArrayList<AllowedVfsRoot> roots) { }
